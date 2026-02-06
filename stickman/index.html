@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Showdown - EXPLOSIVE</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+        #game-container {
+            position: relative;
+            width: 1024px;
+            height: 576px;
+            background-color: #222;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border: 4px solid #333;
+            overflow: hidden; /* Viktig for shake */
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* UI Overlay */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 20px;
+            pointer-events: none;
+        }
+
+        /* Menu Overlay (Startskjerm) */
+        #menu-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .menu-title {
+            font-size: 4rem;
+            margin-bottom: 40px;
+            color: #ff4d4d;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-style: italic;
+            text-shadow: 4px 4px 0 #fff;
+            letter-spacing: 5px;
+        }
+
+        .btn {
+            background: #fff;
+            color: #222;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: 900;
+            cursor: pointer;
+            margin: 10px;
+            transform: skew(-10deg);
+            transition: all 0.1s;
+            min-width: 250px;
+            border: 2px solid #000;
+            box-shadow: 5px 5px 0 #000;
+        }
+
+        .btn:hover {
+            transform: skew(-10deg) translate(-2px, -2px);
+            box-shadow: 7px 7px 0 #000;
+            background: #ffff00;
+        }
+
+        .btn:active {
+            transform: skew(-10deg) translate(2px, 2px);
+            box-shadow: 2px 2px 0 #000;
+        }
+
+        .btn-blue { background: #4d79ff; color: white; border: 2px solid #fff;}
+        .btn-red { background: #ff4d4d; color: white; border: 2px solid #fff;}
+
+        /* Restart knapp (vises ved game over) */
+        #restart-btn {
+            pointer-events: auto;
+            display: none;
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%) skew(-10deg);
+            z-index: 20;
+        }
+
+        .input-group {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            padding: 15px;
+            font-size: 1.2rem;
+            border-radius: 0;
+            border: 2px solid #fff;
+            background: #333;
+            color: #fff;
+            text-align: center;
+            width: 150px;
+            font-weight: bold;
+        }
+
+        /* Helsebarer */
+        .health-bar-container {
+            position: absolute;
+            top: 30px;
+            width: 40%;
+            height: 40px;
+            background-color: #111;
+            border: 4px solid #fff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        #p1-health-container { left: 20px; border-color: #ff4d4d; transform: skew(-20deg); }
+        #p2-health-container { right: 20px; border-color: #4d79ff; flex-direction: row-reverse; display: flex; transform: skew(20deg); }
+
+        .health-fill {
+            height: 100%;
+            transition: width 0.2s ease-out;
+        }
+
+        #p1-health { background-color: #ff4d4d; width: 100%; box-shadow: 0 0 20px #ff4d4d; }
+        #p2-health { background-color: #4d79ff; width: 100%; box-shadow: 0 0 20px #4d79ff; }
+
+        /* Timer */
+        #timer {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fff;
+            color: #000;
+            width: 80px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: 900;
+            border: 4px solid #000;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+        }
+
+        /* Resultattekst */
+        #result-display {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 6rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-style: italic;
+            color: #fff;
+            text-shadow: 5px 5px 0 #000, 0 0 30px rgba(255,255,255,0.5);
+            display: none;
+            text-align: center;
+            z-index: 5;
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0.8;
+            color: #fff;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        #status-msg {
+            margin-top: 20px;
+            color: #aaa;
+            font-size: 0.9rem;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- UI -->
+    <div id="ui-layer">
+        <div id="p1-health-container" class="health-bar-container">
+            <div id="p1-health" class="health-fill"></div>
+        </div>
+        <div id="timer">30</div>
+        <div id="p2-health-container" class="health-bar-container">
+            <div id="p2-health" class="health-fill"></div>
+        </div>
+        
+        <div id="result-display">K.O.</div>
+        <button id="restart-btn" class="btn" onclick="location.reload()">MENY</button>
+
+        <div class="controls-hint" id="controls-hint">
+            Velg spillmodus
+        </div>
+    </div>
+
+    <!-- Meny Overlay -->
+    <div id="menu-layer">
+        <div class="menu-title">Stickman<br>DUEL</div>
+        
+        <!-- Hovedvalg -->
+        <div id="main-menu">
+            <button class="btn" onclick="startLocalGame()">Spill Lokalt</button>
+            <button class="btn btn-blue" onclick="showOnlineMenu()">Spill Online</button>
+        </div>
+
+        <!-- Online Meny -->
+        <div id="online-menu" style="display:none; text-align:center;">
+            <p style="color:#ccc; margin-bottom:10px;">Skriv inn en rom-kode</p>
+            <div class="input-group">
+                <input type="text" id="room-code" placeholder="KODE" maxlength="6">
+            </div>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn btn-red" onclick="initOnlineGame('host')">LAG ROM</button>
+                <button class="btn btn-blue" onclick="initOnlineGame('join')">BLI MED</button>
+            </div>
+            <button class="btn" style="margin-top:20px; font-size:1rem; padding:10px; min-width: 150px;" onclick="showMainMenu()">TILBAKE</button>
+        </div>
+
+        <div id="status-msg"></div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+</div>
+
+<!-- Firebase Config -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, onSnapshot, setDoc, updateDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- FIREBASE SETUP ---
+    const firebaseConfig = JSON.parse(__firebase_config || '{}');
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app';
+    
+    let db, auth, user;
+    let isOnline = false;
+    let isHost = false;
+    let roomId = null;
+    let unsubscribeGame = null;
+
+    if (firebaseConfig.apiKey) {
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        
+        signInAnonymously(auth).catch(console.error);
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+        });
+    }
+
+    // --- GLOBAL SPILL VARIABLER ---
+    window.gameMode = 'menu'; 
+    window.myRole = null; 
+
+    // --- LYD SYSTEM ---
+    const menuMusic = new Audio('489554__wi-photos__menu-music.wav');
+    menuMusic.loop = true;
+    menuMusic.volume = 0.5;
+
+    const battleMusic = new Audio('79645__milton__good-morning-tokyo.mp3');
+    battleMusic.loop = true;
+    battleMusic.volume = 0.4;
+
+    // Prøv å starte menymusikk ved første klikk (pga autoplay policies)
+    let musicStarted = false;
+    document.body.addEventListener('click', () => {
+        if (!musicStarted && window.gameMode === 'menu') {
+            menuMusic.play().catch(e => console.log("Audio play failed:", e));
+            musicStarted = true;
+        }
+    });
+
+    function playBattleMusic() {
+        menuMusic.pause();
+        menuMusic.currentTime = 0;
+        battleMusic.play().catch(e => console.log("Battle music failed:", e));
+    }
+
+    // Eksponer funksjoner til global scope
+    window.startLocalGame = function() {
+        playBattleMusic();
+        document.getElementById('menu-layer').style.display = 'none';
+        document.getElementById('controls-hint').innerHTML = "P1: WASD + Space | P2: Piler + 0/Ctrl";
+        window.gameMode = 'local';
+        startGame();
+    };
+
+    window.showOnlineMenu = function() {
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('online-menu').style.display = 'block';
+    };
+
+    window.showMainMenu = function() {
+        document.getElementById('online-menu').style.display = 'none';
+        document.getElementById('main-menu').style.display = 'block';
+        document.getElementById('status-msg').innerText = "";
+    };
+
+    window.initOnlineGame = async function(role) {
+        if (!user) {
+            document.getElementById('status-msg').innerText = "Kobler til server... vent litt.";
+            return;
+        }
+
+        const codeInput = document.getElementById('room-code').value.trim();
+        if (!codeInput) {
+            document.getElementById('status-msg').innerText = "Skriv inn en rom-kode!";
+            return;
+        }
+
+        roomId = codeInput;
+        isHost = (role === 'host');
+        window.gameMode = 'online';
+        window.myRole = isHost ? 'p1' : 'p2';
+        
+        const statusEl = document.getElementById('status-msg');
+        statusEl.innerText = isHost ? "Oppretter rom..." : "Kobler til rom...";
+
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'matches', roomId);
+
+        try {
+            if (isHost) {
+                await setDoc(roomRef, {
+                    created: Date.now(),
+                    p1: { x: 200, y: 0, hp: 100, anim: 'idle', dir: true, attack: false },
+                    p2: { x: 750, y: 0, hp: 100, anim: 'idle', dir: false, attack: false },
+                    timer: 30,
+                    status: 'waiting'
+                });
+                statusEl.innerText = "Venter på motstander...";
+            } else {
+                const docSnap = await getDoc(roomRef);
+                if (!docSnap.exists()) {
+                    statusEl.innerText = "Rommet finnes ikke! Be host lage det først.";
+                    return;
+                }
+                await updateDoc(roomRef, { status: 'playing' });
+                statusEl.innerText = "Fant rom! Starter...";
+            }
+
+            setupOnlineListener(roomRef);
+            
+            // Vent til vi faktisk starter med å bytte musikk? Nei, vi kjører på.
+            playBattleMusic();
+
+            document.getElementById('menu-layer').style.display = 'none';
+            document.getElementById('controls-hint').innerHTML = isHost 
+                ? "DU ER P1 (Rød): Bruk WASD + Space" 
+                : "DU ER P2 (Blå): Bruk Piltaster + 0/Ctrl";
+            
+            startGame();
+
+        } catch (e) {
+            console.error(e);
+            statusEl.innerText = "Feil: " + e.message;
+        }
+    };
+
+    let lastUpdate = 0;
+    const UPDATE_RATE = 50; 
+
+    function setupOnlineListener(roomRef) {
+        unsubscribeGame = onSnapshot(roomRef, (doc) => {
+            const data = doc.data();
+            if (!data) return;
+
+            if (window.timerRef) window.timerRef = data.timer; 
+
+            if (window.myRole === 'p1') {
+                updateRemotePlayer(player2, data.p2);
+            } 
+            else if (window.myRole === 'p2') {
+                updateRemotePlayer(player1, data.p1);
+            }
+        });
+    }
+
+    // Oppdatert for å trigge effekter ved helsetap
+    function updateRemotePlayer(player, data) {
+        // Posisjon
+        player.position.x = data.x;
+        player.position.y = data.y;
+        player.facingRight = data.dir;
+        
+        // Sjekk om skade er tatt (for effekter)
+        if (data.hp < player.health) {
+             window.spawnHitEffect(player.position.x + player.width/2, player.position.y + player.height/2, player.color);
+             player.takeHitVisuals();
+        }
+        player.health = data.hp;
+        
+        // Angrep sync
+        if (data.attack && !player.isAttacking) {
+            player.attack();
+        }
+        
+        // UI Helse
+        const barId = player === player1 ? '#p1-health' : '#p2-health';
+        document.querySelector(barId).style.width = player.health + '%';
+    }
+
+    window.sendMyState = async function() {
+        if (window.gameMode !== 'online' || !roomId) return;
+        
+        const now = Date.now();
+        if (now - lastUpdate < UPDATE_RATE) return;
+        lastUpdate = now;
+
+        const myPlayer = window.myRole === 'p1' ? player1 : player2;
+        const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'matches', roomId);
+
+        const payload = {
+            x: Math.round(myPlayer.position.x),
+            y: Math.round(myPlayer.position.y),
+            hp: myPlayer.health,
+            dir: myPlayer.facingRight,
+            attack: myPlayer.isAttacking
+        };
+
+        const field = window.myRole;
+        
+        try {
+            await updateDoc(roomRef, {
+                [field]: payload
+            });
+        } catch (e) {}
+    };
+
+</script>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const c = canvas.getContext('2d');
+
+    canvas.width = 1024;
+    canvas.height = 576;
+
+    const GRAVITY = 0.7;
+    const GROUND_HEIGHT = 96; 
+    const JUMP_FORCE = -15;
+    const SPEED = 5;
+    const ATTACK_COOLDOWN = 400;
+
+    // --- VISUELLE EFFEKTER ---
+    let particles = [];
+    let shakeIntensity = 0;
+    let hitStopTimer = 0; // Fryser spillet
+    let backgroundFlash = 0;
+
+    class Particle {
+        constructor(x, y, color, velocity) {
+            this.x = x;
+            this.y = y;
+            this.color = color;
+            this.velocity = velocity;
+            this.alpha = 1;
+            this.size = Math.random() * 5 + 2;
+            this.decay = Math.random() * 0.03 + 0.01;
+        }
+
+        draw() {
+            c.save();
+            c.globalAlpha = this.alpha;
+            c.fillStyle = this.color;
+            c.fillRect(this.x, this.y, this.size, this.size);
+            c.restore();
+        }
+
+        update() {
+            this.x += this.velocity.x;
+            this.y += this.velocity.y;
+            this.velocity.y += 0.2; // Tyngdekraft på blod
+            this.alpha -= this.decay;
+        }
+    }
+
+    // Funksjon for å lage effekter (tilgjengelig globalt for Firebase)
+    window.spawnHitEffect = function(x, y, color) {
+        // Screenshake
+        shakeIntensity = 15;
+        hitStopTimer = 5; // Frys i 5 frames
+        backgroundFlash = 3; 
+
+        // Partikler
+        const particleCount = 15;
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle(
+                x, 
+                y, 
+                color, 
+                {
+                    x: (Math.random() - 0.5) * 15,
+                    y: (Math.random() - 0.5) * 15
+                }
+            ));
+        }
+        // Hvite gnister også
+        for (let i = 0; i < 5; i++) {
+            particles.push(new Particle(
+                x, y, 'white', 
+                { x: (Math.random() - 0.5) * 20, y: (Math.random() - 0.5) * 20 }
+            ));
+        }
+    }
+
+    function rectCollision(rect1, rect2) {
+        return (
+            rect1.attackBox.position.x + rect1.attackBox.width >= rect2.position.x &&
+            rect1.attackBox.position.x <= rect2.position.x + rect2.width &&
+            rect1.attackBox.position.y + rect1.attackBox.height >= rect2.position.y &&
+            rect1.attackBox.position.y <= rect2.position.y + rect2.height
+        );
+    }
+
+    class Fighter {
+        constructor({ position, velocity, color = 'red', offset = { x: 0, y: 0 }, facingRight = true }) {
+            this.position = position;
+            this.velocity = velocity;
+            this.width = 50;
+            this.height = 150;
+            this.lastKey = '';
+            this.color = color;
+            this.isAttacking = false;
+            this.health = 100;
+            this.facingRight = facingRight;
+            this.attackBox = {
+                position: { x: this.position.x, y: this.position.y },
+                offset: offset,
+                width: 120, // Større range
+                height: 50
+            };
+            this.canAttack = true;
+            this.isDead = false;
+            this.flashTimer = 0;
+        }
+
+        draw() {
+            c.lineWidth = 6; // Tykkere linjer
+            c.lineCap = 'round';
+            c.lineJoin = 'round';
+            
+            // Hvis truffet, tegn hvit
+            if (this.flashTimer > 0) {
+                c.strokeStyle = 'white';
+                this.flashTimer--;
+            } else {
+                c.strokeStyle = this.color;
+            }
+
+            const headRadius = 20;
+            const centerX = this.position.x + this.width / 2;
+            const bodyTop = this.position.y + headRadius * 2;
+            const bodyBottom = this.position.y + this.height - 40;
+
+            // Hode
+            c.beginPath();
+            c.arc(centerX, this.position.y + headRadius, headRadius, 0, Math.PI * 2);
+            c.fillStyle = this.flashTimer > 0 ? '#fff' : '#000'; // Svart ansikt for tøffere look
+            c.fill();
+            c.stroke();
+
+            // Kropp
+            c.beginPath();
+            c.moveTo(centerX, bodyTop);
+            c.lineTo(centerX, bodyBottom);
+            c.stroke();
+
+            // Armer
+            c.beginPath();
+            const armY = bodyTop + 20;
+            if (this.isAttacking) {
+                const attackDir = this.facingRight ? 1 : -1;
+                c.moveTo(centerX, armY);
+                // Slag-arm
+                c.lineTo(centerX + (80 * attackDir), armY); 
+                
+                // Visualiser "swish" effekt
+                c.save();
+                c.lineWidth = 2;
+                c.strokeStyle = 'white';
+                c.beginPath();
+                c.arc(centerX + (60 * attackDir), armY, 40, 0, Math.PI * 2);
+                c.stroke();
+                c.restore();
+
+            } else {
+                // Idle fight stance
+                const dir = this.facingRight ? 1 : -1;
+                c.moveTo(centerX, armY);
+                c.lineTo(centerX + (30 * dir), armY + 30); // Fremre arm
+                c.moveTo(centerX, armY);
+                c.lineTo(centerX - (20 * dir), armY + 30); // Bakre arm
+            }
+            c.stroke();
+            
+            // Hanske
+            if (this.isAttacking) {
+                const attackDir = this.facingRight ? 1 : -1;
+                c.beginPath();
+                c.arc(centerX + (80 * attackDir), armY, 15, 0, Math.PI * 2);
+                c.fillStyle = this.flashTimer > 0 ? '#fff' : this.color;
+                c.fill();
+            }
+
+            // Ben
+            c.beginPath();
+            const isMoving = Math.abs(this.velocity.x) > 0;
+            const legOffset = isMoving ? Math.sin(Date.now() / 80) * 30 : 0;
+            c.moveTo(centerX, bodyBottom);
+            c.lineTo(centerX - 20 + legOffset, this.position.y + this.height);
+            c.moveTo(centerX, bodyBottom);
+            c.lineTo(centerX + 20 - legOffset, this.position.y + this.height);
+            c.stroke();
+        }
+
+        update() {
+            this.draw();
+
+            if (!this.isDead) {
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+
+                if (this.position.y + this.height + this.velocity.y >= canvas.height - GROUND_HEIGHT) {
+                    this.velocity.y = 0;
+                    this.position.y = canvas.height - 96 - this.height;
+                } else {
+                    this.velocity.y += GRAVITY;
+                }
+            }
+
+            if (this.facingRight) {
+                 this.attackBox.position.x = this.position.x + this.width;
+            } else {
+                 this.attackBox.position.x = this.position.x - this.attackBox.width;
+            }
+            this.attackBox.position.y = this.position.y + 20;
+        }
+
+        attack() {
+            if (!this.canAttack || this.isDead) return;
+            this.isAttacking = true;
+            this.canAttack = false;
+            setTimeout(() => { this.isAttacking = false; }, 100);
+            setTimeout(() => { this.canAttack = true; }, ATTACK_COOLDOWN);
+        }
+
+        takeHitVisuals() {
+             this.flashTimer = 5; // Flash hvit i 5 frames
+        }
+
+        takeHit(damage) {
+            this.takeHitVisuals();
+            this.health -= damage;
+            
+            if (this.health <= 0) {
+                this.health = 0;
+                this.isDead = true;
+            }
+        }
+    }
+
+    let player1, player2;
+    const keys = {
+        a: { pressed: false },
+        d: { pressed: false },
+        ArrowRight: { pressed: false },
+        ArrowLeft: { pressed: false }
+    };
+
+    let timer = 30; // START TID 30 SEK
+    let timerId;
+    let gameOver = false;
+
+    function resetGame() {
+        player1 = new Fighter({
+            position: { x: 200, y: 0 },
+            velocity: { x: 0, y: 0 },
+            color: '#ff4d4d',
+            offset: { x: 0, y: 0 },
+            facingRight: true
+        });
+
+        player2 = new Fighter({
+            position: { x: 750, y: 0 },
+            velocity: { x: 0, y: 0 },
+            color: '#4d79ff',
+            offset: { x: -50, y: 0 },
+            facingRight: false
+        });
+
+        particles = [];
+        timer = 30; // RESET TIL 30
+        gameOver = false;
+        document.getElementById('result-display').style.display = 'none';
+        document.getElementById('restart-btn').style.display = 'none';
+        document.getElementById('timer').innerText = timer;
+        document.querySelector('#p1-health').style.width = '100%';
+        document.querySelector('#p2-health').style.width = '100%';
+        
+        // Reset timer tekst farge
+        document.getElementById('timer').style.backgroundColor = '#fff';
+    }
+
+    function startGame() {
+        resetGame();
+        clearTimeout(timerId);
+        decreaseTimer();
+        animate();
+    }
+
+    function determineWinner({ player1, player2, timerId }) {
+        clearTimeout(timerId);
+        gameOver = true;
+        const display = document.getElementById('result-display');
+        display.style.display = 'block';
+        document.getElementById('restart-btn').style.display = 'block';
+        
+        // STOR EXPLOSJON VED SLUTT
+        shakeIntensity = 50;
+        backgroundFlash = 20;
+
+        if (player1.health === player2.health) {
+            display.innerText = 'DRAW!';
+        } else if (player1.health > player2.health) {
+            display.innerText = 'P1 WINS!';
+            display.style.color = '#ff4d4d';
+        } else if (player1.health < player2.health) {
+            display.innerText = 'P2 WINS!';
+            display.style.color = '#4d79ff';
+        }
+    }
+
+    function decreaseTimer() {
+        if (timer > 0 && !gameOver) {
+            timerId = setTimeout(decreaseTimer, 1000);
+            timer--;
+            document.getElementById('timer').innerText = timer;
+            if (timer < 10) document.getElementById('timer').style.backgroundColor = '#ff4d4d';
+        }
+        if (timer === 0) {
+            determineWinner({ player1, player2, timerId });
+        }
+    }
+
+    resetGame();
+    
+    let animationId;
+    function animate() {
+        animationId = window.requestAnimationFrame(animate);
+        
+        // HIT STOP LOGIKK (Slow motion ved treff)
+        if (hitStopTimer > 0) {
+            hitStopTimer--;
+            return; // Hopper over update, fryser bildet
+        }
+
+        c.fillStyle = '#222';
+        c.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Screenshake effekt
+        c.save();
+        if (shakeIntensity > 0) {
+            const dx = (Math.random() - 0.5) * shakeIntensity;
+            const dy = (Math.random() - 0.5) * shakeIntensity;
+            c.translate(dx, dy);
+            shakeIntensity *= 0.9; // Demp shake
+            if (shakeIntensity < 1) shakeIntensity = 0;
+        }
+
+        // Background Flash
+        if (backgroundFlash > 0) {
+            c.fillStyle = `rgba(255, 255, 255, ${backgroundFlash * 0.1})`;
+            c.fillRect(0, 0, canvas.width, canvas.height);
+            backgroundFlash--;
+        }
+        
+        // Tegn "atmosfære" gulv
+        c.fillStyle = '#111';
+        c.fillRect(0, canvas.height - GROUND_HEIGHT, canvas.width, GROUND_HEIGHT);
+        // Stripe på gulvet
+        c.fillStyle = '#333';
+        c.fillRect(0, canvas.height - GROUND_HEIGHT, canvas.width, 10);
+
+        // Oppdater partikler bak spillerne
+        particles.forEach((particle, index) => {
+            if (particle.alpha <= 0) {
+                particles.splice(index, 1);
+            } else {
+                particle.update();
+                particle.draw();
+            }
+        });
+
+        player1.update();
+        player2.update();
+
+        // Stopp logikk hvis spillet er over
+        if (gameOver) {
+            c.restore();
+            return;
+        }
+
+        // --- INPUT HANDLING ---
+        
+        // Lokal Modus eller Host (P1)
+        if (window.gameMode === 'local' || (window.gameMode === 'online' && window.myRole === 'p1')) {
+            player1.velocity.x = 0;
+            if (keys.a.pressed && player1.lastKey === 'a') {
+                player1.velocity.x = -SPEED;
+                player1.facingRight = false;
+            } else if (keys.d.pressed && player1.lastKey === 'd') {
+                player1.velocity.x = SPEED;
+                player1.facingRight = true;
+            }
+        }
+
+        // Lokal Modus eller Client (P2)
+        if (window.gameMode === 'local' || (window.gameMode === 'online' && window.myRole === 'p2')) {
+            player2.velocity.x = 0;
+            if (keys.ArrowLeft.pressed && player2.lastKey === 'ArrowLeft') {
+                player2.velocity.x = -SPEED;
+                player2.facingRight = false;
+            } else if (keys.ArrowRight.pressed && player2.lastKey === 'ArrowRight') {
+                player2.velocity.x = SPEED;
+                player2.facingRight = true;
+            }
+        }
+
+        // --- KOLLISJONER & EFFEKTER ---
+
+        // P1 treffer P2
+        if (window.gameMode === 'local' || window.myRole === 'p1') {
+            if (rectCollision(player1, player2) && player1.isAttacking && !player2.isDead) {
+                player1.isAttacking = false;
+                player2.takeHit(10);
+                
+                // Spawn effekter
+                window.spawnHitEffect(player2.position.x + player2.width/2, player2.position.y + player2.height/2, player2.color);
+
+                document.querySelector('#p2-health').style.width = player2.health + '%';
+                player2.velocity.x = player1.facingRight ? 15 : -15; // Mye mer knockback
+                player2.velocity.y = -8;
+            }
+        }
+
+        // P2 treffer P1
+        if (window.gameMode === 'local' || window.myRole === 'p2') {
+            if (rectCollision(player2, player1) && player2.isAttacking && !player1.isDead) {
+                player2.isAttacking = false;
+                player1.takeHit(10);
+
+                // Spawn effekter
+                window.spawnHitEffect(player1.position.x + player1.width/2, player1.position.y + player1.height/2, player1.color);
+
+                document.querySelector('#p1-health').style.width = player1.health + '%';
+                player1.velocity.x = player2.facingRight ? 15 : -15;
+                player1.velocity.y = -8;
+            }
+        }
+
+        c.restore(); // Avslutt screenshake transform
+
+        if (player1.health <= 0 || player2.health <= 0) {
+            determineWinner({ player1, player2, timerId });
+        }
+
+        if (window.gameMode === 'online' && window.sendMyState) {
+            window.sendMyState();
+        }
+    }
+
+    // Input Listeners
+    window.addEventListener('keydown', (event) => {
+        if (gameOver || window.gameMode === 'menu') return;
+
+        const isP1 = (window.gameMode === 'local' || window.myRole === 'p1');
+        const isP2 = (window.gameMode === 'local' || window.myRole === 'p2');
+
+        switch (event.key) {
+            case 'd': if (isP1) { keys.d.pressed = true; player1.lastKey = 'd'; } break;
+            case 'a': if (isP1) { keys.a.pressed = true; player1.lastKey = 'a'; } break;
+            case 'w': if (isP1 && player1.velocity.y === 0) player1.velocity.y = JUMP_FORCE; break;
+            case ' ': if (isP1) player1.attack(); break;
+
+            case 'ArrowRight': if (isP2) { keys.ArrowRight.pressed = true; player2.lastKey = 'ArrowRight'; } break;
+            case 'ArrowLeft': if (isP2) { keys.ArrowLeft.pressed = true; player2.lastKey = 'ArrowLeft'; } break;
+            case 'ArrowUp': if (isP2 && player2.velocity.y === 0) player2.velocity.y = JUMP_FORCE; break;
+            case 'ArrowDown':
+            case 'Control':
+            case '0': if (isP2) player2.attack(); break;
+        }
+    });
+
+    window.addEventListener('keyup', (event) => {
+        const isP1 = (window.gameMode === 'local' || window.myRole === 'p1');
+        const isP2 = (window.gameMode === 'local' || window.myRole === 'p2');
+
+        switch (event.key) {
+            case 'd': if(isP1) keys.d.pressed = false; break;
+            case 'a': if(isP1) keys.a.pressed = false; break;
+            case 'ArrowRight': if(isP2) keys.ArrowRight.pressed = false; break;
+            case 'ArrowLeft': if(isP2) keys.ArrowLeft.pressed = false; break;
+        }
+    });
+
+    function idleLoop() {
+        if (window.gameMode === 'menu') {
+            c.fillStyle = '#111';
+            c.fillRect(0, 0, canvas.width, canvas.height);
+            requestAnimationFrame(idleLoop);
+        }
+    }
+    idleLoop();
+
+</script>
+</body>
+</html>
