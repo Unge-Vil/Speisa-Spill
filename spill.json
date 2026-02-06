@@ -9,10 +9,10 @@
     },
     {
         "id": 2,
-        "tittel": "Egil spill",
-        "beskrivelse": "Kommer snart...",
-        "url": "/romfart/",
-        "ikon": "fa-solid fa-shuttle-space",
+        "tittel": "Erasmus+ Panikken",
+        "beskrivelse": "Det er et hektisk arkadespill hvor du spiller som en stresset prosjektleder.",
+        "url": "erasmus/",
+        "ikon": "fa-solid fa-toilet-paper",
         "farge": "bg-gradient-to-br from-purple-900 to-black"
     }
 ]
