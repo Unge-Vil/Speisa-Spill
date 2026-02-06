@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BAN HAMMER 9000 - ULTIMATE</title>
+    <title>BAN HAMMER 9000 - PARTY EDITION</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
@@ -30,7 +30,7 @@
             height: 100vh;
             background: #000;
             overflow: hidden;
-            transition: background 1s ease;
+            transition: background 0.2s ease; /* Faster transition for disco lights */
         }
 
         #gameCanvas {
@@ -123,6 +123,19 @@
             pointer-events: none;
             z-index: 13;
             transition: opacity 1s;
+        }
+
+        /* Drunk Blur Effect */
+        #drunk-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(0px);
+            pointer-events: none;
+            z-index: 12;
+            transition: backdrop-filter 0.5s;
         }
 
         /* UI Overlay */
@@ -256,6 +269,7 @@
     <div id="flash-overlay"></div>
     <div id="blackout-overlay"></div>
     <div id="vignette-overlay"></div>
+    <div id="drunk-overlay"></div>
     
     <div class="scanlines"></div>
     <div class="crt-overlay"></div>
@@ -275,7 +289,7 @@
     <div id="start-screen" class="start-screen">
         <h1 style="color: #33ff00;">BAN HAMMER 9000</h1>
         <div class="retro-text">OPPDRAG: RENS CHATTEN FOR TROLL.</div>
-        <div class="retro-text warning-text">NYE FIENDER: BOTS & VIRUS!</div>
+        <div class="retro-text warning-text">NYE FIENDER: BOTS, VIRUS & IRL FEST!</div>
         <div class="retro-text" style="color: #ffff00; margin-top: 20px;">MENY: HAMMEREN ER DIN PEKER!</div>
         <button onclick="startGame()">INIT SYSTEM</button>
     </div>
@@ -309,11 +323,12 @@
 
     // Musikk-sekvenser per level
     const SEQUENCES = {
-        1: [55, 0, 55, 0, 65, 0, 55, 0], // The Void: Slow, sparse bass
-        2: [220, 220, 261, 261, 330, 220, 196, 220], // IRC: Chiptune upbeat
-        3: [65, 69, 73, 69, 65, 69, 73, 77], // Predator: Chromatic, creepy
-        4: [440, 0, 880, 0, 440, 880, 440, 0], // Bird App: High pitched notifications
-        5: [110, 108, 110, 55, 110, 108, 110, 220]  // Dark Web: Fast, glitchy bass
+        1: [55, 0, 55, 0, 65, 0, 55, 0], // The Void: Slow
+        2: [220, 220, 261, 261, 330, 220, 196, 220], // IRC: Chiptune
+        3: [65, 69, 73, 69, 65, 69, 73, 77], // Predator: Creepy
+        4: [440, 0, 880, 0, 440, 880, 440, 0], // Bird App: High
+        5: [110, 108, 110, 55, 110, 108, 110, 220], // Dark Web: Techno
+        6: [110, 0, 110, 0, 110, 0, 110, 0] // IRL Party: 4-on-the-floor House
     };
 
     function initAudio() {
@@ -357,36 +372,44 @@
         // --- LEVEL SPECIFIC INSTRUMENTS ---
         if (freq > 0) {
             if (currentLevel === 1) {
-                // Heartbeat bass
                 playTone('triangle', freq, freq * 0.5, 0.4, now, 0.3);
             } else if (currentLevel === 2) {
-                // 8-bit Square
                 playTone('square', freq, freq, 0.1, now, 0.1);
             } else if (currentLevel === 3) {
-                // Sawtooth Drone
                 playTone('sawtooth', freq, freq + Math.random()*5, 0.3, now, 0.15);
             } else if (currentLevel === 4) {
-                // Sine Bleeps
                 playTone('sine', freq, freq, 0.05, now, 0.1);
             } else if (currentLevel === 5) {
-                // Industrial Distortion
                 playTone('sawtooth', freq, freq/2, 0.1, now, 0.2);
                 if(Math.random() > 0.7) playNoise(0.05, now, 0.2);
+            } else if (currentLevel === 6) {
+                // Party Bass - Punchy Sawtooth
+                playTone('sawtooth', 60, 40, 0.1, now, 0.4); 
+                // Party Melody
+                if(noteIndex % 8 === 0) playTone('square', 440, 440, 0.2, now, 0.1);
+                if(noteIndex % 8 === 2) playTone('square', 554, 554, 0.2, now, 0.1);
             }
         }
 
         // Rhythm/Drums
         if (currentLevel >= 2 && noteIndex % 2 === 0) playNoise(0.02, now, 0.05); // Hat
         if (currentLevel >= 4 && noteIndex % 4 === 0) playNoise(0.1, now, 0.1); // Snare
+        if (currentLevel === 6) {
+            // Kick drum every beat
+            playTone('sine', 100, 30, 0.1, now, 0.5); 
+            // Hat offbeat
+            if(noteIndex % 2 === 1) playNoise(0.05, now, 0.1); 
+        }
 
         noteIndex++;
         
         // Tempo Logic
-        let tempo = 250; // Lvl 1 Slow
+        let tempo = 250; 
         if (currentLevel === 2) tempo = 150;
-        if (currentLevel === 3) tempo = 300; // Slow creepy
-        if (currentLevel === 4) tempo = 120; // Fast pop
-        if (currentLevel === 5) tempo = 100; // Super fast techno
+        if (currentLevel === 3) tempo = 300; 
+        if (currentLevel === 4) tempo = 120; 
+        if (currentLevel === 5) tempo = 100; 
+        if (currentLevel === 6) tempo = 125; // 120 BPM ish House
 
         musicTimer = setTimeout(scheduleMusicNote, tempo);
     }
@@ -437,6 +460,11 @@
             if(!audioCtx || isMuted) return;
             const now = audioCtx.currentTime;
             [440, 554, 659].forEach((f, i) => playTone('sine', f, f, 0.3, now + i*0.1, 0.1));
+        },
+        drunk: () => {
+            // Wobbly sound
+            if(!audioCtx || isMuted) return;
+            playTone('sine', 200, 150, 0.5, 0, 0.2);
         }
     };
 
@@ -463,6 +491,7 @@
     const flashOverlay = document.getElementById('flash-overlay');
     const blackoutOverlay = document.getElementById('blackout-overlay');
     const vignetteOverlay = document.getElementById('vignette-overlay');
+    const drunkOverlay = document.getElementById('drunk-overlay');
 
     let width, height;
     let score = 0;
@@ -475,6 +504,7 @@
     let glitchEffect = 0;
     let combo = 0;
     let isTouchInput = false;
+    let drunkLevel = 0; // 0 to 100
 
     let mouseX = width/2;
     let mouseY = height/2;
@@ -490,13 +520,14 @@
 
     highscoreEl.innerText = highScore;
 
-    const LEVEL_THRESHOLDS = { 1: 0, 2: 20, 3: 50, 4: 100, 5: 160 };
-    const LEVEL_NAMES = { 1: "THE VOID", 2: "IRC CHATROOM", 3: "PREDATOR ALLEY", 4: "FUGLE-APPEN", 5: "MØRKENETTET" };
+    const LEVEL_THRESHOLDS = { 1: 0, 2: 20, 3: 50, 4: 100, 5: 160, 6: 250 };
+    const LEVEL_NAMES = { 1: "THE VOID", 2: "IRC CHATROOM", 3: "PREDATOR ALLEY", 4: "FUGLE-APPEN", 5: "MØRKENETTET", 6: "IRL FEST" };
 
     const trollInsults = ["Noob!", "Hax!", "Ratio", "Ez", "Taper", "Bot", "Cringe", "Lag!", "Cry more"];
     const nicePhrases = ["Hei!", "GG!", "Kult!", "Venn?", ":)", "Bra spilt", "Lykke til"];
     const predatorPhrases = ["...", "Sulten", "Kom hit", "Nam nam", "Bli med", "Mørket..."];
     const botPhrases = ["BEEP", "BUY CRYPTO", "CLICK HERE", "FREE IPHONE", "BOOP", "FOLLOW ME"];
+    const partyInsults = ["Skål!", "Chug!", "En til?", "Hvor er ølet?", "Kjedelig!", "Fest!"];
     
     const ircNames = ["<Slayer>", "<Admin>", "<Guest>", "<TrollHunter>"];
     const ircChat = ["lol", "brb", "asl?", "xD", "rofl"];
@@ -574,7 +605,7 @@
              const name = ircNames[Math.floor(Math.random() * ircNames.length)];
              const msg = ircChat[Math.floor(Math.random() * ircChat.length)];
              el.text = `[${Math.floor(Math.random()*23)}:${Math.floor(Math.random()*59)}] ${name} ${msg}`;
-             el.x = 40; // Indent for window look
+             el.x = 40; 
         } else if (currentLevel === 4) {
              el.text = Math.random() > 0.5 ? "☁" : "🐦"; 
              el.speed = 1 + Math.random(); 
@@ -631,6 +662,15 @@
                 this.radius = 35; this.speedX = (Math.random() - 0.5) * 8; this.speedY = -Math.random() * 5;
                 this.color = '#00ff00'; this.phrase = "FATAL ERROR";
                 this.scoreValue = 0; this.loadImpact = 0;
+            } else if (type === 'alcohol') {
+                this.radius = 25; this.speedX = (Math.random() - 0.5) * 6; this.speedY = -Math.random() * 4 - 2;
+                this.color = '#FFA500'; this.phrase = "ØL?";
+                this.scoreValue = 0; this.loadImpact = 5;
+            } else if (type === 'party_troll') {
+                this.speedX = (Math.random() - 0.5) * 7; this.speedY = -Math.random() * 5 - 2;
+                this.color = '#ff00ff'; // Neon party color
+                this.phrase = partyInsults[Math.floor(Math.random() * partyInsults.length)];
+                this.scoreValue = 5; this.loadImpact = -5;
             }
         }
 
@@ -687,6 +727,7 @@
             ctx.shadowBlur = 0; this.pulse += 0.1;
             if (this.type === 'predator') { ctx.shadowBlur = 10 + Math.sin(this.pulse) * 5; ctx.shadowColor = '#ff00ff'; } 
             else if (this.type === 'virus') { ctx.shadowBlur = 15; ctx.shadowColor = '#00ff00'; }
+            else if (this.type === 'party_troll') { ctx.shadowBlur = 10; ctx.shadowColor = '#00ffff'; }
 
             ctx.fillStyle = this.color;
             
@@ -704,15 +745,29 @@
                 ctx.fillStyle = Math.random() > 0.5 ? '#00ff00' : '#000000';
                 ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 2;
                 ctx.fillRect(this.x - 20, this.y - 20, 40, 40); ctx.strokeRect(this.x - 22, this.y - 22, 44, 44);
+            } else if (this.type === 'alcohol') {
+                // Beer glass
+                ctx.fillStyle = '#FFA500';
+                ctx.fillRect(this.x - 10, this.y - 15, 20, 30);
+                ctx.fillStyle = '#FFF'; // Foam
+                ctx.fillRect(this.x - 12, this.y - 20, 24, 8);
+                ctx.strokeStyle = '#FFF'; ctx.lineWidth = 2;
+                ctx.strokeRect(this.x - 10, this.y - 15, 20, 30);
+            } else if (this.type === 'party_troll') {
+                ctx.fillRect(this.x - 20, this.y - 20, 40, 40);
+                // Party Hat
+                ctx.fillStyle = '#FFFF00';
+                ctx.beginPath(); ctx.moveTo(this.x - 20, this.y - 20); ctx.lineTo(this.x, this.y - 50); ctx.lineTo(this.x + 20, this.y - 20); ctx.fill();
             } else {
                 ctx.fillRect(this.x - 20, this.y - 20, 40, 40);
             }
             
-            if (this.type !== 'coffee' && this.type !== 'virus') {
+            // Faces (Skip for items)
+            if (['coffee', 'virus', 'alcohol'].indexOf(this.type) === -1) {
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(this.x - 12, this.y - 10, 10, 10); ctx.fillRect(this.x + 2, this.y - 10, 10, 10);
                 ctx.fillStyle = '#000';
-                if (this.type === 'troll') {
+                if (this.type === 'troll' || this.type === 'party_troll') {
                      ctx.fillRect(this.x - 8, this.y - 6, 4, 4); ctx.fillRect(this.x + 6, this.y - 6, 4, 4);
                      ctx.fillRect(this.x - 10, this.y + 12, 20, 4);
                 } else if (this.type === 'innocent') {
@@ -723,10 +778,32 @@
             }
             
             if (this.showPhrase) {
-                ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000';
+                ctx.save();
+                ctx.font = currentLevel === 4 ? "bold 22px Arial" : "28px 'VT323'";
+                
+                ctx.fillStyle = '#fff'; 
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                
                 const w = ctx.measureText(this.phrase).width + 20;
-                ctx.fillRect(this.x - w/2, this.y - 60, w, 30); ctx.strokeRect(this.x - w/2, this.y - 60, w, 30);
-                ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.fillText(this.phrase, this.x, this.y - 38);
+                const h = 40; 
+                const bY = this.y - 75; 
+                
+                ctx.fillRect(this.x - w/2, bY, w, h);
+                ctx.strokeRect(this.x - w/2, bY, w, h);
+                
+                ctx.beginPath();
+                ctx.moveTo(this.x, bY + h);
+                ctx.lineTo(this.x - 5, bY + h + 8);
+                ctx.lineTo(this.x + 5, bY + h);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#000'; 
+                ctx.textAlign = 'center'; 
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.phrase, this.x, bY + h/2 + 2); 
+                ctx.restore();
             }
         }
     }
@@ -742,7 +819,7 @@
                 let points = e.scoreValue;
                 let isGoodHit = false;
 
-                if (e.type === 'troll' || e.type === 'bot') {
+                if (e.type === 'troll' || e.type === 'bot' || e.type === 'party_troll') {
                     isGoodHit = true; if(e.type === 'bot') points = 5;
                     createExplosion(e.x, e.y, e.color, true); incrementCombo();
                 } else if (e.type === 'predator') {
@@ -757,11 +834,17 @@
                     resetCombo(); createExplosion(e.x, e.y, '#00ff00', true);
                     score -= 50; blackoutOverlay.style.opacity = 1; 
                     setTimeout(() => blackoutOverlay.style.opacity = 0, 2000); sfx.error();
+                } else if (e.type === 'alcohol') {
+                    // DRUNK MODE TRIGGER
+                    resetCombo(); createExplosion(e.x, e.y, '#FFA500', true);
+                    drunkLevel = Math.min(drunkLevel + 50, 100); // Add 50% drunkness
+                    floatText.push(new FloatingText(e.x, e.y, "FULL?!", "#FFA500"));
+                    sfx.drunk();
                 }
 
                 if (isGoodHit && e.type !== 'coffee') {
                     sfx.hit(); score += points * (1 + Math.floor(combo/5)); serverLoad += e.loadImpact; triggerFlash();
-                } else if (!isGoodHit && e.type !== 'virus') {
+                } else if (!isGoodHit && e.type !== 'virus' && e.type !== 'alcohol') {
                     score += points; serverLoad += e.loadImpact; sfx.bad();
                 }
                 
@@ -792,6 +875,7 @@
         let hammerColor = '#999'; let glowColor = 'transparent';
         if (combo > 5) { hammerColor = '#ff00ff'; glowColor = '#ff00ff'; }
         else if (currentLevel === 5) { hammerColor = '#00ff00'; glowColor = '#00ff00'; }
+        else if (currentLevel === 6) { hammerColor = '#FFFF00'; glowColor = '#FFFF00'; }
         
         cursorCtx.shadowBlur = glowColor !== 'transparent' ? 20 : 0;
         cursorCtx.shadowColor = glowColor; cursorCtx.strokeStyle = hammerColor;
@@ -829,6 +913,8 @@
             levelEl.style.color = '#1DA1F2'; uiLayer.style.color = '#1DA1F2';
         } else if (currentLevel === 5) {
             levelEl.style.color = '#00ff00'; uiLayer.style.color = '#00ff00';
+        } else if (currentLevel === 6) {
+            levelEl.style.color = '#FFFF00'; uiLayer.style.color = '#FFFF00';
         }
         
         stopMusic(); startMusic(); initBackgroundElements(); gameActive = true;
@@ -836,7 +922,7 @@
 
     function startGame() {
         initAudio(); startMusic(); gameActive = true;
-        score = 0; combo = 0; serverLoad = 0; currentLevel = 1;
+        score = 0; combo = 0; serverLoad = 0; currentLevel = 1; drunkLevel = 0;
         entities = []; particles = []; floatText = []; shockwaves = [];
         scoreEl.innerText = score; livesEl.innerText = serverLoad;
         levelEl.innerText = "LEVEL: 1 - THE VOID";
@@ -855,7 +941,14 @@
     }
 
     function drawBackground() {
-        if (currentLevel === 4) ctx.fillStyle = '#002244'; else ctx.fillStyle = '#000'; 
+        if (currentLevel === 4) ctx.fillStyle = '#002244'; 
+        else if (currentLevel === 6) {
+            // Disco Lights
+            const hue = (frame * 2) % 360;
+            ctx.fillStyle = `hsl(${hue}, 50%, 10%)`; 
+        }
+        else ctx.fillStyle = '#000'; 
+        
         ctx.fillRect(0, 0, width, height);
 
         if (currentLevel >= 2) {
@@ -901,6 +994,22 @@
         drawBackground();
 
         if (gameActive) {
+            // DRUNK LOGIC
+            if (drunkLevel > 0) {
+                drunkLevel -= 0.1; // Decay
+                const swayX = Math.sin(frame * 0.05) * (drunkLevel * 0.5);
+                const swayY = Math.cos(frame * 0.03) * (drunkLevel * 0.5);
+                ctx.save();
+                ctx.translate(swayX, swayY);
+                // Also rotate screen slightly
+                const rot = Math.sin(frame * 0.02) * (drunkLevel * 0.0005);
+                ctx.rotate(rot);
+                
+                drunkOverlay.style.backdropFilter = `blur(${Math.min(drunkLevel/20, 5)}px)`;
+            } else {
+                drunkOverlay.style.backdropFilter = `blur(0px)`;
+            }
+
             if (glitchEffect > 0) {
                 ctx.save(); ctx.translate((Math.random()-0.5)*10, 0); 
                 ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = 'rgba(255, 0, 0, 0.5)'; ctx.fillRect(0,0,width,height);
@@ -932,6 +1041,12 @@
                     if (Math.random() < 0.05) type = 'coffee';
                     else if (currentLevel === 4) { if (r < 0.3) type = 'bot'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
                     else if (currentLevel === 5) { if (r < 0.15) type = 'virus'; else if (r < 0.3) type = 'predator'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
+                    else if (currentLevel === 6) { 
+                        if (r < 0.2) type = 'alcohol'; 
+                        else if (r < 0.5) type = 'party_troll';
+                        else if (r < 0.7) type = 'troll';
+                        else type = 'innocent'; 
+                    }
                     else if (currentLevel === 3) { if (r < 0.2) type = 'predator'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
                     else { if (r < 0.7) type = 'troll'; else type = 'innocent'; }
                     entities.push(new Entity(type));
@@ -940,7 +1055,7 @@
             
             if (frame % 30 === 0) {
                 let loadIncrease = 0.2; 
-                entities.forEach(e => loadIncrease += (e.type === 'bot' ? 2 : (e.type === 'troll' ? 0.5 : 0)));
+                entities.forEach(e => loadIncrease += (e.type === 'bot' ? 2 : (e.type === 'troll' || e.type === 'party_troll' ? 0.5 : 0)));
                 serverLoad += loadIncrease;
                 if (serverLoad > 100) gameOver();
                 livesEl.innerText = Math.floor(serverLoad);
@@ -951,6 +1066,7 @@
             entities.forEach(e => { e.update(); e.draw(); });
             
             if (totalShake > 0) ctx.restore();
+            if (drunkLevel > 0) ctx.restore(); // Restore drunk transform
         }
 
         for (let i = particles.length - 1; i >= 0; i--) {
@@ -966,6 +1082,11 @@
         }
         if (combo > 1) { comboDisplayEl.style.display = 'block'; comboCountEl.innerText = combo; } else { comboDisplayEl.style.display = 'none'; }
 
+        for (let i = floatText.length - 1; i >= 0; i--) {
+            let f = floatText[i]; f.update(); f.draw();
+            if (f.life <= 0) floatText.splice(i, 1);
+        }
+
         frame++;
         requestAnimationFrame(animate);
     }
@@ -973,6 +1094,12 @@
     function incrementCombo() { combo++; }
     function resetCombo() { combo = 0; }
     function triggerFlash() { flashOverlay.style.opacity = "0.4"; setTimeout(() => flashOverlay.style.opacity = "0", 80); }
+
+    class FloatingText {
+        constructor(x, y, text, color = "#ff0000") { this.x = x; this.y = y; this.text = text; this.life = 1.0; this.vy = -3; this.color = color; }
+        update() { this.y += this.vy; this.life -= 0.02; }
+        draw() { ctx.save(); ctx.globalAlpha = this.life; ctx.font = "bold 40px 'VT323'"; ctx.fillStyle = this.color; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.textAlign = "center"; ctx.translate(this.x, this.y); ctx.rotate((Math.random() - 0.5) * 0.1); ctx.fillText(this.text, 0, 0); ctx.strokeText(this.text, 0, 0); ctx.restore(); }
+    }
 
     animate();
 
