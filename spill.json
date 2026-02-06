@@ -14,5 +14,13 @@
         "url": "erasmus/",
         "ikon": "fa-solid fa-toilet-paper",
         "farge": "bg-gradient-to-br from-purple-900 to-black"
+    },
+        {
+        "id": 3,
+        "tittel": "Stickman Duel",
+        "beskrivelse": "Flerspiller stickman-slåssespill",
+        "url": "stickman/",
+        "ikon": "fa-solid fa-toilet-paper",
+        "farge": "bg-gradient-to-br from-purple-900 to-black"
     }
 ]
