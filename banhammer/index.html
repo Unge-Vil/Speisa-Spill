@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BAN HAMMER 9000 - EXTENDED</title>
+    <title>BAN HAMMER 9000 - ULTIMATE</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
@@ -30,7 +30,7 @@
             height: 100vh;
             background: #000;
             overflow: hidden;
-            transition: background 1s ease; /* Smooth transition between levels */
+            transition: background 1s ease;
         }
 
         #gameCanvas {
@@ -98,7 +98,6 @@
             transition: opacity 0.1s;
         }
 
-        /* Used for virus blackout */
         #blackout-overlay {
             position: absolute;
             top: 0;
@@ -110,6 +109,20 @@
             pointer-events: none;
             z-index: 14;
             transition: opacity 0.2s;
+        }
+        
+        /* Predator Vignette */
+        #vignette-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 40%, rgba(100, 0, 20, 0.6) 100%);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 13;
+            transition: opacity 1s;
         }
 
         /* UI Overlay */
@@ -124,18 +137,42 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            transition: color 0.5s;
+        }
+
+        /* Audio Controls */
+        #audio-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 102;
+        }
+        
+        .icon-btn {
+            background: none;
+            border: 2px solid currentColor;
+            color: inherit;
+            font-family: 'VT323', monospace;
+            font-size: 1.5rem;
+            padding: 5px 10px;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        .icon-btn:hover {
+            background: rgba(255,255,255,0.2);
         }
 
         @media (max-width: 600px) {
             #ui-layer { font-size: 1.2rem; top: 10px; left: 10px; }
             h1 { font-size: 2.5rem; }
             h2 { font-size: 2rem; }
+            #audio-controls { top: 10px; right: 10px; }
         }
 
         .hud-item {
             background: rgba(0,0,0,0.7);
             padding: 5px 10px;
-            border: 1px solid #33ff00;
+            border: 1px solid currentColor;
         }
 
         #level-indicator { color: #ffff00; }
@@ -218,9 +255,14 @@
 
     <div id="flash-overlay"></div>
     <div id="blackout-overlay"></div>
+    <div id="vignette-overlay"></div>
     
     <div class="scanlines"></div>
     <div class="crt-overlay"></div>
+
+    <div id="audio-controls">
+        <button class="icon-btn" id="mute-btn" onclick="toggleMute()">🔊</button>
+    </div>
 
     <div id="ui-layer">
         <div class="hud-item">SCORE: <span id="score">0</span></div>
@@ -260,30 +302,97 @@
     // --- AUDIO SYSTEM ---
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     let audioCtx;
+    let isMuted = false;
+    let musicTimer;
+    let isMusicPlaying = false;
+    let noteIndex = 0;
+
+    // Musikk-sekvenser per level
+    const SEQUENCES = {
+        1: [55, 0, 55, 0, 65, 0, 55, 0], // The Void: Slow, sparse bass
+        2: [220, 220, 261, 261, 330, 220, 196, 220], // IRC: Chiptune upbeat
+        3: [65, 69, 73, 69, 65, 69, 73, 77], // Predator: Chromatic, creepy
+        4: [440, 0, 880, 0, 440, 880, 440, 0], // Bird App: High pitched notifications
+        5: [110, 108, 110, 55, 110, 108, 110, 220]  // Dark Web: Fast, glitchy bass
+    };
 
     function initAudio() {
         if (!audioCtx) audioCtx = new AudioContext();
         if (audioCtx.state === 'suspended') audioCtx.resume();
     }
 
-    const sfx = {
-        hit: () => playTone('square', 150, 40, 0.1),
-        hitBig: () => playNoise(0.3),
-        bad: () => playTone('sawtooth', 100, 50, 0.3),
-        error: () => { // Glitchy sound for virus
-             if(!audioCtx) return;
-             playTone('sawtooth', 50, 200, 0.1);
-             setTimeout(() => playTone('square', 200, 50, 0.1), 100);
-        },
-        powerup: () => {
-            if(!audioCtx) return;
-            const now = audioCtx.currentTime;
-            [440, 554, 659].forEach((f, i) => playTone('sine', f, f, 0.3, now + i*0.1));
+    function toggleMute() {
+        isMuted = !isMuted;
+        const btn = document.getElementById('mute-btn');
+        btn.innerText = isMuted ? "🔇" : "🔊";
+        if (isMuted) {
+            stopMusic();
+            if(audioCtx) audioCtx.suspend();
+        } else {
+            if(audioCtx) audioCtx.resume();
+            if(gameActive) startMusic();
         }
-    };
+    }
 
-    function playTone(type, startFreq, endFreq, duration, startTime) {
-        if (!audioCtx) return;
+    function startMusic() {
+        if (isMusicPlaying || isMuted || !audioCtx) return;
+        isMusicPlaying = true;
+        noteIndex = 0;
+        scheduleMusicNote();
+    }
+
+    function stopMusic() {
+        isMusicPlaying = false;
+        if (musicTimer) clearTimeout(musicTimer);
+    }
+
+    function scheduleMusicNote() {
+        if (!isMusicPlaying || !audioCtx) return;
+        const now = audioCtx.currentTime;
+        
+        // Get sequence for current level (fallback to 1)
+        const seq = SEQUENCES[currentLevel] || SEQUENCES[1];
+        const freq = seq[noteIndex % seq.length];
+        
+        // --- LEVEL SPECIFIC INSTRUMENTS ---
+        if (freq > 0) {
+            if (currentLevel === 1) {
+                // Heartbeat bass
+                playTone('triangle', freq, freq * 0.5, 0.4, now, 0.3);
+            } else if (currentLevel === 2) {
+                // 8-bit Square
+                playTone('square', freq, freq, 0.1, now, 0.1);
+            } else if (currentLevel === 3) {
+                // Sawtooth Drone
+                playTone('sawtooth', freq, freq + Math.random()*5, 0.3, now, 0.15);
+            } else if (currentLevel === 4) {
+                // Sine Bleeps
+                playTone('sine', freq, freq, 0.05, now, 0.1);
+            } else if (currentLevel === 5) {
+                // Industrial Distortion
+                playTone('sawtooth', freq, freq/2, 0.1, now, 0.2);
+                if(Math.random() > 0.7) playNoise(0.05, now, 0.2);
+            }
+        }
+
+        // Rhythm/Drums
+        if (currentLevel >= 2 && noteIndex % 2 === 0) playNoise(0.02, now, 0.05); // Hat
+        if (currentLevel >= 4 && noteIndex % 4 === 0) playNoise(0.1, now, 0.1); // Snare
+
+        noteIndex++;
+        
+        // Tempo Logic
+        let tempo = 250; // Lvl 1 Slow
+        if (currentLevel === 2) tempo = 150;
+        if (currentLevel === 3) tempo = 300; // Slow creepy
+        if (currentLevel === 4) tempo = 120; // Fast pop
+        if (currentLevel === 5) tempo = 100; // Super fast techno
+
+        musicTimer = setTimeout(scheduleMusicNote, tempo);
+    }
+
+    function playTone(type, startFreq, endFreq, duration, startTime, vol = 0.2) {
+        if (!audioCtx || isMuted) return;
         const t = startTime || audioCtx.currentTime;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
@@ -291,15 +400,16 @@
         gain.connect(audioCtx.destination);
         osc.type = type;
         osc.frequency.setValueAtTime(startFreq, t);
-        osc.frequency.exponentialRampToValueAtTime(endFreq, t + duration);
-        gain.gain.setValueAtTime(0.2, t);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(1, endFreq), t + duration);
+        gain.gain.setValueAtTime(vol, t);
         gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
         osc.start(t);
         osc.stop(t + duration);
     }
 
-    function playNoise(duration) {
-        if (!audioCtx) return;
+    function playNoise(duration, startTime, vol = 0.3) {
+        if (!audioCtx || isMuted) return;
+        const t = startTime || audioCtx.currentTime;
         const bufSize = audioCtx.sampleRate * duration;
         const buffer = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -309,31 +419,50 @@
         const gain = audioCtx.createGain();
         noise.connect(gain);
         gain.connect(audioCtx.destination);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-        noise.start();
+        gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
+        noise.start(t);
     }
+
+    const sfx = {
+        hit: () => playTone('square', 150, 40, 0.1, 0, 0.15),
+        hitBig: () => playNoise(0.3, 0, 0.4),
+        bad: () => playTone('sawtooth', 100, 50, 0.3, 0, 0.2),
+        error: () => { 
+             if(!audioCtx || isMuted) return;
+             playTone('sawtooth', 50, 200, 0.1, 0, 0.2);
+             setTimeout(() => playTone('square', 200, 50, 0.1, 0, 0.2), 100);
+        },
+        powerup: () => {
+            if(!audioCtx || isMuted) return;
+            const now = audioCtx.currentTime;
+            [440, 554, 659].forEach((f, i) => playTone('sine', f, f, 0.3, now + i*0.1, 0.1));
+        }
+    };
 
     // --- GAME VARIABLES ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const cursorCanvas = document.getElementById('cursorCanvas');
     const cursorCtx = cursorCanvas.getContext('2d');
-    const gameContainer = document.getElementById('game-container');
     
+    const uiLayer = document.getElementById('ui-layer');
     const scoreEl = document.getElementById('score');
     const highscoreEl = document.getElementById('highscore');
     const livesEl = document.getElementById('lives');
     const levelEl = document.getElementById('level-indicator');
     const comboDisplayEl = document.getElementById('combo-display');
     const comboCountEl = document.getElementById('combo-count');
+    
     const gameOverEl = document.getElementById('game-over');
     const levelUpEl = document.getElementById('level-up-screen');
     const levelDescEl = document.getElementById('level-desc');
     const startScreenEl = document.getElementById('start-screen');
     const finalScoreEl = document.getElementById('final-score');
+    
     const flashOverlay = document.getElementById('flash-overlay');
     const blackoutOverlay = document.getElementById('blackout-overlay');
+    const vignetteOverlay = document.getElementById('vignette-overlay');
 
     let width, height;
     let score = 0;
@@ -345,41 +474,34 @@
     let hitStop = 0;
     let glitchEffect = 0;
     let combo = 0;
+    let isTouchInput = false;
 
-    // Mouse/Touch position
     let mouseX = width/2;
     let mouseY = height/2;
     let isClicking = false;
     let hammerRotation = 0;
     let shakeIntensity = 0;
 
-    // Entities
     let entities = [];
     let particles = [];
     let floatText = [];
     let shockwaves = [];
-    let bgElements = []; // Reused for chat, matrix code, stars etc.
+    let bgElements = [];
 
     highscoreEl.innerText = highScore;
 
     const LEVEL_THRESHOLDS = { 1: 0, 2: 20, 3: 50, 4: 100, 5: 160 };
-    const LEVEL_NAMES = { 
-        1: "THE VOID", 
-        2: "IRC CHATROOM", 
-        3: "PREDATOR ALLEY", 
-        4: "FUGLE-APPEN", // Twitter/X parody
-        5: "MØRKENETTET" // Dark Web
-    };
+    const LEVEL_NAMES = { 1: "THE VOID", 2: "IRC CHATROOM", 3: "PREDATOR ALLEY", 4: "FUGLE-APPEN", 5: "MØRKENETTET" };
 
     const trollInsults = ["Noob!", "Hax!", "Ratio", "Ez", "Taper", "Bot", "Cringe", "Lag!", "Cry more"];
     const nicePhrases = ["Hei!", "GG!", "Kult!", "Venn?", ":)", "Bra spilt", "Lykke til"];
     const predatorPhrases = ["...", "Sulten", "Kom hit", "Nam nam", "Bli med", "Mørket..."];
     const botPhrases = ["BEEP", "BUY CRYPTO", "CLICK HERE", "FREE IPHONE", "BOOP", "FOLLOW ME"];
     
-    // Background content generators
     const ircNames = ["<Slayer>", "<Admin>", "<Guest>", "<TrollHunter>"];
     const ircChat = ["lol", "brb", "asl?", "xD", "rofl"];
     const matrixChars = "010101XYZA";
+    const hashtags = ["#Trending", "#Viral", "#News", "#CatVideo", "#BanHammer"];
 
     function resize() {
         width = window.innerWidth;
@@ -395,6 +517,7 @@
 
     // --- INPUT HANDLING ---
     document.addEventListener('mousemove', (e) => {
+        isTouchInput = false; 
         mouseX = e.clientX;
         mouseY = e.clientY;
     });
@@ -402,13 +525,17 @@
     document.addEventListener('mousedown', triggerSwing);
 
     const handleTouch = (e) => {
-        e.preventDefault();
+        isTouchInput = true; 
         const touch = e.touches[0];
         mouseX = touch.clientX;
-        mouseY = touch.clientY - 60; 
+        mouseY = touch.clientY - 80; 
+
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+        if (e.cancelable) e.preventDefault();
     };
 
     document.addEventListener('touchmove', handleTouch, { passive: false });
+    
     document.addEventListener('touchstart', (e) => {
         handleTouch(e);
         triggerSwing();
@@ -435,41 +562,29 @@
     function initBackgroundElements() {
         bgElements = [];
         let count = 20;
-        if (currentLevel === 5) count = 50; // More drops for matrix
-        
-        for(let i=0; i<count; i++) {
-            bgElements.push(createBgElement(true));
-        }
+        if (currentLevel === 5) count = 50; 
+        for(let i=0; i<count; i++) bgElements.push(createBgElement(true));
     }
 
     function createBgElement(randomY = false) {
         const y = randomY ? Math.random() * height : (currentLevel === 5 ? -20 : height + 20);
-        
-        let el = {
-            x: Math.random() * width,
-            y: y,
-            speed: 0.5 + Math.random() * 0.5,
-            opacity: 0.1 + Math.random() * 0.2,
-            text: ""
-        };
+        let el = { x: Math.random() * width, y: y, speed: 0.5 + Math.random() * 0.5, opacity: 0.1 + Math.random() * 0.2, text: "" };
 
         if (currentLevel === 2) {
              const name = ircNames[Math.floor(Math.random() * ircNames.length)];
              const msg = ircChat[Math.floor(Math.random() * ircChat.length)];
              el.text = `[${Math.floor(Math.random()*23)}:${Math.floor(Math.random()*59)}] ${name} ${msg}`;
-             el.x = 20; // Align left
+             el.x = 40; // Indent for window look
         } else if (currentLevel === 4) {
-             // "Bird" shapes or clouds
              el.text = Math.random() > 0.5 ? "☁" : "🐦"; 
-             el.speed = 1 + Math.random(); // Horizontal speed for birds
+             el.speed = 1 + Math.random(); 
              el.y = Math.random() * height;
              el.x = randomY ? Math.random() * width : -50;
         } else if (currentLevel === 5) {
              el.text = matrixChars[Math.floor(Math.random() * matrixChars.length)];
-             el.speed = 5 + Math.random() * 5; // Fast falling
-             el.x = Math.floor(Math.random() * (width / 20)) * 20; // Grid aligned
+             el.speed = 5 + Math.random() * 5; 
+             el.x = Math.floor(Math.random() * (width / 20)) * 20; 
         }
-        
         return el;
     }
 
@@ -487,66 +602,41 @@
             this.showPhrase = false;
             this.pulse = 0;
 
-            // Type Defaults
             if (type === 'troll') {
-                this.speedX = (Math.random() - 0.5) * 5;
-                this.speedY = -Math.random() * 4 - 3;
+                this.speedX = (Math.random() - 0.5) * 5; this.speedY = -Math.random() * 4 - 3;
                 this.color = Math.random() > 0.5 ? '#ff0055' : '#ff3300';
                 this.phrase = trollInsults[Math.floor(Math.random() * trollInsults.length)];
-                this.scoreValue = 1;
-                this.loadImpact = -2;
+                this.scoreValue = 1; this.loadImpact = -2;
             } else if (type === 'innocent') {
-                this.speedX = (Math.random() - 0.5) * 3;
-                this.speedY = -Math.random() * 3 - 2;
+                this.speedX = (Math.random() - 0.5) * 3; this.speedY = -Math.random() * 3 - 2;
                 this.color = Math.random() > 0.5 ? '#00ffaa' : '#00aaff';
                 this.phrase = nicePhrases[Math.floor(Math.random() * nicePhrases.length)];
-                this.scoreValue = -5;
-                this.loadImpact = 10;
+                this.scoreValue = -5; this.loadImpact = 10;
             } else if (type === 'predator') {
-                this.radius = 40;
-                this.speedX = 0;
-                this.speedY = -2;
+                this.radius = 40; this.speedX = 0; this.speedY = -2;
                 this.color = '#800080';
                 this.phrase = predatorPhrases[Math.floor(Math.random() * predatorPhrases.length)];
-                this.scoreValue = 50;
-                this.loadImpact = -10;
+                this.scoreValue = 50; this.loadImpact = -10;
             } else if (type === 'coffee') {
-                this.radius = 25;
-                this.speedX = 0;
-                this.speedY = -1.5; 
-                this.color = '#6f4e37';
-                this.phrase = "KAFFE!";
-                this.scoreValue = 10;
-                this.loadImpact = -20;
+                this.radius = 25; this.speedX = 0; this.speedY = -1.5; 
+                this.color = '#6f4e37'; this.phrase = "KAFFE!";
+                this.scoreValue = 10; this.loadImpact = -20;
             } else if (type === 'bot') {
-                this.radius = 25;
-                this.speedX = (Math.random() > 0.5 ? 10 : -10); // Very fast horizontal
-                this.speedY = -1;
-                this.x = this.speedX > 0 ? -50 : width + 50; // Start off screen
-                this.y = Math.random() * (height - 200) + 100;
-                this.targetY = this.y; // Keep Y steady
-                this.color = '#888888';
+                this.radius = 25; this.speedX = (Math.random() > 0.5 ? 10 : -10); this.speedY = -1;
+                this.x = this.speedX > 0 ? -50 : width + 50; this.y = Math.random() * (height - 200) + 100;
+                this.targetY = this.y; this.color = '#888888';
                 this.phrase = botPhrases[Math.floor(Math.random() * botPhrases.length)];
-                this.scoreValue = 5;
-                this.loadImpact = -15; // Bots clog server fast
-                this.state = 'roaming'; // Skip enter
+                this.scoreValue = 5; this.loadImpact = -15; this.state = 'roaming';
             } else if (type === 'virus') {
-                this.radius = 35;
-                this.speedX = (Math.random() - 0.5) * 8;
-                this.speedY = -Math.random() * 5;
-                this.color = '#00ff00';
-                this.phrase = "FATAL ERROR";
-                this.scoreValue = 0; // Penalty actually
-                this.loadImpact = 0;
+                this.radius = 35; this.speedX = (Math.random() - 0.5) * 8; this.speedY = -Math.random() * 5;
+                this.color = '#00ff00'; this.phrase = "FATAL ERROR";
+                this.scoreValue = 0; this.loadImpact = 0;
             }
         }
 
         update() {
-            // MOVEMENT LOGIC
             if (this.type === 'predator' && this.state === 'roaming') {
-                // Hunt logic (Simplified for brevity)
-                let nearest = null;
-                let minDistSq = 9999999;
+                let nearest = null; let minDistSq = 9999999;
                 entities.forEach(e => {
                     if (e.type === 'innocent') {
                         const distSq = (e.x-this.x)**2 + (e.y-this.y)**2;
@@ -564,24 +654,18 @@
                 } else {
                     this.x += Math.sin(frame * 0.02) * 2; this.y += Math.cos(frame * 0.02) * 2;
                 }
-                // Bounds
                 this.x = Math.max(50, Math.min(width-50, this.x));
                 this.y = Math.max(50, Math.min(height-50, this.y));
 
             } else if (this.type === 'bot') {
-                // Bots just zip across
                 this.x += this.speedX;
-                if (this.x < -100 || this.x > width + 100) this.markedForDeletion = true; // Delete when off screen
-                
+                if (this.x < -100 || this.x > width + 100) this.markedForDeletion = true;
             } else if (this.type === 'virus') {
-                // Jittery movement
                 this.x += this.speedX + (Math.random() - 0.5) * 10;
                 this.y += Math.sin(frame * 0.1) * 5;
                 if (this.x < 50 || this.x > width - 50) this.speedX *= -1;
                 if (this.y < 50 || this.y > height - 50) this.y = Math.random() * height;
-
             } else {
-                // Standard
                 if (this.state === 'entering') {
                     this.y += this.speedY;
                     if (this.y <= this.targetY) this.state = 'roaming';
@@ -592,54 +676,38 @@
                 }
             }
 
-            // Phrase Logic
             this.phraseTimer++;
             if (this.phraseTimer > 100) {
                 this.showPhrase = true;
-                if (this.phraseTimer > 250) {
-                    this.showPhrase = false;
-                    this.phraseTimer = 0;
-                }
+                if (this.phraseTimer > 250) { this.showPhrase = false; this.phraseTimer = 0; }
             }
         }
 
         draw() {
-            ctx.shadowBlur = 0;
-            this.pulse += 0.1;
-
-            if (this.type === 'predator') {
-                ctx.shadowBlur = 10 + Math.sin(this.pulse) * 5; ctx.shadowColor = '#ff00ff';
-            } else if (this.type === 'virus') {
-                ctx.shadowBlur = 15; ctx.shadowColor = '#00ff00';
-            }
+            ctx.shadowBlur = 0; this.pulse += 0.1;
+            if (this.type === 'predator') { ctx.shadowBlur = 10 + Math.sin(this.pulse) * 5; ctx.shadowColor = '#ff00ff'; } 
+            else if (this.type === 'virus') { ctx.shadowBlur = 15; ctx.shadowColor = '#00ff00'; }
 
             ctx.fillStyle = this.color;
             
-            // Draw Shape
             if (this.type === 'predator') {
                 ctx.beginPath(); ctx.moveTo(this.x, this.y - 30); ctx.lineTo(this.x + 25, this.y + 20); ctx.lineTo(this.x - 25, this.y + 20); ctx.fill();
             } else if (this.type === 'coffee') {
                 ctx.fillRect(this.x - 15, this.y - 15, 30, 30);
-                // Steam
                 ctx.fillStyle = '#fff'; ctx.globalAlpha = 0.6;
-                ctx.fillRect(this.x - 5, this.y - 25 - (frame%20)/2, 4, 8);
-                ctx.globalAlpha = 1.0;
+                ctx.fillRect(this.x - 5, this.y - 25 - (frame%20)/2, 4, 8); ctx.globalAlpha = 1.0;
             } else if (this.type === 'bot') {
-                ctx.fillRect(this.x - 20, this.y - 15, 40, 30); // Rectangle head
-                // Antenna
+                ctx.fillRect(this.x - 20, this.y - 15, 40, 30); 
                 ctx.beginPath(); ctx.moveTo(this.x, this.y-15); ctx.lineTo(this.x, this.y-25); ctx.stroke();
                 ctx.beginPath(); ctx.arc(this.x, this.y-25, 3, 0, Math.PI*2); ctx.fill();
             } else if (this.type === 'virus') {
-                // Glitchy box
                 ctx.fillStyle = Math.random() > 0.5 ? '#00ff00' : '#000000';
                 ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 2;
-                ctx.fillRect(this.x - 20, this.y - 20, 40, 40);
-                ctx.strokeRect(this.x - 22, this.y - 22, 44, 44);
+                ctx.fillRect(this.x - 20, this.y - 20, 40, 40); ctx.strokeRect(this.x - 22, this.y - 22, 44, 44);
             } else {
                 ctx.fillRect(this.x - 20, this.y - 20, 40, 40);
             }
             
-            // Eyes/Face
             if (this.type !== 'coffee' && this.type !== 'virus') {
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(this.x - 12, this.y - 10, 10, 10); ctx.fillRect(this.x + 2, this.y - 10, 10, 10);
@@ -650,19 +718,15 @@
                 } else if (this.type === 'innocent') {
                      ctx.beginPath(); ctx.arc(this.x, this.y + 8, 8, 0, Math.PI); ctx.stroke();
                 } else if (this.type === 'bot') {
-                     ctx.fillRect(this.x - 10, this.y + 8, 20, 2); // Robot mouth
+                     ctx.fillRect(this.x - 10, this.y + 8, 20, 2);
                 }
             }
             
-            // Text Bubble
             if (this.showPhrase) {
-                // Simplified bubble drawing
                 ctx.fillStyle = '#fff'; ctx.strokeStyle = '#000';
                 const w = ctx.measureText(this.phrase).width + 20;
-                ctx.fillRect(this.x - w/2, this.y - 60, w, 30);
-                ctx.strokeRect(this.x - w/2, this.y - 60, w, 30);
-                ctx.fillStyle = '#000'; ctx.textAlign = 'center';
-                ctx.fillText(this.phrase, this.x, this.y - 38);
+                ctx.fillRect(this.x - w/2, this.y - 60, w, 30); ctx.strokeRect(this.x - w/2, this.y - 60, w, 30);
+                ctx.fillStyle = '#000'; ctx.textAlign = 'center'; ctx.fillText(this.phrase, this.x, this.y - 38);
             }
         }
     }
@@ -671,49 +735,34 @@
         for (let i = entities.length - 1; i >= 0; i--) {
             const e = entities[i];
             const distSq = (e.x - mouseX)**2 + (e.y - mouseY)**2;
-            const radius = e.type === 'predator' ? 80 : 70;
+            let radius = e.type === 'predator' ? 80 : 70;
+            if (isTouchInput) radius *= 1.4; 
 
             if (distSq < radius * radius) { 
                 let points = e.scoreValue;
                 let isGoodHit = false;
 
                 if (e.type === 'troll' || e.type === 'bot') {
-                    isGoodHit = true;
-                    if(e.type === 'bot') points = 5;
-                    createExplosion(e.x, e.y, e.color, true);
-                    incrementCombo();
+                    isGoodHit = true; if(e.type === 'bot') points = 5;
+                    createExplosion(e.x, e.y, e.color, true); incrementCombo();
                 } else if (e.type === 'predator') {
-                    isGoodHit = true;
-                    createExplosion(e.x, e.y, '#ff00ff', true);
-                    shakeIntensity = 40; hitStop = 8; glitchEffect = 10;
-                    incrementCombo();
+                    isGoodHit = true; createExplosion(e.x, e.y, '#ff00ff', true);
+                    shakeIntensity = 40; hitStop = 8; glitchEffect = 10; incrementCombo();
                 } else if (e.type === 'coffee') {
-                    isGoodHit = true;
-                    createExplosion(e.x, e.y, '#fff', true);
-                    serverLoad = Math.max(0, serverLoad - 20);
-                    sfx.powerup();
+                    isGoodHit = true; createExplosion(e.x, e.y, '#fff', true);
+                    serverLoad = Math.max(0, serverLoad - 20); sfx.powerup();
                 } else if (e.type === 'innocent') {
-                    resetCombo();
-                    createExplosion(e.x, e.y, e.color, false);
+                    resetCombo(); createExplosion(e.x, e.y, e.color, false);
                 } else if (e.type === 'virus') {
-                    // BAD HIT
-                    resetCombo();
-                    createExplosion(e.x, e.y, '#00ff00', true);
-                    score -= 50;
-                    blackoutOverlay.style.opacity = 1; // Blind the player
-                    setTimeout(() => blackoutOverlay.style.opacity = 0, 2000);
-                    sfx.error();
+                    resetCombo(); createExplosion(e.x, e.y, '#00ff00', true);
+                    score -= 50; blackoutOverlay.style.opacity = 1; 
+                    setTimeout(() => blackoutOverlay.style.opacity = 0, 2000); sfx.error();
                 }
 
                 if (isGoodHit && e.type !== 'coffee') {
-                    sfx.hit();
-                    score += points * (1 + Math.floor(combo/5));
-                    serverLoad += e.loadImpact;
-                    triggerFlash();
+                    sfx.hit(); score += points * (1 + Math.floor(combo/5)); serverLoad += e.loadImpact; triggerFlash();
                 } else if (!isGoodHit && e.type !== 'virus') {
-                    score += points;
-                    serverLoad += e.loadImpact;
-                    sfx.bad();
+                    score += points; serverLoad += e.loadImpact; sfx.bad();
                 }
                 
                 scoreEl.innerText = score;
@@ -727,14 +776,12 @@
     function createExplosion(x, y, colorStr, isBig) {
         const count = isBig ? 50 : 15;
         for (let i = 0; i < count; i++) particles.push({
-             x: x, y: y, 
-             vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, 
+             x: x, y: y, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, 
              life: 1.0, color: colorStr, size: Math.random()*8+3
         });
         if(isBig) shockwaves.push({x:x, y:y, radius:10, color:colorStr, life:1.0});
     }
 
-    // --- DRAWING ---
     function drawHammer() {
         cursorCtx.clearRect(0, 0, width, height);
         cursorCtx.save();
@@ -742,16 +789,12 @@
         cursorCtx.rotate(hammerRotation * Math.PI / 180);
         cursorCtx.fillStyle = '#8B4513'; cursorCtx.fillRect(-10, 0, 20, 100);
         
-        // Dynamic Hammer Glow
-        let hammerColor = '#999';
-        let glowColor = 'transparent';
-        
+        let hammerColor = '#999'; let glowColor = 'transparent';
         if (combo > 5) { hammerColor = '#ff00ff'; glowColor = '#ff00ff'; }
-        else if (currentLevel === 5) { hammerColor = '#00ff00'; glowColor = '#00ff00'; } // Matrix hammer
+        else if (currentLevel === 5) { hammerColor = '#00ff00'; glowColor = '#00ff00'; }
         
         cursorCtx.shadowBlur = glowColor !== 'transparent' ? 20 : 0;
-        cursorCtx.shadowColor = glowColor;
-        cursorCtx.strokeStyle = hammerColor;
+        cursorCtx.shadowColor = glowColor; cursorCtx.strokeStyle = hammerColor;
 
         cursorCtx.fillStyle = '#555'; cursorCtx.lineWidth = 3;
         cursorCtx.fillRect(-40, -40, 80, 50); cursorCtx.strokeRect(-40, -40, 80, 50);
@@ -761,7 +804,6 @@
     }
 
     function checkLevelProgress() {
-        // Find next level
         const nextLvl = currentLevel + 1;
         if (LEVEL_THRESHOLDS[nextLvl] && score >= LEVEL_THRESHOLDS[nextLvl]) {
             triggerLevelUp(nextLvl);
@@ -769,79 +811,86 @@
     }
 
     function triggerLevelUp(lvl) {
-        gameActive = false;
-        currentLevel = lvl;
+        gameActive = false; currentLevel = lvl;
         levelDescEl.innerText = `Laster inn: ${LEVEL_NAMES[lvl]}`;
-        levelUpEl.style.display = 'flex'; 
-        entities = [];
-        sfx.powerup(); 
+        levelUpEl.style.display = 'flex'; entities = []; sfx.powerup(); 
     }
 
     function nextLevel() {
         levelUpEl.style.display = 'none';
         levelEl.innerText = `LEVEL: ${currentLevel} - ${LEVEL_NAMES[currentLevel]}`;
-        // Style changes for level
-        if (currentLevel === 3) levelEl.style.color = '#ff0055';
-        if (currentLevel === 4) levelEl.style.color = '#1DA1F2'; // Twitter Blue
-        if (currentLevel === 5) levelEl.style.color = '#00ff00'; // Matrix Green
         
-        initBackgroundElements();
-        gameActive = true;
+        uiLayer.style.color = '#33ff00'; 
+        vignetteOverlay.style.opacity = 0; 
+
+        if (currentLevel === 3) {
+            levelEl.style.color = '#ff0055'; uiLayer.style.color = '#ff0055'; vignetteOverlay.style.opacity = 1;
+        } else if (currentLevel === 4) {
+            levelEl.style.color = '#1DA1F2'; uiLayer.style.color = '#1DA1F2';
+        } else if (currentLevel === 5) {
+            levelEl.style.color = '#00ff00'; uiLayer.style.color = '#00ff00';
+        }
+        
+        stopMusic(); startMusic(); initBackgroundElements(); gameActive = true;
     }
 
     function startGame() {
-        initAudio(); 
-        gameActive = true;
+        initAudio(); startMusic(); gameActive = true;
         score = 0; combo = 0; serverLoad = 0; currentLevel = 1;
         entities = []; particles = []; floatText = []; shockwaves = [];
         scoreEl.innerText = score; livesEl.innerText = serverLoad;
         levelEl.innerText = "LEVEL: 1 - THE VOID";
-        comboDisplayEl.style.display = 'none';
-        startScreenEl.style.display = 'none';
-        gameOverEl.style.display = 'none';
+        
+        uiLayer.style.color = '#33ff00'; vignetteOverlay.style.opacity = 0;
+        comboDisplayEl.style.display = 'none'; startScreenEl.style.display = 'none'; gameOverEl.style.display = 'none';
         resize();
     }
 
     function resetGame() { startGame(); }
     
     function gameOver() {
-        gameActive = false;
-        finalScoreEl.innerText = score;
+        gameActive = false; stopMusic(); finalScoreEl.innerText = score;
         if (score > highScore) { highScore = score; localStorage.setItem('banHammerHighScore', highScore); highscoreEl.innerText = highScore; }
         gameOverEl.style.display = 'flex'; sfx.bad(); 
     }
 
     function drawBackground() {
-        // Dynamic Background Colors
-        if (currentLevel === 4) ctx.fillStyle = '#002244'; // Deep Blue for Twitter level
-        else ctx.fillStyle = '#000'; // Black for others
-
+        if (currentLevel === 4) ctx.fillStyle = '#002244'; else ctx.fillStyle = '#000'; 
         ctx.fillRect(0, 0, width, height);
 
-        // Draw elements (Stars, Text, Code)
         if (currentLevel >= 2) {
-            ctx.font = currentLevel === 4 ? "30px Arial" : "16px 'VT323'";
-            ctx.textAlign = 'left';
-            
-            // Add new line occasionally
-            if (frame % 10 === 0 && currentLevel === 5) bgElements.push(createBgElement()); // Faster add for matrix
-            else if (frame % 20 === 0 && currentLevel < 5) bgElements.push(createBgElement());
+            ctx.font = currentLevel === 4 ? "20px Arial" : "16px 'VT323'"; ctx.textAlign = 'left';
+            let spawnRate = 20; if(currentLevel === 5) spawnRate = 5; 
+            if (frame % spawnRate === 0) bgElements.push(createBgElement());
+
+            if(currentLevel === 2) {
+                ctx.strokeStyle = '#33ff00'; ctx.lineWidth = 2;
+                ctx.strokeRect(10, 10, width-20, height-20);
+                ctx.fillStyle = '#33ff00'; ctx.fillRect(10, 10, width-20, 30);
+                ctx.fillStyle = '#000'; ctx.font = "20px 'VT323'"; ctx.fillText("mIRC32 - #chat [Connected]", 20, 32);
+            }
+
+            if(currentLevel === 4) {
+                ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(width - 200, 0, 200, height);
+                ctx.fillStyle = '#fff'; ctx.font = "bold 20px Arial"; ctx.fillText("Trending", width - 180, 40);
+                ctx.font = "14px Arial";
+                hashtags.forEach((tag, i) => { ctx.fillText(tag, width - 180, 80 + (i*30)); });
+            }
 
             for (let i = bgElements.length - 1; i >= 0; i--) {
                 let el = bgElements[i];
-                if (currentLevel === 4) el.x += el.speed; // Birds fly right
-                else el.y += (currentLevel === 2 ? -el.speed : el.speed); // Chat up, Matrix down
-
-                let color = `rgba(0, 255, 0, ${el.opacity})`; // Default Green
-                if (currentLevel === 4) color = `rgba(255, 255, 255, ${el.opacity})`; // White birds
-
-                ctx.fillStyle = color;
+                if (currentLevel === 4) el.x += el.speed; else el.y += (currentLevel === 2 ? -el.speed : el.speed);
+                let color = `rgba(0, 255, 0, ${el.opacity})`; 
+                if (currentLevel === 4) color = `rgba(255, 255, 255, ${el.opacity})`;
+                
+                if(currentLevel === 5 && Math.random() > 0.95) ctx.fillStyle = '#fff'; else ctx.fillStyle = color;
+                
+                ctx.font = currentLevel === 4 ? "20px Arial" : "16px 'VT323'";
                 ctx.fillText(el.text, el.x, el.y);
                 
-                // Remove logic
-                if (currentLevel === 2 && el.y < -20) bgElements.splice(i, 1);
+                if (currentLevel === 2 && el.y < 40) bgElements.splice(i, 1); 
                 else if (currentLevel === 5 && el.y > height) bgElements.splice(i, 1);
-                else if (currentLevel === 4 && el.x > width) bgElements.splice(i, 1);
+                else if (currentLevel === 4 && el.x > width - 200) bgElements.splice(i, 1); 
             }
         }
     }
@@ -853,64 +902,59 @@
 
         if (gameActive) {
             if (glitchEffect > 0) {
-                ctx.save();
-                ctx.translate((Math.random()-0.5)*10, 0); 
-                ctx.globalCompositeOperation = 'screen'; 
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.5)'; ctx.fillRect(0,0,width,height);
+                ctx.save(); ctx.translate((Math.random()-0.5)*10, 0); 
+                ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = 'rgba(255, 0, 0, 0.5)'; ctx.fillRect(0,0,width,height);
                 ctx.restore(); glitchEffect--;
             }
+
+            // LOAD SHAKE LOGIC
+            let loadShake = 0;
+            if (serverLoad > 40) { // Shake starts at 40%
+                loadShake = (serverLoad - 40) / 5;
+            }
+
+            let totalShake = shakeIntensity + loadShake;
+
+            if (totalShake > 0) {
+                ctx.save(); 
+                ctx.translate((Math.random()-0.5)*totalShake, (Math.random()-0.5)*totalShake);
+            }
+            
             if (shakeIntensity > 0) {
-                ctx.save();
-                ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity);
-                shakeIntensity *= 0.9;
+                shakeIntensity *= 0.9; 
                 if (shakeIntensity < 0.5) shakeIntensity = 0;
             }
 
-            // Spawn Logic
             if (frame % 60 === 0) {
                 const max = 5 + (score/10) + currentLevel;
                 if (entities.length < max) {
-                    const r = Math.random();
-                    let type = 'troll';
-                    
+                    const r = Math.random(); let type = 'troll';
                     if (Math.random() < 0.05) type = 'coffee';
-                    else if (currentLevel === 4) {
-                         if (r < 0.3) type = 'bot'; 
-                         else if (r < 0.7) type = 'troll';
-                         else type = 'innocent';
-                    } else if (currentLevel === 5) {
-                         if (r < 0.15) type = 'virus';
-                         else if (r < 0.3) type = 'predator';
-                         else if (r < 0.7) type = 'troll';
-                         else type = 'innocent';
-                    } else if (currentLevel === 3) {
-                         if (r < 0.2) type = 'predator'; else if (r < 0.7) type = 'troll'; else type = 'innocent';
-                    } else {
-                         if (r < 0.7) type = 'troll'; else type = 'innocent';
-                    }
+                    else if (currentLevel === 4) { if (r < 0.3) type = 'bot'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
+                    else if (currentLevel === 5) { if (r < 0.15) type = 'virus'; else if (r < 0.3) type = 'predator'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
+                    else if (currentLevel === 3) { if (r < 0.2) type = 'predator'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
+                    else { if (r < 0.7) type = 'troll'; else type = 'innocent'; }
                     entities.push(new Entity(type));
                 }
             }
             
-            // Server Load Logic
             if (frame % 30 === 0) {
-                let loadIncrease = 0.2; // Passive
+                let loadIncrease = 0.2; 
                 entities.forEach(e => loadIncrease += (e.type === 'bot' ? 2 : (e.type === 'troll' ? 0.5 : 0)));
                 serverLoad += loadIncrease;
                 if (serverLoad > 100) gameOver();
                 livesEl.innerText = Math.floor(serverLoad);
-                livesEl.style.color = serverLoad > 80 ? 'red' : '#33ff00';
+                livesEl.style.color = serverLoad > 80 ? 'red' : 'inherit';
             }
 
             entities = entities.filter(e => !e.markedForDeletion);
             entities.forEach(e => { e.update(); e.draw(); });
-            if (shakeIntensity > 0) ctx.restore();
+            
+            if (totalShake > 0) ctx.restore();
         }
 
-        // Particles
         for (let i = particles.length - 1; i >= 0; i--) {
-            let p = particles[i]; 
-            p.x += p.vx; p.y += p.vy; p.life -= 0.03; p.vy += 0.5;
+            let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03; p.vy += 0.5;
             ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fillRect(p.x, p.y, p.size, p.size); ctx.globalAlpha = 1;
             if (p.life <= 0) particles.splice(i, 1);
         }
@@ -920,20 +964,12 @@
             ctx.strokeStyle = s.color; ctx.globalAlpha = s.life; ctx.lineWidth = 10 * s.life; ctx.stroke(); ctx.globalAlpha = 1;
             if (s.life <= 0) shockwaves.splice(i, 1);
         }
-
-        // Combo Logic
-        if (combo > 1) {
-            comboDisplayEl.style.display = 'block';
-            comboCountEl.innerText = combo;
-        } else {
-            comboDisplayEl.style.display = 'none';
-        }
+        if (combo > 1) { comboDisplayEl.style.display = 'block'; comboCountEl.innerText = combo; } else { comboDisplayEl.style.display = 'none'; }
 
         frame++;
         requestAnimationFrame(animate);
     }
     
-    // Helpers
     function incrementCombo() { combo++; }
     function resetCombo() { combo = 0; }
     function triggerFlash() { flashOverlay.style.opacity = "0.4"; setTimeout(() => flashOverlay.style.opacity = "0", 80); }
