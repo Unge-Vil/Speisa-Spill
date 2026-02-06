@@ -1,0 +1,18 @@
+[
+    {
+        "id": 1,
+        "tittel": "Banhammer 9000",
+        "beskrivelse": "Bannlys alle trollene og kanskje også enda skummlere fiender!",
+        "url": "banhammer/",
+        "ikon": "fa-solid fa-hammer",
+        "farge": "bg-gradient-to-br from-blue-900 to-black"
+    },
+    {
+        "id": 2,
+        "tittel": "Egil spill",
+        "beskrivelse": "Kommer snart...",
+        "url": "/romfart/",
+        "ikon": "fa-solid fa-shuttle-space",
+        "farge": "bg-gradient-to-br from-purple-900 to-black"
+    }
+]
