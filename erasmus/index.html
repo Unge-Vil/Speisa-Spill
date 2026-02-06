@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erasmus+ Panikken: Deadline Day</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Courier+Prime:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .eu-blue { background-color: #003399; }
+        .eu-yellow { color: #FFCC00; }
+        
+        .pixel-font { font-family: 'Courier Prime', monospace; }
+
+        /* Animations */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .shake-screen {
+            animation: shake 0.5s;
+            animation-iteration-count: infinite;
+        }
+
+        .falling-item {
+            position: absolute;
+            cursor: pointer;
+            transition: transform 0.1s;
+            user-select: none;
+            z-index: 10;
+        }
+
+        .falling-item:active {
+            transform: scale(0.9);
+        }
+
+        .popup-window {
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+            animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .loading-overlay {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(2px);
+        }
+
+        /* Scanlines for retro PC feel */
+        .scanlines {
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-200 h-screen w-screen relative overflow-hidden text-gray-800">
+
+    <!-- Game UI Container -->
+    <div id="game-container" class="h-full w-full flex flex-col relative">
+        
+        <!-- Header / Status Bar -->
+        <div class="bg-blue-800 text-white p-2 flex justify-between items-center shadow-lg z-20 border-b-4 border-yellow-400">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-flag-europe text-yellow-400 text-2xl"></i>
+                <div>
+                    <h1 class="font-bold text-sm leading-none">Erasmus+ Portal</h1>
+                    <span class="text-xs text-blue-200">Session ID: <span id="oid-display">894102...</span></span>
+                </div>
+            </div>
+            
+            <div class="flex gap-4 items-center">
+                <div class="text-center">
+                    <div class="text-xs uppercase text-blue-300">Søknadskvalitet</div>
+                    <div class="w-32 h-4 bg-gray-700 rounded-full overflow-hidden border border-white">
+                        <div id="progress-bar" class="h-full bg-green-500 w-0 transition-all duration-200"></div>
+                    </div>
+                    <div id="progress-text" class="text-xs font-bold">0%</div>
+                </div>
+
+                <div class="text-center bg-red-900 px-3 py-1 rounded border border-red-500 animate-pulse">
+                    <div class="text-xs text-red-200 uppercase">FRISTEN GÅR UT OM:</div>
+                    <div id="timer" class="text-2xl font-mono font-bold text-red-500">60.00</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Workspace (Play Area) -->
+        <div id="workspace" class="flex-1 relative bg-[#e0e0e0] overflow-hidden">
+            <!-- Background Decoration -->
+            <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+                <i class="fas fa-stamp text-9xl"></i>
+            </div>
+
+            <!-- Submit Button (Only active at 100%) -->
+            <div class="absolute bottom-4 right-4 z-10">
+                <button id="submit-btn" disabled onclick="trySubmit()" class="bg-gray-400 text-gray-600 font-bold py-4 px-8 rounded shadow-inner border-b-4 border-gray-600 text-xl cursor-not-allowed transition-all transform">
+                    <i class="fas fa-paper-plane mr-2"></i> SEND INN SØKNAD
+                </button>
+            </div>
+
+            <!-- Hint Text -->
+            <div id="hint-text" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded shadow border border-yellow-400 z-0 text-sm">
+                Fang buzzordene! Unngå feilene!
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="absolute inset-0 bg-blue-900 z-50 flex flex-col items-center justify-center text-white p-4">
+        <div class="bg-white text-blue-900 p-8 rounded-lg shadow-2xl max-w-lg w-full text-center border-4 border-yellow-400">
+            <i class="fas fa-star text-yellow-500 text-6xl mb-4"></i>
+            <h1 class="text-3xl font-bold mb-2">Erasmus+ Panikken</h1>
+            <p class="text-gray-600 mb-6">Fristen går ut om 60 sekunder! Serveren krasjer! Har du husket mandatene?</p>
+            
+            <div class="text-left bg-gray-100 p-4 rounded mb-6 text-sm border border-gray-300">
+                <p class="font-bold mb-2">Hvordan spille:</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li><span class="text-green-600 font-bold">KLIKK</span> på Buzzord (f.eks. "Synergi", "Bærekraft") for å fylle søknaden.</li>
+                    <li><span class="text-red-600 font-bold">UNNGÅ</span> Tabber (f.eks. "Skrivefeil", "Glemte vedlegg").</li>
+                    <li><span class="text-blue-600 font-bold">LUKK</span> Feilmeldinger (Popups) raskt!</li>
+                    <li>Trykk <span class="font-bold bg-green-500 text-white px-1 rounded">SEND INN</span> når søknaden er 100%.</li>
+                </ul>
+            </div>
+
+            <button onclick="startGame()" class="bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold py-3 px-8 rounded-full text-xl shadow-lg transform transition hover:scale-105">
+                START SØKNADSPROSESSEN
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="hidden absolute inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded shadow-2xl max-w-md w-full text-center border-t-8 border-red-500">
+            <h2 id="end-title" class="text-3xl font-bold mb-2">SØKNAD AVVIST</h2>
+            <div id="end-icon" class="text-6xl my-4">😞</div>
+            <p id="end-reason" class="text-lg text-gray-700 mb-6">Fristen gikk ut mens du drakk kaffe.</p>
+            <p class="text-sm text-gray-500 mb-6 pixel-font">Score: <span id="final-score">0</span>% completed</p>
+            <button onclick="location.reload()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">
+                PRØV NESTE DEADLINE
+            </button>
+        </div>
+    </div>
+
+    <!-- Retro CRT Effect Overlay -->
+    <div class="absolute inset-0 pointer-events-none scanlines z-40"></div>
+
+    <script>
+        // Game State
+        let state = {
+            isRunning: false,
+            score: 0, // 0 to 100
+            timeLeft: 60,
+            stress: 0,
+            gameLoop: null,
+            spawnLoop: null,
+            popupLoop: null,
+            difficultyMultiplier: 1
+        };
+
+        // Constants
+        const BUZZWORDS = [
+            { text: "Synergi", color: "bg-blue-100 border-blue-500 text-blue-800", points: 5, icon: "fa-link" },
+            { text: "Bærekraft", color: "bg-green-100 border-green-500 text-green-800", points: 5, icon: "fa-leaf" },
+            { text: "Inkludering", color: "bg-purple-100 border-purple-500 text-purple-800", points: 6, icon: "fa-users" },
+            { text: "Innovasjon", color: "bg-yellow-100 border-yellow-500 text-yellow-800", points: 7, icon: "fa-lightbulb" },
+            { text: "Mobilitet", color: "bg-indigo-100 border-indigo-500 text-indigo-800", points: 4, icon: "fa-plane" },
+            { text: "Digitalisering", color: "bg-cyan-100 border-cyan-500 text-cyan-800", points: 5, icon: "fa-laptop" },
+            { text: "Transnasjonal", color: "bg-blue-200 border-blue-600 text-blue-900", points: 8, icon: "fa-globe-europe" },
+            { text: "Disseminering", color: "bg-pink-100 border-pink-500 text-pink-800", points: 10, icon: "fa-bullhorn" }
+        ];
+
+        const BAD_WORDS = [
+            { text: "Ferie?", color: "bg-red-100 border-red-500 text-red-800", damage: 10, icon: "fa-umbrella-beach" },
+            { text: "Glemt Pass", color: "bg-red-100 border-red-500 text-red-800", damage: 15, icon: "fa-passport" },
+            { text: "Ingen Mandat", color: "bg-gray-300 border-gray-600 text-gray-800", damage: 20, icon: "fa-file-signature" },
+            { text: "Ugyldig OID", color: "bg-orange-100 border-orange-500 text-orange-800", damage: 10, icon: "fa-id-card" },
+            { text: "Google Translate", color: "bg-red-50 border-red-400 text-red-900", damage: 12, icon: "fa-language" }
+        ];
+
+        const POPUP_MESSAGES = [
+            "Connection Lost: Reconnecting...",
+            "Session Expired: Log in again",
+            "Error 503: Gateway Timeout",
+            "Vennligst oppdater din OID",
+            "Mangler vedlegg: CV_Project_Lead.pdf"
+        ];
+
+        // Elements
+        const workspace = document.getElementById('workspace');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const timerDisplay = document.getElementById('timer');
+        const submitBtn = document.getElementById('submit-btn');
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            state.isRunning = true;
+            state.timeLeft = 60;
+            state.score = 0;
+            updateUI();
+
+            // Start Loops
+            state.gameLoop = setInterval(gameTick, 100);
+            state.spawnLoop = setInterval(spawnItem, 800);
+            state.popupLoop = setInterval(trySpawnPopup, 3000);
+        }
+
+        function gameTick() {
+            if (!state.isRunning) return;
+
+            // Timer Logic
+            state.timeLeft -= 0.1;
+            timerDisplay.textContent = state.timeLeft.toFixed(2);
+            
+            // Panic Mode: Screen shakes when time is low
+            if (state.timeLeft < 15) {
+                document.body.classList.add('shake-screen');
+                timerDisplay.classList.add('text-4xl'); // Grow timer
+            }
+
+            // Difficulty ramping
+            if (state.timeLeft < 30) state.difficultyMultiplier = 1.5;
+            if (state.timeLeft < 10) state.difficultyMultiplier = 2.5;
+
+            // Lose Condition
+            if (state.timeLeft <= 0) {
+                endGame(false, "FRISTEN UTLØP! EU-serveren stengte dørene rett foran nesen på deg.");
+            }
+        }
+
+        function updateUI() {
+            // Cap score
+            if (state.score < 0) state.score = 0;
+            if (state.score > 100) state.score = 100;
+
+            progressBar.style.width = `${state.score}%`;
+            progressText.textContent = `${state.score}%`;
+
+            // Enable submit button
+            if (state.score >= 100) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('bg-gray-400', 'text-gray-600', 'cursor-not-allowed', 'border-gray-600');
+                submitBtn.classList.add('bg-green-500', 'text-white', 'hover:bg-green-600', 'cursor-pointer', 'border-green-700', 'animate-bounce');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('bg-gray-400', 'text-gray-600', 'cursor-not-allowed', 'border-gray-600');
+                submitBtn.classList.remove('bg-green-500', 'text-white', 'hover:bg-green-600', 'cursor-pointer', 'border-green-700', 'animate-bounce');
+            }
+        }
+
+        function spawnItem() {
+            if (!state.isRunning) return;
+            
+            // Chance to spawn good or bad item
+            const isBad = Math.random() < 0.3; // 30% chance of bad item
+            const itemData = isBad 
+                ? BAD_WORDS[Math.floor(Math.random() * BAD_WORDS.length)]
+                : BUZZWORDS[Math.floor(Math.random() * BUZZWORDS.length)];
+
+            const el = document.createElement('div');
+            el.className = `falling-item absolute px-4 py-2 rounded-lg shadow-md border-2 font-bold flex items-center gap-2 ${itemData.color}`;
+            el.innerHTML = `<i class="fas ${itemData.icon}"></i> ${itemData.text}`;
+            
+            // Random Position
+            const maxLeft = workspace.clientWidth - 150;
+            el.style.left = `${Math.random() * maxLeft}px`;
+            el.style.top = '-50px';
+
+            // Click Handler
+            el.onmousedown = () => {
+                if (isBad) {
+                    state.score -= itemData.damage;
+                    playSound('error');
+                    showFloatingText(el.style.left, el.style.top, `-${itemData.damage}%`, 'text-red-600');
+                } else {
+                    state.score += itemData.points;
+                    playSound('pop');
+                    showFloatingText(el.style.left, el.style.top, `+${itemData.points}%`, 'text-green-600');
+                }
+                updateUI();
+                el.remove();
+            };
+
+            workspace.appendChild(el);
+
+            // Animation (Fall down)
+            let pos = -50;
+            const speed = (2 + Math.random() * 3) * state.difficultyMultiplier; // Speed increases with difficulty
+            
+            const anim = setInterval(() => {
+                if (!state.isRunning) {
+                    clearInterval(anim);
+                    return;
+                }
+                pos += speed;
+                el.style.top = `${pos}px`;
+
+                // Remove if out of bounds
+                if (pos > workspace.clientHeight) {
+                    el.remove();
+                    clearInterval(anim);
+                }
+            }, 20);
+        }
+
+        function trySpawnPopup() {
+            if (!state.isRunning) return;
+            // 40% chance to spawn a popup every cycle
+            if (Math.random() > 0.4) return;
+
+            const id = Date.now();
+            const popup = document.createElement('div');
+            popup.className = 'popup-window absolute bg-gray-100 border-2 border-blue-800 w-64 p-1 z-30 select-none';
+            
+            // Random position in center area
+            const rX = 50 + Math.random() * (workspace.clientWidth - 300);
+            const rY = 50 + Math.random() * (workspace.clientHeight - 200);
+            
+            popup.style.left = `${rX}px`;
+            popup.style.top = `${rY}px`;
+
+            const msg = POPUP_MESSAGES[Math.floor(Math.random() * POPUP_MESSAGES.length)];
+
+            popup.innerHTML = `
+                <div class="bg-blue-800 text-white text-xs px-2 py-1 flex justify-between items-center cursor-move">
+                    <span>System Error</span>
+                    <button class="hover:bg-red-500 px-1" onclick="this.closest('.popup-window').remove()">X</button>
+                </div>
+                <div class="p-4 flex flex-col items-center text-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 text-3xl mb-2"></i>
+                    <p class="text-sm font-bold mb-4">${msg}</p>
+                    <button onclick="this.closest('.popup-window').remove()" class="bg-gray-300 border border-black px-4 py-1 text-sm shadow active:bg-gray-400">OK</button>
+                </div>
+            `;
+
+            workspace.appendChild(popup);
+            playSound('alert');
+        }
+
+        function showFloatingText(x, y, text, colorClass) {
+            const float = document.createElement('div');
+            float.className = `absolute text-xl font-black ${colorClass} z-20 pointer-events-none`;
+            float.style.left = x;
+            float.style.top = y;
+            float.innerText = text;
+            workspace.appendChild(float);
+
+            // Animate up and fade
+            let op = 1;
+            let topVal = parseInt(y);
+            const anim = setInterval(() => {
+                op -= 0.05;
+                topVal -= 2;
+                float.style.opacity = op;
+                float.style.top = `${topVal}px`;
+                if(op <= 0) {
+                    clearInterval(anim);
+                    float.remove();
+                }
+            }, 50);
+        }
+
+        function trySubmit() {
+            if (!state.isRunning) return;
+            if (state.score < 100) return;
+
+            state.isRunning = false;
+            clearInterval(state.gameLoop);
+            clearInterval(state.spawnLoop);
+            clearInterval(state.popupLoop);
+            document.body.classList.remove('shake-screen');
+
+            // Fake loading simulation
+            const btn = document.getElementById('submit-btn');
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> SENDER INN...';
+            
+            // 50% chance of "Server Error" fakeout before success
+            setTimeout(() => {
+                if (Math.random() > 0.5) {
+                    // Success
+                    endGame(true, "GRATULERER! Søknaden er sendt inn 2 sekunder før fristen. Du kan nå sove.");
+                } else {
+                    // Fakeout delay then success
+                    btn.innerHTML = '<i class="fas fa-exclamation-circle text-red-500"></i> SERVER ERROR...';
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fas fa-check"></i> SENDT (Backup)';
+                        endGame(true, "PUH! Serveren krasjet, men backup-systemet reddet deg. Søknaden er levert!");
+                    }, 2000);
+                }
+            }, 1500);
+        }
+
+        function endGame(won, message) {
+            state.isRunning = false;
+            clearInterval(state.gameLoop);
+            clearInterval(state.spawnLoop);
+            clearInterval(state.popupLoop);
+            document.body.classList.remove('shake-screen');
+
+            const screen = document.getElementById('game-over-screen');
+            const title = document.getElementById('end-title');
+            const reason = document.getElementById('end-reason');
+            const icon = document.getElementById('end-icon');
+            
+            screen.classList.remove('hidden');
+            document.getElementById('final-score').innerText = Math.floor(state.score);
+
+            if (won) {
+                screen.querySelector('.bg-white').classList.remove('border-red-500');
+                screen.querySelector('.bg-white').classList.add('border-green-500');
+                title.innerText = "SØKNAD GODKJENT!";
+                title.classList.add('text-green-600');
+                icon.innerHTML = '<i class="fas fa-champagne-glasses text-yellow-500"></i>';
+                reason.innerText = message;
+            } else {
+                screen.querySelector('.bg-white').classList.add('border-red-500');
+                screen.querySelector('.bg-white').classList.remove('border-green-500');
+                title.innerText = "SØKNAD AVVIST";
+                title.classList.remove('text-green-600');
+                title.classList.add('text-red-600');
+                icon.innerHTML = '😭';
+                reason.innerText = message;
+            }
+        }
+
+        // Minimal sound effects using AudioContext would be better, but keeping it file-simple without assets.
+        // Simulated visual feedback acts as sound substitute here.
+        function playSound(type) {
+            // Placeholder for real sound implementation
+        }
+
+        // OID Scramble effect
+        setInterval(() => {
+            const oid = document.getElementById('oid-display');
+            if(Math.random() > 0.8) {
+                oid.innerText = "E" + Math.floor(10000000 + Math.random() * 90000000);
+            }
+        }, 2000);
+
+    </script>
+</body>
+</html>
