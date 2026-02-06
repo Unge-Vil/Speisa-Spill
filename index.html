@@ -76,20 +76,6 @@
             border-color: #00ffff;
         }
 
-        .logo-placeholder {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(45deg, #ff00ff, #00ffff);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 20px;
-            font-family: 'Orbitron', sans-serif;
-            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
-        }
-
         .neon-text {
             text-shadow: 0 0 10px rgba(189, 0, 255, 0.7);
         }
@@ -100,21 +86,29 @@
     <!-- Header / Navigasjon -->
     <header class="glass-panel sticky top-0 z-50 border-b border-gray-800">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <!-- LOGO PLACEHOLDER -->
-                <div class="logo-placeholder animate-pulse-glow">
-                    UV
-                </div>
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-black tracking-widest font-scifi uppercase bg-clip-text text-transparent bg-gradient-to-r from-neon-pink to-neon-blue">
+            <div class="flex items-center gap-6">
+                <!-- LOGO -->
+                <a href="https://ungevil.no" target="_blank" class="block">
+                    <img src="https://www.ungevil.no/wp-content/uploads/2024/01/UngeVil-dark-line.png" 
+                         alt="Unge Vil Logo" 
+                         class="h-10 md:h-12 w-auto filter drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] hover:scale-105 transition-transform duration-300">
+                </a>
+                
+                <div class="hidden sm:block border-l border-gray-600 pl-6 h-8 flex items-center">
+                    <h1 class="text-xl md:text-2xl font-black tracking-widest font-scifi uppercase bg-clip-text text-transparent bg-gradient-to-r from-neon-pink to-neon-blue">
                         SPEISA SPILL
                     </h1>
-                    <p class="text-xs text-gray-400 font-mono tracking-widest uppercase">Unge Vil Portal</p>
                 </div>
             </div>
             <a href="https://github.com" target="_blank" class="text-gray-400 hover:text-neon-blue transition duration-300">
                 <i class="fa-brands fa-github text-3xl"></i>
             </a>
+        </div>
+        <!-- Mobil tittel (vises kun på små skjermer) -->
+        <div class="sm:hidden text-center pb-2">
+            <h1 class="text-xl font-black tracking-widest font-scifi uppercase bg-clip-text text-transparent bg-gradient-to-r from-neon-pink to-neon-blue">
+                SPEISA SPILL
+            </h1>
         </div>
     </header>
 
@@ -139,13 +133,23 @@
     <!-- Spill Grid -->
     <main class="container mx-auto px-6 pb-24 flex-grow z-10">
         <div id="gameGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Spillene lastes inn her via JavaScript -->
+            <!-- Spinner mens vi laster data -->
+            <div class="col-span-full text-center py-20">
+                <i class="fa-solid fa-spinner fa-spin text-4xl text-neon-blue"></i>
+                <p class="mt-4 text-gray-400">Kobler til databasen...</p>
+            </div>
         </div>
 
         <!-- Tomt søkeresultat melding -->
         <div id="noResults" class="hidden text-center py-10">
             <i class="fa-solid fa-meteor text-6xl text-gray-600 mb-4 animate-spin-slow"></i>
             <p class="text-xl text-gray-400 font-scifi">Ingen livstegn funnet...</p>
+        </div>
+        
+        <!-- Feilmelding boks (skjult som standard) -->
+        <div id="errorMsg" class="hidden text-center py-10">
+            <i class="fa-solid fa-triangle-exclamation text-6xl text-red-500 mb-4"></i>
+            <p class="text-xl text-gray-400">Kunne ikke laste spilldata (spill.json).</p>
         </div>
     </main>
 
@@ -157,36 +161,17 @@
     <!-- LOGIKK OG DATA -->
     <script>
         // ==========================================
-        // KONFIGURASJON AV SPILL (JSON-STRUKTUR)
-        // ==========================================
-        
-        const spillListe = [
-            {
-                "id": 1,
-                "tittel": "Banhammer 9000",
-                "beskrivelse": "Bannlys alle trollene og kanskje også enda skummlere fiender!",
-                "url": "banhammer/",
-                "ikon": "fa-solid fa-hammer", // Byttet til mer tech-ikon
-                "farge": "bg-gradient-to-br from-blue-900 to-black"
-            },
-            {
-                "id": 2,
-                "tittel": "Egil spill",
-                "beskrivelse": "Kommer snart...",
-                "url": "/romfart/",
-                "ikon": "fa-solid fa-shuttle-space",
-                "farge": "bg-gradient-to-br from-purple-900 to-black"
-            }
-        ];
-
-        // ==========================================
         // SYSTEM FOR Å VISE SPILLENE
         // ==========================================
 
         const gameGrid = document.getElementById('gameGrid');
         const searchInput = document.getElementById('searchInput');
         const noResults = document.getElementById('noResults');
+        const errorMsg = document.getElementById('errorMsg');
+        
+        let spillListe = []; // Tom liste som fylles fra JSON
 
+        // Funksjon for å generere HTML for spillkortene
         function renderGames(games) {
             gameGrid.innerHTML = '';
             
@@ -197,7 +182,6 @@
                 
                 games.forEach(spill => {
                     const card = document.createElement('div');
-                    // Legger til 'glass-panel' klasse og litt styling
                     card.className = `game-card glass-panel rounded-lg overflow-hidden flex flex-col h-full hover:border-neon-blue transition-all duration-300`;
                     
                     card.innerHTML = `
@@ -227,8 +211,23 @@
             }
         }
 
-        renderGames(spillListe);
+        // Funksjon for å hente data fra spill.json
+        async function lastInnSpill() {
+            try {
+                const response = await fetch('spill.json');
+                if (!response.ok) {
+                    throw new Error('Nettverksfeil ved lasting av JSON');
+                }
+                spillListe = await response.json();
+                renderGames(spillListe);
+            } catch (error) {
+                console.error("Feil:", error);
+                gameGrid.innerHTML = ''; // Tøm loading spinner
+                errorMsg.classList.remove('hidden');
+            }
+        }
 
+        // Setup søkefunksjonalitet
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const filteredGames = spillListe.filter(spill => 
@@ -237,6 +236,9 @@
             );
             renderGames(filteredGames);
         });
+
+        // Start appen ved å laste inn data
+        lastInnSpill();
 
     </script>
 </body>
