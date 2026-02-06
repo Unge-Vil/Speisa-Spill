@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speisa Spill - Unge Vil</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Orbitron for Sci-Fi look, Poppins for tekst -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome for ikoner -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                        scifi: ['Orbitron', 'sans-serif'],
+                    },
+                    colors: {
+                        'space-dark': '#050510',
+                        'space-panel': 'rgba(20, 20, 40, 0.7)',
+                        'neon-pink': '#ff00ff',
+                        'neon-blue': '#00ffff',
+                        'neon-purple': '#bd00ff'
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-glow': 'pulse-glow 3s infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        'pulse-glow': {
+                            '0%, 100%': { boxShadow: '0 0 10px #bd00ff' },
+                            '50%': { boxShadow: '0 0 25px #00ffff' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #050510;
+            color: #ffffff;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+            animation: starMove 100s linear infinite;
+        }
+
+        @keyframes starMove {
+            from { background-position: 0 0, 40px 60px, 130px 270px; }
+            to { background-position: 550px 550px, 590px 610px, 680px 820px; }
+        }
+
+        .glass-panel {
+            background: rgba(22, 33, 62, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.1);
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            border-color: #00ffff;
+        }
+
+        .logo-placeholder {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 20px;
+            font-family: 'Orbitron', sans-serif;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+        }
+
+        .neon-text {
+            text-shadow: 0 0 10px rgba(189, 0, 255, 0.7);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header / Navigasjon -->
+    <header class="glass-panel sticky top-0 z-50 border-b border-gray-800">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <!-- LOGO PLACEHOLDER -->
+                <div class="logo-placeholder animate-pulse-glow">
+                    UV
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-black tracking-widest font-scifi uppercase bg-clip-text text-transparent bg-gradient-to-r from-neon-pink to-neon-blue">
+                        SPEISA SPILL
+                    </h1>
+                    <p class="text-xs text-gray-400 font-mono tracking-widest uppercase">Unge Vil Portal</p>
+                </div>
+            </div>
+            <a href="https://github.com" target="_blank" class="text-gray-400 hover:text-neon-blue transition duration-300">
+                <i class="fa-brands fa-github text-3xl"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Seksjon -->
+    <div class="container mx-auto px-6 py-16 text-center relative">
+        <!-- Dekorativ planet effekt (bakgrunn) -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-neon-purple rounded-full blur-[100px] opacity-20 -z-10"></div>
+
+        <h2 class="text-3xl md:text-5xl font-bold mb-6 font-scifi text-white neon-text">Velkommen til Portalrommet</h2>
+        <p class="text-blue-200 text-lg max-w-2xl mx-auto mb-10 font-light tracking-wide">
+            Utforsk vårt univers av AI-genererte spill. Velg en destinasjon nedenfor og gjør deg klar for oppskytning!
+        </p>
+        
+        <!-- Søkefelt -->
+        <div class="relative max-w-md mx-auto group">
+            <input type="text" id="searchInput" placeholder="Søk i universet..." 
+                class="w-full bg-space-dark bg-opacity-80 border border-neon-blue/30 rounded-none py-4 px-6 pl-12 focus:outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition text-white font-mono placeholder-gray-500 clip-path-polygon">
+            <i class="fa-solid fa-rocket absolute left-4 top-4 text-neon-blue group-hover:animate-bounce"></i>
+        </div>
+    </div>
+
+    <!-- Spill Grid -->
+    <main class="container mx-auto px-6 pb-24 flex-grow z-10">
+        <div id="gameGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Spillene lastes inn her via JavaScript -->
+        </div>
+
+        <!-- Tomt søkeresultat melding -->
+        <div id="noResults" class="hidden text-center py-10">
+            <i class="fa-solid fa-meteor text-6xl text-gray-600 mb-4 animate-spin-slow"></i>
+            <p class="text-xl text-gray-400 font-scifi">Ingen livstegn funnet...</p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-panel py-8 text-center text-gray-400 text-sm border-t border-gray-800 mt-auto">
+        <p class="font-mono">SYSTEM STATUS: ONLINE | &copy; 2024 Unge Vil</p>
+    </footer>
+
+    <!-- LOGIKK OG DATA -->
+    <script>
+        // ==========================================
+        // KONFIGURASJON AV SPILL (JSON-STRUKTUR)
+        // ==========================================
+        
+        const spillListe = [
+            {
+                "id": 1,
+                "tittel": "Gjett Tallet",
+                "beskrivelse": "Klarer du å knekke koden? Gjett hvilket tall AI-en tenker på.",
+                "url": "/gjett-tallet/",
+                "ikon": "fa-solid fa-microchip", // Byttet til mer tech-ikon
+                "farge": "bg-gradient-to-br from-blue-900 to-black"
+            },
+            {
+                "id": 2,
+                "tittel": "Romfarts-eventyr",
+                "beskrivelse": "Styr raketten gjennom asteroidebeltet. Hvor langt ut i rommet kommer du?",
+                "url": "/romfart/",
+                "ikon": "fa-solid fa-shuttle-space",
+                "farge": "bg-gradient-to-br from-purple-900 to-black"
+            },
+            {
+                "id": 3,
+                "tittel": "Unge Vil Quiz",
+                "beskrivelse": "Test kunnskapene dine om universet, koding og kunstig intelligens.",
+                "url": "/quiz/",
+                "ikon": "fa-solid fa-user-astronaut",
+                "farge": "bg-gradient-to-br from-yellow-900 to-black"
+            },
+            {
+                "id": 4,
+                "tittel": "Snake AI",
+                "beskrivelse": "En kybernetisk slange på jakt etter digital energi. Klassiker i ny drakt.",
+                "url": "/snake/",
+                "ikon": "fa-solid fa-robot",
+                "farge": "bg-gradient-to-br from-green-900 to-black"
+            },
+             {
+                "id": 5,
+                "tittel": "Warp Zone",
+                "beskrivelse": "En portal til en ukjent dimensjon. Kommer snart...",
+                "url": "#",
+                "ikon": "fa-solid fa-spinner",
+                "farge": "bg-gradient-to-br from-gray-800 to-black"
+            }
+        ];
+
+        // ==========================================
+        // SYSTEM FOR Å VISE SPILLENE
+        // ==========================================
+
+        const gameGrid = document.getElementById('gameGrid');
+        const searchInput = document.getElementById('searchInput');
+        const noResults = document.getElementById('noResults');
+
+        function renderGames(games) {
+            gameGrid.innerHTML = '';
+            
+            if (games.length === 0) {
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+                
+                games.forEach(spill => {
+                    const card = document.createElement('div');
+                    // Legger til 'glass-panel' klasse og litt styling
+                    card.className = `game-card glass-panel rounded-lg overflow-hidden flex flex-col h-full hover:border-neon-blue transition-all duration-300`;
+                    
+                    card.innerHTML = `
+                        <div class="h-40 ${spill.farge} flex items-center justify-center relative overflow-hidden group border-b border-gray-700">
+                            <i class="${spill.ikon} text-7xl text-white opacity-90 group-hover:scale-110 group-hover:text-neon-blue transition-all duration-500 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]"></i>
+                            
+                            <!-- Grid effekt i bakgrunnen av kortet -->
+                            <div class="absolute inset-0 opacity-20" 
+                                style="background-image: linear-gradient(#00ffff 1px, transparent 1px), linear-gradient(90deg, #00ffff 1px, transparent 1px); background-size: 20px 20px;">
+                            </div>
+                        </div>
+                        
+                        <div class="p-6 flex flex-col flex-grow">
+                            <h3 class="text-xl font-bold mb-2 text-white font-scifi tracking-wide">${spill.tittel}</h3>
+                            <p class="text-blue-100/70 text-sm mb-6 flex-grow font-mono leading-relaxed">${spill.beskrivelse}</p>
+                            
+                            <a href="${spill.url}" class="group relative block text-center w-full py-3 bg-transparent border border-neon-blue text-neon-blue font-bold rounded overflow-hidden hover:text-black transition-colors duration-300">
+                                <span class="absolute inset-0 w-full h-full bg-neon-blue transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out"></span>
+                                <span class="relative flex items-center justify-center gap-2">
+                                    START SPILL <i class="fa-solid fa-play text-xs"></i>
+                                </span>
+                            </a>
+                        </div>
+                    `;
+                    gameGrid.appendChild(card);
+                });
+            }
+        }
+
+        renderGames(spillListe);
+
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredGames = spillListe.filter(spill => 
+                spill.tittel.toLowerCase().includes(searchTerm) || 
+                spill.beskrivelse.toLowerCase().includes(searchTerm)
+            );
+            renderGames(filteredGames);
+        });
+
+    </script>
+</body>
+</html>
