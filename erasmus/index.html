@@ -13,6 +13,7 @@
             font-family: 'Roboto', sans-serif;
             overflow: hidden;
             touch-action: manipulation;
+            user-select: none;
         }
 
         .eu-blue { background-color: #003399; }
@@ -44,7 +45,6 @@
             position: absolute;
             cursor: pointer;
             transition: transform 0.1s;
-            user-select: none;
             z-index: 10;
         }
 
@@ -53,7 +53,7 @@
         }
 
         .popup-window {
-            box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+            box-shadow: 6px 6px 0px rgba(0,0,0,0.5);
             animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
@@ -62,9 +62,29 @@
             to { transform: scale(1); opacity: 1; }
         }
 
-        .loading-overlay {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(2px);
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: particleFade 0.8s forwards;
+        }
+
+        @keyframes particleFade {
+            0% { transform: translate(0,0) rotate(0deg); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)); opacity: 0; }
+        }
+
+        .lagging {
+            filter: grayscale(80%) blur(1px);
+            cursor: wait !important;
+        }
+
+        .inverted-mode {
+            filter: invert(1) hue-rotate(180deg);
+        }
+
+        .tilted-mode {
+            transform: rotate(3deg) scale(0.95);
+            transition: transform 0.3s ease;
         }
 
         /* Scanlines for retro PC feel */
@@ -73,78 +93,134 @@
             background-size: 100% 4px;
             pointer-events: none;
         }
+
+        /* Glitch effect text */
+        .glitch-text {
+            animation: glitch 1s infinite;
+        }
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        /* Binders-Bernt Animation */
+        .assistant-anim {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
     </style>
 </head>
 <body class="bg-gray-200 h-screen w-screen relative overflow-hidden text-gray-800">
 
     <!-- Game UI Container -->
-    <div id="game-container" class="h-full w-full flex flex-col relative">
+    <div id="game-container" class="h-full w-full flex flex-col relative transition-all duration-300">
         
         <!-- Header / Status Bar -->
         <div class="bg-blue-800 text-white p-2 flex justify-between items-center shadow-lg z-20 border-b-4 border-yellow-400">
             <div class="flex items-center gap-2">
                 <i class="fas fa-flag-europe text-yellow-400 text-2xl"></i>
                 <div>
-                    <h1 class="font-bold text-sm leading-none">Erasmus+ Portal</h1>
+                    <h1 class="font-bold text-sm leading-none">Erasmus+ Portal v3.0 (Unstable)</h1>
                     <span class="text-xs text-blue-200">Session ID: <span id="oid-display">894102...</span></span>
                 </div>
             </div>
             
             <div class="flex gap-4 items-center">
+                <button id="mute-btn" onclick="toggleMute()" class="text-blue-200 hover:text-white focus:outline-none">
+                    <i id="mute-icon" class="fas fa-volume-up text-lg"></i>
+                </button>
+
                 <div class="text-center">
                     <div class="text-xs uppercase text-blue-300">Søknadskvalitet</div>
-                    <div class="w-32 h-4 bg-gray-700 rounded-full overflow-hidden border border-white">
+                    <div class="w-32 h-4 bg-gray-700 rounded-full overflow-hidden border border-white relative">
                         <div id="progress-bar" class="h-full bg-green-500 w-0 transition-all duration-200"></div>
+                        <!-- Goal marker -->
+                        <div class="absolute top-0 bottom-0 right-0 w-1 bg-white opacity-50"></div>
                     </div>
                     <div id="progress-text" class="text-xs font-bold">0%</div>
                 </div>
 
-                <div class="text-center bg-red-900 px-3 py-1 rounded border border-red-500 animate-pulse">
-                    <div class="text-xs text-red-200 uppercase">FRISTEN GÅR UT OM:</div>
+                <div class="text-center bg-red-900 px-3 py-1 rounded border border-red-500 shadow-inner">
+                    <div class="text-xs text-red-200 uppercase">DEADLINE:</div>
                     <div id="timer" class="text-2xl font-mono font-bold text-red-500">60.00</div>
                 </div>
             </div>
         </div>
 
         <!-- Main Workspace (Play Area) -->
-        <div id="workspace" class="flex-1 relative bg-[#e0e0e0] overflow-hidden">
+        <div id="workspace" class="flex-1 relative bg-[#e0e0e0] overflow-hidden cursor-crosshair">
             <!-- Background Decoration -->
             <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
                 <i class="fas fa-stamp text-9xl"></i>
             </div>
+            
+            <!-- Lag Overlay -->
+            <div id="lag-overlay" class="hidden absolute inset-0 bg-white bg-opacity-50 z-40 flex items-center justify-center cursor-wait">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin text-4xl text-blue-800 mb-2"></i>
+                    <p class="font-bold text-blue-900 bg-white px-2 border border-blue-900 shadow">BUFFERING...</p>
+                </div>
+            </div>
+
+            <!-- Fake Blue Screen Flash -->
+            <div id="bsod-flash" class="hidden absolute inset-0 bg-blue-900 z-50 flex items-center justify-center text-white font-mono p-10">
+                <div>
+                    <h1 class="text-2xl mb-4">:(</h1>
+                    <p>Your PC ran into a problem and needs to restart.</p>
+                    <p class="mt-4 text-sm">0% complete</p>
+                </div>
+            </div>
 
             <!-- Submit Button (Only active at 100%) -->
             <div class="absolute bottom-4 right-4 z-10">
-                <button id="submit-btn" disabled onclick="trySubmit()" class="bg-gray-400 text-gray-600 font-bold py-4 px-8 rounded shadow-inner border-b-4 border-gray-600 text-xl cursor-not-allowed transition-all transform">
-                    <i class="fas fa-paper-plane mr-2"></i> SEND INN SØKNAD
+                <button id="submit-btn" disabled onclick="trySubmit()" class="group relative bg-gray-400 text-gray-600 font-bold py-4 px-8 rounded shadow-inner border-b-4 border-gray-600 text-xl cursor-not-allowed transition-all transform overflow-hidden">
+                    <span class="relative z-10 flex items-center">
+                        <i class="fas fa-paper-plane mr-2 group-hover:translate-x-1 transition-transform"></i> SEND INN
+                    </span>
+                    <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
                 </button>
             </div>
 
             <!-- Hint Text -->
-            <div id="hint-text" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded shadow border border-yellow-400 z-0 text-sm">
-                Fang buzzordene! Unngå feilene!
+            <div id="hint-text" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded shadow border border-yellow-400 z-0 text-sm animate-pulse">
+                Klikk på buzzordene! Lukk feilmeldinger!
             </div>
         </div>
     </div>
 
     <!-- Start Screen -->
     <div id="start-screen" class="absolute inset-0 bg-blue-900 z-50 flex flex-col items-center justify-center text-white p-4">
-        <div class="bg-white text-blue-900 p-8 rounded-lg shadow-2xl max-w-lg w-full text-center border-4 border-yellow-400">
-            <i class="fas fa-star text-yellow-500 text-6xl mb-4"></i>
-            <h1 class="text-3xl font-bold mb-2">Erasmus+ Panikken</h1>
-            <p class="text-gray-600 mb-6">Fristen går ut om 60 sekunder! Serveren krasjer! Har du husket mandatene?</p>
+        <div class="bg-white text-blue-900 p-8 rounded-lg shadow-2xl max-w-lg w-full text-center border-4 border-yellow-400 relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 text-yellow-100 text-9xl opacity-50 transform rotate-12">
+                <i class="fas fa-file-contract"></i>
+            </div>
             
-            <div class="text-left bg-gray-100 p-4 rounded mb-6 text-sm border border-gray-300">
-                <p class="font-bold mb-2">Hvordan spille:</p>
+            <i class="fas fa-star text-yellow-500 text-6xl mb-4 relative z-10"></i>
+            <h1 class="text-3xl font-bold mb-2 relative z-10">Erasmus+ Panikken</h1>
+            <p class="text-gray-600 mb-6 relative z-10">Klokka er 11:59. Serveren er overbelastet. Binders-Bernt er plagsom.</p>
+            
+            <div class="text-left bg-gray-100 p-4 rounded mb-6 text-sm border border-gray-300 relative z-10 shadow-inner">
+                <p class="font-bold mb-2">Instruksjoner:</p>
                 <ul class="list-disc pl-5 space-y-1">
-                    <li><span class="text-green-600 font-bold">KLIKK</span> på Buzzord (f.eks. "Synergi", "Bærekraft") for å fylle søknaden.</li>
-                    <li><span class="text-red-600 font-bold">UNNGÅ</span> Tabber (f.eks. "Skrivefeil", "Glemte vedlegg").</li>
-                    <li><span class="text-blue-600 font-bold">LUKK</span> Feilmeldinger (Popups) raskt!</li>
-                    <li>Trykk <span class="font-bold bg-green-500 text-white px-1 rounded">SEND INN</span> når søknaden er 100%.</li>
+                    <li><span class="text-green-600 font-bold">FANG:</span> Buzzord (f.eks. "Synergi")</li>
+                    <li><span class="text-red-600 font-bold">UNNGÅ:</span> Tabber (f.eks. "Ferie")</li>
+                    <li><span class="text-blue-600 font-bold">LUKK:</span> Feilmeldinger!</li>
+                    <li><span class="text-purple-600 font-bold">NYHET:</span> Ignorer Binders-Bernt. Han mener det godt, men...</li>
                 </ul>
+                <div class="mt-4 text-center text-xs text-gray-500">
+                    <i class="fas fa-music"></i> Inneholder panikkskapende musikk
+                </div>
             </div>
 
-            <button onclick="startGame()" class="bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold py-3 px-8 rounded-full text-xl shadow-lg transform transition hover:scale-105">
+            <button onclick="startGame()" class="relative z-10 bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-black py-4 px-10 rounded-full text-xl shadow-lg transform transition hover:scale-105 active:scale-95 border-b-4 border-yellow-600">
                 START SØKNADSPROSESSEN
             </button>
         </div>
@@ -155,9 +231,13 @@
         <div class="bg-white p-8 rounded shadow-2xl max-w-md w-full text-center border-t-8 border-red-500">
             <h2 id="end-title" class="text-3xl font-bold mb-2">SØKNAD AVVIST</h2>
             <div id="end-icon" class="text-6xl my-4">😞</div>
-            <p id="end-reason" class="text-lg text-gray-700 mb-6">Fristen gikk ut mens du drakk kaffe.</p>
-            <p class="text-sm text-gray-500 mb-6 pixel-font">Score: <span id="final-score">0</span>% completed</p>
-            <button onclick="location.reload()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700">
+            <p id="end-reason" class="text-lg text-gray-700 mb-6 font-medium">Fristen gikk ut mens du drakk kaffe.</p>
+            <div class="bg-gray-100 p-4 rounded mb-6 text-left font-mono text-sm border border-gray-300">
+                <div>Status: <span id="final-status" class="font-bold">FAILED</span></div>
+                <div>Score: <span id="final-score">0</span>% completed</div>
+                <div>Server Load: 104% (Fire hazard)</div>
+            </div>
+            <button onclick="location.reload()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded hover:bg-blue-700 shadow-lg transform transition active:translate-y-1">
                 PRØV NESTE DEADLINE
             </button>
         </div>
@@ -167,19 +247,199 @@
     <div class="absolute inset-0 pointer-events-none scanlines z-40"></div>
 
     <script>
-        // Game State
+        // --- AUDIO ENGINE ---
+        const audioEngine = {
+            ctx: null,
+            isPlaying: false,
+            muted: false,
+            tempo: 110,
+            nextNoteTime: 0,
+            timerID: null,
+            sequence: [110, 110, 220, 110, 165, 110, 220, 110], // Base frequencies
+            noteIndex: 0,
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+
+            playMusic() {
+                if (this.isPlaying || this.muted) return;
+                this.isPlaying = true;
+                this.nextNoteTime = this.ctx.currentTime;
+                this.scheduler();
+            },
+
+            stopMusic() {
+                this.isPlaying = false;
+                clearTimeout(this.timerID);
+            },
+
+            setTempo(newTempo) {
+                this.tempo = newTempo;
+            },
+
+            toggleMute() {
+                this.muted = !this.muted;
+                const icon = document.getElementById('mute-icon');
+                if (this.muted) {
+                    this.stopMusic();
+                    icon.classList.remove('fa-volume-up');
+                    icon.classList.add('fa-volume-mute');
+                } else {
+                    if (state.isRunning) this.playMusic();
+                    icon.classList.remove('fa-volume-mute');
+                    icon.classList.add('fa-volume-up');
+                }
+            },
+
+            scheduler() {
+                if (!this.isPlaying) return;
+                // Schedule notes ahead
+                while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
+                    this.playNote(this.nextNoteTime);
+                    // 16th notes
+                    const secondsPerBeat = 60.0 / this.tempo;
+                    this.nextNoteTime += 0.25 * secondsPerBeat;
+                }
+                this.timerID = setTimeout(() => this.scheduler(), 25);
+            },
+
+            playNote(time) {
+                if (this.muted) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                // Alternating sequence
+                const freq = this.sequence[this.noteIndex % this.sequence.length];
+                // Pitch shift up as tempo increases for more panic
+                const pitchShift = Math.max(0, (this.tempo - 110) * 0.5);
+
+                osc.frequency.value = freq + pitchShift;
+                osc.type = 'square'; // Arcade sound
+
+                // Envelope
+                gain.gain.setValueAtTime(0.03, time);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+
+                osc.start(time);
+                osc.stop(time + 0.1);
+
+                this.noteIndex++;
+            },
+
+            // SFX Functions
+            playSFX(type) {
+                if (this.muted || !this.ctx) return;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                const now = this.ctx.currentTime;
+
+                if (type === 'good') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.exponentialRampToValueAtTime(1760, now + 0.1);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } 
+                else if (type === 'bad') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+                else if (type === 'popup') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(400, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                    
+                    const osc2 = this.ctx.createOscillator();
+                    const gain2 = this.ctx.createGain();
+                    osc2.connect(gain2);
+                    gain2.connect(this.ctx.destination);
+                    osc2.type = 'square';
+                    osc2.frequency.setValueAtTime(200, now);
+                    gain2.gain.setValueAtTime(0.05, now);
+                    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc2.start(now);
+                    osc2.stop(now + 0.3);
+                }
+                else if (type === 'glitch') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(Math.random()*1000, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                }
+                else if (type === 'assistant') {
+                    // Funny high pitched noise
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.linearRampToValueAtTime(1200, now + 0.1);
+                    osc.frequency.linearRampToValueAtTime(800, now + 0.2);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                }
+                else if (type === 'win') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G
+                    osc.frequency.setValueAtTime(1046.50, now + 0.3); // High C
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.8);
+                    osc.start(now);
+                    osc.stop(now + 0.8);
+                }
+                else if (type === 'lose') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(50, now + 1.0);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 1.0);
+                    osc.start(now);
+                    osc.stop(now + 1.0);
+                }
+            }
+        };
+
+        // --- GAME LOGIC ---
+
         let state = {
             isRunning: false,
-            score: 0, // 0 to 100
+            isLagging: false,
+            score: 0,
             timeLeft: 60,
-            stress: 0,
             gameLoop: null,
             spawnLoop: null,
             popupLoop: null,
+            lagLoop: null,
+            chaosLoop: null,
             difficultyMultiplier: 1
         };
 
-        // Constants
         const BUZZWORDS = [
             { text: "Synergi", color: "bg-blue-100 border-blue-500 text-blue-800", points: 5, icon: "fa-link" },
             { text: "Bærekraft", color: "bg-green-100 border-green-500 text-green-800", points: 5, icon: "fa-leaf" },
@@ -188,7 +448,9 @@
             { text: "Mobilitet", color: "bg-indigo-100 border-indigo-500 text-indigo-800", points: 4, icon: "fa-plane" },
             { text: "Digitalisering", color: "bg-cyan-100 border-cyan-500 text-cyan-800", points: 5, icon: "fa-laptop" },
             { text: "Transnasjonal", color: "bg-blue-200 border-blue-600 text-blue-900", points: 8, icon: "fa-globe-europe" },
-            { text: "Disseminering", color: "bg-pink-100 border-pink-500 text-pink-800", points: 10, icon: "fa-bullhorn" }
+            { text: "Disseminering", color: "bg-pink-100 border-pink-500 text-pink-800", points: 10, icon: "fa-bullhorn" },
+            { text: "AI-drevet", color: "bg-teal-100 border-teal-500 text-teal-800", points: 9, icon: "fa-robot" },
+            { text: "Grønt Skifte", color: "bg-green-200 border-green-600 text-green-900", points: 6, icon: "fa-seedling" }
         ];
 
         const BAD_WORDS = [
@@ -196,15 +458,39 @@
             { text: "Glemt Pass", color: "bg-red-100 border-red-500 text-red-800", damage: 15, icon: "fa-passport" },
             { text: "Ingen Mandat", color: "bg-gray-300 border-gray-600 text-gray-800", damage: 20, icon: "fa-file-signature" },
             { text: "Ugyldig OID", color: "bg-orange-100 border-orange-500 text-orange-800", damage: 10, icon: "fa-id-card" },
-            { text: "Google Translate", color: "bg-red-50 border-red-400 text-red-900", damage: 12, icon: "fa-language" }
+            { text: "Google Translate", color: "bg-red-50 border-red-400 text-red-900", damage: 12, icon: "fa-language" },
+            { text: "Budsjettkutt", color: "bg-red-200 border-red-600 text-red-900", damage: 25, icon: "fa-scissors" },
+            { text: "Comic Sans", color: "bg-pink-200 border-pink-500 text-pink-900", damage: 8, icon: "fa-font" }
         ];
 
         const POPUP_MESSAGES = [
-            "Connection Lost: Reconnecting...",
-            "Session Expired: Log in again",
-            "Error 503: Gateway Timeout",
-            "Vennligst oppdater din OID",
-            "Mangler vedlegg: CV_Project_Lead.pdf"
+            { title: "Network Error", msg: "Mistet kontakten med Brussel. Kobler til...", icon: "fa-wifi" },
+            { title: "Session Expired", msg: "Du har vært inaktiv i 3 sekunder. Logg inn på nytt.", icon: "fa-clock" },
+            { title: "System Error 503", msg: "Serveren er ute til lunsj.", icon: "fa-server" },
+            { title: "Mangler Vedlegg", msg: "Filen 'Budsjett_Final_v2_FINAL(1).xlsx' er korrupt.", icon: "fa-file-excel" },
+            { title: "Partner Update", msg: "Din spanske partner har dratt på ferie.", icon: "fa-umbrella-beach" },
+            { title: "Validering", msg: "Vennligst bekreft at du ikke er en robot.", icon: "fa-robot" }
+        ];
+
+        const ASSISTANT_QUOTES = [
+            "Ser ut som du prøver å skrive en søknad. Trenger du hjelp med å prokrastinere?",
+            "Jeg slettet nettopp side 42 for deg. Ingen årsak!",
+            "Er du sikker på at du vil bruke det ordet? Veldig modig.",
+            "Det er bare 400 sider igjen av programguiden.",
+            "Har du husket å ta 3 kaffepauser?",
+            "Jeg lagret ikke. Ops.",
+            "Rektor ringer. Skal jeg legge på?",
+            "Dette ser dyrt ut."
+        ];
+
+        const LOSE_REASONS = [
+            "Du glemte å krysse av for 'Honour Declaration'.",
+            "PDF-filen var 1MB for stor.",
+            "Serveren krasjet kl 11:59:59.",
+            "Du brukte feil OID-nummer.",
+            "Strømmen gikk på kontoret.",
+            "Du kom i skade for å laste opp handlelisten din i stedet for CV.",
+            "EU-kommisjonen likte ikke fontvalget ditt."
         ];
 
         // Elements
@@ -213,52 +499,161 @@
         const progressText = document.getElementById('progress-text');
         const timerDisplay = document.getElementById('timer');
         const submitBtn = document.getElementById('submit-btn');
+        const lagOverlay = document.getElementById('lag-overlay');
+        const gameContainer = document.getElementById('game-container');
+
+        function toggleMute() {
+            audioEngine.toggleMute();
+        }
 
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
+            audioEngine.init();
+            audioEngine.playMusic();
+            
             state.isRunning = true;
+            state.isLagging = false;
             state.timeLeft = 60;
             state.score = 0;
             updateUI();
 
-            // Start Loops
+            document.querySelectorAll('.falling-item, .popup-window, .particle, .assistant-bubble').forEach(el => el.remove());
+
             state.gameLoop = setInterval(gameTick, 100);
             state.spawnLoop = setInterval(spawnItem, 800);
-            state.popupLoop = setInterval(trySpawnPopup, 3000);
+            state.popupLoop = setInterval(trySpawnPopup, 3500);
+            state.lagLoop = setInterval(tryTriggerLag, 5000);
+            state.chaosLoop = setInterval(tryChaosEvent, 7000); // New chaos loop
         }
 
         function gameTick() {
             if (!state.isRunning) return;
+            
+            if (state.isLagging) {
+                if(Math.random() > 0.8) audioEngine.playSFX('glitch');
+                return;
+            }
 
-            // Timer Logic
             state.timeLeft -= 0.1;
             timerDisplay.textContent = state.timeLeft.toFixed(2);
             
-            // Panic Mode: Screen shakes when time is low
             if (state.timeLeft < 15) {
                 document.body.classList.add('shake-screen');
-                timerDisplay.classList.add('text-4xl'); // Grow timer
+                timerDisplay.classList.add('text-4xl', 'glitch-text');
+                timerDisplay.classList.remove('text-red-500');
+                timerDisplay.classList.add('text-red-600');
+                audioEngine.setTempo(250); 
+            } else if (state.timeLeft < 30) {
+                audioEngine.setTempo(180); 
+                state.difficultyMultiplier = 1.3;
+            } else {
+                audioEngine.setTempo(110); 
             }
 
-            // Difficulty ramping
-            if (state.timeLeft < 30) state.difficultyMultiplier = 1.5;
-            if (state.timeLeft < 10) state.difficultyMultiplier = 2.5;
+            if (state.timeLeft < 10) state.difficultyMultiplier = 2.0;
 
-            // Lose Condition
             if (state.timeLeft <= 0) {
-                endGame(false, "FRISTEN UTLØP! EU-serveren stengte dørene rett foran nesen på deg.");
+                const randomReason = LOSE_REASONS[Math.floor(Math.random() * LOSE_REASONS.length)];
+                endGame(false, randomReason);
+            }
+        }
+
+        // New: Chaos Events (Binders-Bernt & Visual Glitches)
+        function tryChaosEvent() {
+            if (!state.isRunning || state.isLagging) return;
+            const roll = Math.random();
+
+            if (roll < 0.3) {
+                spawnAssistant();
+            } else if (roll < 0.45) {
+                triggerInvert();
+            } else if (roll < 0.6) {
+                triggerTilt();
+            } else if (roll < 0.65) {
+                triggerBSOD(); // Rare
+            }
+        }
+
+        function spawnAssistant() {
+            const quote = ASSISTANT_QUOTES[Math.floor(Math.random() * ASSISTANT_QUOTES.length)];
+            const el = document.createElement('div');
+            el.className = 'assistant-bubble absolute z-50 flex flex-col items-center assistant-anim';
+            
+            const x = Math.random() * (workspace.clientWidth - 200);
+            const y = Math.random() * (workspace.clientHeight - 200);
+            
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+
+            el.innerHTML = `
+                <div class="bg-yellow-100 border-2 border-black p-2 rounded-lg shadow-lg mb-2 text-xs font-bold w-40 text-center relative bubble-text">
+                    ${quote}
+                    <div class="absolute -bottom-2 left-1/2 w-3 h-3 bg-yellow-100 border-r-2 border-b-2 border-black transform rotate-45 -translate-x-1/2"></div>
+                </div>
+                <div class="text-4xl text-gray-600 cursor-pointer hover:scale-110 transition-transform" onclick="this.parentElement.remove()">
+                    <i class="fas fa-paperclip"></i>
+                    <div class="absolute top-2 left-2 bg-white rounded-full w-2 h-2 border border-black"></div>
+                    <div class="absolute top-2 right-2 bg-white rounded-full w-2 h-2 border border-black"></div>
+                </div>
+            `;
+
+            workspace.appendChild(el);
+            audioEngine.playSFX('assistant');
+
+            setTimeout(() => { if(el.parentElement) el.remove(); }, 5000);
+        }
+
+        function triggerInvert() {
+            document.body.classList.add('inverted-mode');
+            audioEngine.playSFX('glitch');
+            setTimeout(() => document.body.classList.remove('inverted-mode'), 2000);
+        }
+
+        function triggerTilt() {
+            gameContainer.classList.add('tilted-mode');
+            audioEngine.playSFX('glitch');
+            setTimeout(() => gameContainer.classList.remove('tilted-mode'), 3000);
+        }
+
+        function triggerBSOD() {
+            const bsod = document.getElementById('bsod-flash');
+            bsod.classList.remove('hidden');
+            audioEngine.stopMusic();
+            audioEngine.playSFX('lose'); // reusing lose sound for drama
+            setTimeout(() => {
+                bsod.classList.add('hidden');
+                if (state.isRunning) audioEngine.playMusic();
+            }, 800); // Quick flash
+        }
+
+        function tryTriggerLag() {
+            if (!state.isRunning || state.isLagging || state.timeLeft < 5) return;
+            
+            if (Math.random() < 0.15) {
+                state.isLagging = true;
+                lagOverlay.classList.remove('hidden');
+                workspace.classList.add('lagging');
+                audioEngine.stopMusic(); 
+                audioEngine.playSFX('glitch');
+                
+                const duration = 1500 + Math.random() * 1500;
+                
+                setTimeout(() => {
+                    state.isLagging = false;
+                    lagOverlay.classList.add('hidden');
+                    workspace.classList.remove('lagging');
+                    if (state.isRunning) audioEngine.playMusic();
+                }, duration);
             }
         }
 
         function updateUI() {
-            // Cap score
             if (state.score < 0) state.score = 0;
             if (state.score > 100) state.score = 100;
 
             progressBar.style.width = `${state.score}%`;
             progressText.textContent = `${state.score}%`;
 
-            // Enable submit button
             if (state.score >= 100) {
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('bg-gray-400', 'text-gray-600', 'cursor-not-allowed', 'border-gray-600');
@@ -270,33 +665,57 @@
             }
         }
 
+        function createExplosion(x, y, colorClass) {
+            const colors = ['#FFD700', '#FF4500', '#00BFFF', '#32CD32', '#FF69B4'];
+            for (let i = 0; i < 8; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle fixed w-2 h-2 rounded-full z-50';
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.left = x;
+                p.style.top = y;
+                
+                const tx = (Math.random() - 0.5) * 100 + 'px';
+                const ty = (Math.random() - 0.5) * 100 + 'px';
+                const rot = Math.random() * 360 + 'deg';
+                
+                p.style.setProperty('--tx', tx);
+                p.style.setProperty('--ty', ty);
+                p.style.setProperty('--rot', rot);
+                
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 800);
+            }
+        }
+
         function spawnItem() {
-            if (!state.isRunning) return;
+            if (!state.isRunning || state.isLagging) return;
             
-            // Chance to spawn good or bad item
-            const isBad = Math.random() < 0.3; // 30% chance of bad item
+            const isBad = Math.random() < 0.35;
             const itemData = isBad 
                 ? BAD_WORDS[Math.floor(Math.random() * BAD_WORDS.length)]
                 : BUZZWORDS[Math.floor(Math.random() * BUZZWORDS.length)];
 
             const el = document.createElement('div');
-            el.className = `falling-item absolute px-4 py-2 rounded-lg shadow-md border-2 font-bold flex items-center gap-2 ${itemData.color}`;
+            el.className = `falling-item absolute px-4 py-2 rounded-lg shadow-md border-2 font-bold flex items-center gap-2 ${itemData.color} hover:brightness-110 active:scale-95`;
             el.innerHTML = `<i class="fas ${itemData.icon}"></i> ${itemData.text}`;
             
-            // Random Position
-            const maxLeft = workspace.clientWidth - 150;
-            el.style.left = `${Math.random() * maxLeft}px`;
-            el.style.top = '-50px';
+            const maxLeft = workspace.clientWidth - 180;
+            const startLeft = Math.random() * maxLeft;
+            el.style.left = `${startLeft}px`;
+            el.style.top = '-60px';
 
-            // Click Handler
-            el.onmousedown = () => {
+            el.onmousedown = (e) => {
+                if(state.isLagging) return;
+
+                createExplosion(e.clientX + 'px', e.clientY + 'px');
+                
                 if (isBad) {
                     state.score -= itemData.damage;
-                    playSound('error');
+                    audioEngine.playSFX('bad');
                     showFloatingText(el.style.left, el.style.top, `-${itemData.damage}%`, 'text-red-600');
                 } else {
                     state.score += itemData.points;
-                    playSound('pop');
+                    audioEngine.playSFX('good');
                     showFloatingText(el.style.left, el.style.top, `+${itemData.points}%`, 'text-green-600');
                 }
                 updateUI();
@@ -305,19 +724,25 @@
 
             workspace.appendChild(el);
 
-            // Animation (Fall down)
-            let pos = -50;
-            const speed = (2 + Math.random() * 3) * state.difficultyMultiplier; // Speed increases with difficulty
+            let pos = -60;
+            let drift = (Math.random() - 0.5) * 1; 
+            const speed = (2.5 + Math.random() * 2) * state.difficultyMultiplier;
             
             const anim = setInterval(() => {
                 if (!state.isRunning) {
                     clearInterval(anim);
                     return;
                 }
-                pos += speed;
-                el.style.top = `${pos}px`;
+                if (state.isLagging) return;
 
-                // Remove if out of bounds
+                pos += speed;
+                let currentLeft = parseFloat(el.style.left);
+                
+                if(currentLeft <= 0 || currentLeft >= maxLeft) drift *= -1;
+                
+                el.style.top = `${pos}px`;
+                el.style.left = `${currentLeft + drift}px`;
+
                 if (pos > workspace.clientHeight) {
                     el.remove();
                     clearInterval(anim);
@@ -326,48 +751,47 @@
         }
 
         function trySpawnPopup() {
-            if (!state.isRunning) return;
-            // 40% chance to spawn a popup every cycle
-            if (Math.random() > 0.4) return;
+            if (!state.isRunning || state.isLagging) return;
+            if (Math.random() > 0.5) return;
 
-            const id = Date.now();
+            audioEngine.playSFX('popup');
+
             const popup = document.createElement('div');
-            popup.className = 'popup-window absolute bg-gray-100 border-2 border-blue-800 w-64 p-1 z-30 select-none';
+            popup.className = 'popup-window absolute bg-gray-100 border-2 border-blue-800 w-72 p-1 z-30 select-none shadow-2xl';
             
-            // Random position in center area
-            const rX = 50 + Math.random() * (workspace.clientWidth - 300);
-            const rY = 50 + Math.random() * (workspace.clientHeight - 200);
+            const rX = 20 + Math.random() * (workspace.clientWidth - 300);
+            const rY = 20 + Math.random() * (workspace.clientHeight - 250);
             
             popup.style.left = `${rX}px`;
             popup.style.top = `${rY}px`;
 
-            const msg = POPUP_MESSAGES[Math.floor(Math.random() * POPUP_MESSAGES.length)];
+            const data = POPUP_MESSAGES[Math.floor(Math.random() * POPUP_MESSAGES.length)];
 
             popup.innerHTML = `
-                <div class="bg-blue-800 text-white text-xs px-2 py-1 flex justify-between items-center cursor-move">
-                    <span>System Error</span>
-                    <button class="hover:bg-red-500 px-1" onclick="this.closest('.popup-window').remove()">X</button>
+                <div class="bg-blue-800 text-white text-xs px-2 py-1 flex justify-between items-center">
+                    <span class="font-bold truncate">${data.title}</span>
+                    <button class="hover:bg-red-500 px-2 rounded-sm" onclick="this.closest('.popup-window').remove()">X</button>
                 </div>
-                <div class="p-4 flex flex-col items-center text-center">
-                    <i class="fas fa-exclamation-triangle text-yellow-500 text-3xl mb-2"></i>
-                    <p class="text-sm font-bold mb-4">${msg}</p>
-                    <button onclick="this.closest('.popup-window').remove()" class="bg-gray-300 border border-black px-4 py-1 text-sm shadow active:bg-gray-400">OK</button>
+                <div class="p-4 flex flex-col items-center text-center bg-gray-50">
+                    <i class="fas ${data.icon} text-red-500 text-3xl mb-3"></i>
+                    <p class="text-sm font-medium mb-4 text-gray-700">${data.msg}</p>
+                    <button onclick="this.closest('.popup-window').remove()" class="bg-gray-200 hover:bg-gray-300 border border-black px-6 py-1 text-sm shadow active:translate-y-1">
+                        OK
+                    </button>
                 </div>
             `;
 
             workspace.appendChild(popup);
-            playSound('alert');
         }
 
         function showFloatingText(x, y, text, colorClass) {
             const float = document.createElement('div');
-            float.className = `absolute text-xl font-black ${colorClass} z-20 pointer-events-none`;
+            float.className = `absolute text-2xl font-black ${colorClass} z-20 pointer-events-none drop-shadow-md`;
             float.style.left = x;
             float.style.top = y;
             float.innerText = text;
             workspace.appendChild(float);
 
-            // Animate up and fade
             let op = 1;
             let topVal = parseInt(y);
             const anim = setInterval(() => {
@@ -379,50 +803,70 @@
                     clearInterval(anim);
                     float.remove();
                 }
-            }, 50);
+            }, 40);
         }
 
         function trySubmit() {
             if (!state.isRunning) return;
             if (state.score < 100) return;
 
+            if(Math.random() > 0.3 && state.timeLeft > 5) {
+                const btn = document.getElementById('submit-btn');
+                btn.style.transform = `translate(${Math.random()*50 - 25}px, ${Math.random()*50 - 25}px)`;
+                setTimeout(() => btn.style.transform = 'translate(0,0)', 300);
+                audioEngine.playSFX('glitch');
+                return; 
+            }
+
             state.isRunning = false;
+            audioEngine.stopMusic();
+            
             clearInterval(state.gameLoop);
             clearInterval(state.spawnLoop);
             clearInterval(state.popupLoop);
+            clearInterval(state.lagLoop);
+            clearInterval(state.chaosLoop);
             document.body.classList.remove('shake-screen');
+            document.body.classList.remove('inverted-mode');
+            gameContainer.classList.remove('tilted-mode');
 
-            // Fake loading simulation
             const btn = document.getElementById('submit-btn');
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> SENDER INN...';
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> VALIDERER...';
+            btn.classList.remove('animate-bounce');
             
-            // 50% chance of "Server Error" fakeout before success
             setTimeout(() => {
-                if (Math.random() > 0.5) {
-                    // Success
-                    endGame(true, "GRATULERER! Søknaden er sendt inn 2 sekunder før fristen. Du kan nå sove.");
+                if (Math.random() > 0.4) {
+                    audioEngine.playSFX('win');
+                    endGame(true, "GRATULERER! Søknaden ble levert med 2 sekunder margin. Du får nå 2 års pause.");
                 } else {
-                    // Fakeout delay then success
-                    btn.innerHTML = '<i class="fas fa-exclamation-circle text-red-500"></i> SERVER ERROR...';
+                    btn.innerHTML = '<i class="fas fa-exclamation-triangle text-yellow-300"></i> FEIL I SKJEMA...';
+                    audioEngine.playSFX('popup');
                     setTimeout(() => {
-                        btn.innerHTML = '<i class="fas fa-check"></i> SENDT (Backup)';
-                        endGame(true, "PUH! Serveren krasjet, men backup-systemet reddet deg. Søknaden er levert!");
-                    }, 2000);
+                        btn.innerHTML = '<i class="fas fa-check"></i> TVANGSSENDT';
+                        audioEngine.playSFX('win');
+                        endGame(true, "PUH! Systemet nektet først, men vi hacket det til. Du er reddet!");
+                    }, 2500);
                 }
             }, 1500);
         }
 
         function endGame(won, message) {
             state.isRunning = false;
+            audioEngine.stopMusic();
             clearInterval(state.gameLoop);
             clearInterval(state.spawnLoop);
             clearInterval(state.popupLoop);
+            clearInterval(state.lagLoop);
+            clearInterval(state.chaosLoop);
             document.body.classList.remove('shake-screen');
+            document.body.classList.remove('inverted-mode');
+            gameContainer.classList.remove('tilted-mode');
 
             const screen = document.getElementById('game-over-screen');
             const title = document.getElementById('end-title');
             const reason = document.getElementById('end-reason');
             const icon = document.getElementById('end-icon');
+            const status = document.getElementById('final-status');
             
             screen.classList.remove('hidden');
             document.getElementById('final-score').innerText = Math.floor(state.score);
@@ -430,34 +874,34 @@
             if (won) {
                 screen.querySelector('.bg-white').classList.remove('border-red-500');
                 screen.querySelector('.bg-white').classList.add('border-green-500');
-                title.innerText = "SØKNAD GODKJENT!";
+                title.innerText = "SØKNAD LEVERT!";
                 title.classList.add('text-green-600');
-                icon.innerHTML = '<i class="fas fa-champagne-glasses text-yellow-500"></i>';
+                title.classList.remove('text-red-600');
+                icon.innerHTML = '<i class="fas fa-check-circle text-green-500"></i>';
                 reason.innerText = message;
+                status.innerText = "ACCEPTED";
+                status.classList.add('text-green-600');
             } else {
+                audioEngine.playSFX('lose');
                 screen.querySelector('.bg-white').classList.add('border-red-500');
                 screen.querySelector('.bg-white').classList.remove('border-green-500');
-                title.innerText = "SØKNAD AVVIST";
+                title.innerText = "DEADLINE MISSED";
                 title.classList.remove('text-green-600');
                 title.classList.add('text-red-600');
-                icon.innerHTML = '😭';
+                icon.innerHTML = '💀';
                 reason.innerText = message;
+                status.innerText = "REJECTED";
+                status.classList.add('text-red-600');
             }
         }
 
-        // Minimal sound effects using AudioContext would be better, but keeping it file-simple without assets.
-        // Simulated visual feedback acts as sound substitute here.
-        function playSound(type) {
-            // Placeholder for real sound implementation
-        }
-
-        // OID Scramble effect
         setInterval(() => {
             const oid = document.getElementById('oid-display');
-            if(Math.random() > 0.8) {
-                oid.innerText = "E" + Math.floor(10000000 + Math.random() * 90000000);
+            if(Math.random() > 0.9) {
+                const parts = ["E10", "NO", "ERR", "NULL"];
+                oid.innerText = parts[Math.floor(Math.random()*parts.length)] + Math.floor(100000 + Math.random() * 900000);
             }
-        }, 2000);
+        }, 1000);
 
     </script>
 </body>
