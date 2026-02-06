@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Updated viewport for mobile games: prevents zooming -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Erasmus+ Panic: Deadline Day</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,11 +12,10 @@
         body {
             font-family: 'Roboto', sans-serif;
             overflow: hidden;
-            /* Prevents pull-to-refresh and other browser gestures */
             overscroll-behavior: none; 
             touch-action: none;
             user-select: none;
-            -webkit-user-select: none; /* Safari specific */
+            -webkit-user-select: none;
         }
 
         .eu-blue { background-color: #003399; }
@@ -25,7 +23,6 @@
         
         .pixel-font { font-family: 'Courier Prime', monospace; }
 
-        /* Animations */
         @keyframes shake {
             0% { transform: translate(1px, 1px) rotate(0deg); }
             10% { transform: translate(-1px, -2px) rotate(-1deg); }
@@ -50,7 +47,6 @@
             cursor: pointer;
             transition: transform 0.1s;
             z-index: 10;
-            /* Better touch targets */
             padding: 12px 16px; 
             touch-action: none;
         }
@@ -62,7 +58,6 @@
         .popup-window {
             box-shadow: 6px 6px 0px rgba(0,0,0,0.5);
             animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            /* Ensure popups are easily tappable */
             touch-action: none;
         }
 
@@ -96,14 +91,12 @@
             transition: transform 0.3s ease;
         }
 
-        /* Scanlines for retro PC feel */
         .scanlines {
             background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
             background-size: 100% 4px;
             pointer-events: none;
         }
 
-        /* Glitch effect text */
         .glitch-text {
             animation: glitch 1s infinite;
         }
@@ -116,7 +109,6 @@
             100% { transform: translate(0); }
         }
 
-        /* Binders-Bernt Animation */
         .assistant-anim {
             animation: float 3s ease-in-out infinite;
         }
@@ -126,9 +118,20 @@
             100% { transform: translateY(0px); }
         }
 
-        /* Mobile specific safe area spacing */
         .safe-area-bottom {
             padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        .stress-vignette {
+            background: radial-gradient(circle, transparent 50%, rgba(255, 0, 0, 0.0) 100%);
+            transition: background 0.5s ease;
+            pointer-events: none;
+        }
+        
+        .frozen-timer {
+            color: #3b82f6 !important;
+            text-shadow: 0 0 10px #60a5fa;
+            animation: pulse 1s infinite;
         }
     </style>
 </head>
@@ -137,6 +140,9 @@
     <!-- Game UI Container -->
     <div id="game-container" class="h-full w-full flex flex-col relative transition-all duration-300">
         
+        <!-- Stress Vignette Overlay -->
+        <div id="stress-vignette" class="stress-vignette absolute inset-0 z-30"></div>
+
         <!-- Header / Status Bar -->
         <div class="bg-blue-800 text-white p-2 flex justify-between items-center shadow-lg z-20 border-b-4 border-yellow-400">
             <div class="flex items-center gap-2">
@@ -162,7 +168,10 @@
                         <div id="progress-bar" class="h-full bg-green-500 w-0 transition-all duration-200"></div>
                         <div class="absolute top-0 bottom-0 right-0 w-1 bg-white opacity-50"></div>
                     </div>
-                    <div id="progress-text" class="text-xs font-bold">0%</div>
+                    <div class="flex justify-between w-32 px-1">
+                        <span id="progress-text" class="text-xs font-bold">0%</span>
+                        <span id="combo-display" class="text-xs font-bold text-yellow-400 opacity-0 transition-opacity">x1</span>
+                    </div>
                 </div>
 
                 <!-- Mobile optimized condensed view for small screens -->
@@ -170,11 +179,12 @@
                     <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden border border-white relative mb-1">
                         <div id="progress-bar-mobile" class="h-full bg-green-500 w-0 transition-all duration-200"></div>
                     </div>
+                    <span id="combo-display-mobile" class="text-[10px] font-bold text-yellow-400 opacity-0">x1</span>
                 </div>
 
                 <div class="text-center bg-red-900 px-2 py-1 rounded border border-red-500 shadow-inner min-w-[60px]">
                     <div id="ui-deadline" class="text-[10px] text-red-200 uppercase sm:block hidden">DEADLINE:</div>
-                    <div id="timer" class="text-lg sm:text-2xl font-mono font-bold text-red-500">60.00</div>
+                    <div id="timer" class="text-lg sm:text-2xl font-mono font-bold text-red-500 transition-colors">60.00</div>
                 </div>
             </div>
         </div>
@@ -210,11 +220,12 @@
                 </a>
             </div>
 
-            <!-- Submit Button (Only active at 100%) - Adjusted for mobile safe area -->
+            <!-- Submit Button -->
             <div class="absolute bottom-4 right-4 z-10 safe-area-bottom">
                 <button id="submit-btn" disabled onclick="trySubmit()" class="group relative bg-gray-400 text-gray-600 font-bold py-3 px-6 sm:py-4 sm:px-8 rounded shadow-inner border-b-4 border-gray-600 text-lg sm:text-xl cursor-not-allowed transition-all transform overflow-hidden touch-manipulation">
                     <span class="relative z-10 flex items-center">
-                        <i class="fas fa-paper-plane mr-2 group-hover:translate-x-1 transition-transform"></i> <span id="ui-submit-btn">SUBMIT</span>
+                        <i id="btn-icon" class="fas fa-paper-plane mr-2 group-hover:translate-x-1 transition-transform"></i> 
+                        <span id="ui-submit-btn">SUBMIT</span>
                     </span>
                     <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
                 </button>
@@ -302,6 +313,7 @@
                 appQuality: "Application Quality",
                 deadline: "DEADLINE:",
                 submit: "SUBMIT",
+                closeErrors: "CLOSE ERRORS!",
                 hint: "Tap buzzwords! Close errors!",
                 
                 startTitle: "Erasmus+ Panic",
@@ -310,13 +322,12 @@
                 instructions: [
                     "<span class='text-green-600 font-bold'>TAP:</span> Buzzwords (e.g. 'Synergy')",
                     "<span class='text-red-600 font-bold'>AVOID:</span> Mistakes (e.g. 'Holiday')",
-                    "<span class='text-blue-600 font-bold'>CLOSE:</span> Error popups!",
-                    "<span class='text-purple-600 font-bold'>NEW:</span> Ignore Paperclip-Paul. He means well..."
+                    "<span class='text-blue-600 font-bold'>CLOSE:</span> Error popups before submitting!",
+                    "<span class='text-orange-500 font-bold'>GRAB:</span> Coffee to freeze time!",
+                    "<span class='text-purple-600 font-bold'>NEW:</span> Ignore Paperclip-Paul..."
                 ],
                 audioWarn: "Contains panic-inducing music",
                 startBtn: "START APPLICATION PROCESS",
-
-                // Footer / Credits
                 poweredBy: "Powered by Unge Vil",
                 parody: "Intended as a fun parody",
                 
@@ -331,6 +342,8 @@
                 statusFailed: "FAILED",
                 statusAccepted: "ACCEPTED",
                 retryBtn: "TRY NEXT DEADLINE",
+                
+                coffeeText: "COFFEE BREAK!",
 
                 buzzwords: [
                     { text: "Synergy", color: "bg-blue-100 border-blue-500 text-blue-800", points: 5, icon: "fa-link" },
@@ -386,6 +399,7 @@
                 appQuality: "Søknadskvalitet",
                 deadline: "FRIST:",
                 submit: "SEND INN",
+                closeErrors: "LUKK FEIL!",
                 hint: "Trykk på buzzordene! Lukk feilmeldinger!",
                 
                 startTitle: "Erasmus+ Panikken",
@@ -394,13 +408,12 @@
                 instructions: [
                     "<span class='text-green-600 font-bold'>TRYKK:</span> Buzzord (f.eks. 'Synergi')",
                     "<span class='text-red-600 font-bold'>UNNGÅ:</span> Tabber (f.eks. 'Ferie')",
-                    "<span class='text-blue-600 font-bold'>LUKK:</span> Feilmeldinger!",
-                    "<span class='text-purple-600 font-bold'>NYHET:</span> Ignorer Binders-Bernt. Han mener det godt, men..."
+                    "<span class='text-blue-600 font-bold'>LUKK:</span> Alle feilmeldinger før du sender!",
+                    "<span class='text-orange-500 font-bold'>FANG:</span> Kaffepause for å fryse tiden!",
+                    "<span class='text-purple-600 font-bold'>NYHET:</span> Ignorer Binders-Bernt..."
                 ],
                 audioWarn: "Inneholder panikkskapende musikk",
                 startBtn: "START SØKNADSPROSESSEN",
-
-                // Footer / Credits
                 poweredBy: "Powered by Unge Vil",
                 parody: "Ment som en morsom parodi",
                 
@@ -415,6 +428,8 @@
                 statusFailed: "AVVIST",
                 statusAccepted: "GODKJENT",
                 retryBtn: "PRØV NESTE DEADLINE",
+
+                coffeeText: "KAFFEPAUSE!",
 
                 buzzwords: [
                     { text: "Synergi", color: "bg-blue-100 border-blue-500 text-blue-800", points: 5, icon: "fa-link" },
@@ -467,7 +482,7 @@
             }
         };
 
-        // --- AUDIO ENGINE (unchanged logic) ---
+        // --- AUDIO ENGINE ---
         const audioEngine = {
             ctx: null,
             isPlaying: false,
@@ -482,7 +497,6 @@
                 if (!this.ctx) {
                     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 }
-                // Important for Mobile Safari: Resume context on user gesture
                 if (this.ctx.state === 'suspended') {
                     this.ctx.resume();
                 }
@@ -535,8 +549,8 @@
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 const freq = this.sequence[this.noteIndex % this.sequence.length];
-                const pitchShift = Math.max(0, (this.tempo - 110) * 0.5);
-                osc.frequency.value = freq + pitchShift;
+                const pitchShift = state.timeFrozen ? -30 : Math.max(0, (this.tempo - 110) * 0.5);
+                osc.frequency.value = Math.max(50, freq + pitchShift);
                 osc.type = 'square'; 
                 gain.gain.setValueAtTime(0.03, time);
                 gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
@@ -607,6 +621,15 @@
                     osc.start(now);
                     osc.stop(now + 0.2);
                 }
+                else if (type === 'powerup') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.linearRampToValueAtTime(800, now + 0.5);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                }
                 else if (type === 'win') {
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(523.25, now);
@@ -637,16 +660,17 @@
             isLagging: false,
             score: 0,
             timeLeft: 60,
+            timeFrozen: false,
+            combo: 1,
             gameLoop: null,
             spawnLoop: null,
             popupLoop: null,
             lagLoop: null,
             chaosLoop: null,
             difficultyMultiplier: 1,
-            language: 'en' // Default language
+            language: 'en'
         };
 
-        // UI Element References
         const uiTitle = document.getElementById('ui-title');
         const uiQuality = document.getElementById('ui-quality');
         const uiDeadline = document.getElementById('ui-deadline');
@@ -662,10 +686,8 @@
         const startLangBtn = document.getElementById('start-lang-btn');
         const langBtnText = document.getElementById('lang-btn-text');
         
-        // Start Screen Footer elements
         const startPowered = document.getElementById('start-powered');
         const startParody = document.getElementById('start-parody');
-        // No need to dynamically update link URL since it is static, but good to know we can
 
         const endTitle = document.getElementById('end-title');
         const endReason = document.getElementById('end-reason');
@@ -678,10 +700,13 @@
         const progressText = document.getElementById('progress-text');
         const timerDisplay = document.getElementById('timer');
         const submitBtn = document.getElementById('submit-btn');
+        const btnIcon = document.getElementById('btn-icon');
         const lagOverlay = document.getElementById('lag-overlay');
         const gameContainer = document.getElementById('game-container');
+        const comboDisplay = document.getElementById('combo-display');
+        const comboDisplayMobile = document.getElementById('combo-display-mobile');
+        const stressVignette = document.getElementById('stress-vignette');
 
-        // Initial setup
         applyLanguage(state.language);
 
         function toggleLanguage() {
@@ -691,36 +716,27 @@
 
         function applyLanguage(lang) {
             const r = RESOURCES[lang];
-            
-            // Header
             uiTitle.textContent = r.title;
             uiQuality.textContent = r.appQuality;
             uiDeadline.textContent = r.deadline;
-            uiSubmitBtn.textContent = r.submit;
             
-            // Toggle Button Text (Show the OTHER language)
+            // Only update button text if game isn't running to avoid overwriting error states
+            if(!state.isRunning) {
+                uiSubmitBtn.textContent = r.submit;
+            }
+            
             const otherLang = lang === 'en' ? 'NO' : 'EN';
             startLangBtn.textContent = lang === 'en' ? 'Norsk' : 'English';
             langBtnText.textContent = otherLang;
-
-            // Hint
             hintText.textContent = r.hint;
-
-            // Start Screen
             startTitle.textContent = r.startTitle;
             startDesc.textContent = r.startDesc;
             startInstrTitle.textContent = r.instrTitle;
             startAudioWarn.textContent = r.audioWarn;
             startBtn.textContent = r.startBtn;
-            
-            // Start Screen Footer
             startPowered.textContent = r.poweredBy;
             startParody.textContent = r.parody;
-            
-            // Instructions list
             startInstrList.innerHTML = r.instructions.map(i => `<li>${i}</li>`).join('');
-
-            // End Screen (Base text)
             endRetryBtn.textContent = r.retryBtn;
         }
 
@@ -735,9 +751,13 @@
             
             state.isRunning = true;
             state.isLagging = false;
+            state.timeFrozen = false;
             state.timeLeft = 60;
             state.score = 0;
+            state.combo = 1;
             updateUI();
+            updateComboUI();
+            stressVignette.style.background = `radial-gradient(circle, transparent 50%, rgba(255, 0, 0, 0.0) 100%)`;
 
             document.querySelectorAll('.falling-item, .popup-window, .particle, .assistant-bubble').forEach(el => el.remove());
 
@@ -756,20 +776,33 @@
                 return;
             }
 
-            state.timeLeft -= 0.1;
+            if (!state.timeFrozen) {
+                state.timeLeft -= 0.1;
+            }
             timerDisplay.textContent = state.timeLeft.toFixed(2);
             
-            if (state.timeLeft < 15) {
+            const urgency = 1 - (state.timeLeft / 60); 
+            if (urgency > 0.5) {
+                const alpha = (urgency - 0.5) * 1.5; 
+                stressVignette.style.background = `radial-gradient(circle, transparent 40%, rgba(255, 0, 0, ${alpha}) 100%)`;
+            }
+
+            if (state.timeFrozen) {
+                audioEngine.setTempo(80); 
+                timerDisplay.classList.add('frozen-timer');
+            } else if (state.timeLeft < 15) {
                 document.body.classList.add('shake-screen');
                 timerDisplay.classList.add('text-4xl', 'glitch-text');
-                timerDisplay.classList.remove('text-red-500');
+                timerDisplay.classList.remove('text-red-500', 'frozen-timer');
                 timerDisplay.classList.add('text-red-600');
                 audioEngine.setTempo(250); 
             } else if (state.timeLeft < 30) {
                 audioEngine.setTempo(180); 
                 state.difficultyMultiplier = 1.3;
+                timerDisplay.classList.remove('frozen-timer');
             } else {
                 audioEngine.setTempo(110); 
+                timerDisplay.classList.remove('frozen-timer');
             }
 
             if (state.timeLeft < 10) state.difficultyMultiplier = 2.0;
@@ -781,8 +814,42 @@
             }
         }
 
+        function triggerCoffeeBreak() {
+            if (state.timeFrozen) return;
+            
+            state.timeFrozen = true;
+            audioEngine.playSFX('powerup');
+            
+            const r = RESOURCES[state.language];
+            showFloatingText(workspace.clientWidth/2 + 'px', workspace.clientHeight/3 + 'px', r.coffeeText, 'text-blue-500', 30);
+            
+            document.body.style.transition = "filter 0.5s";
+            document.body.style.filter = "sepia(0.5) brightness(1.1)";
+            
+            setTimeout(() => {
+                state.timeFrozen = false;
+                document.body.style.filter = "";
+            }, 5000);
+        }
+
+        function updateComboUI() {
+            const text = `x${state.combo}`;
+            comboDisplay.textContent = text;
+            comboDisplayMobile.textContent = text;
+            
+            if (state.combo > 1) {
+                comboDisplay.classList.remove('opacity-0');
+                comboDisplayMobile.classList.remove('opacity-0');
+                comboDisplay.classList.add('scale-125');
+                setTimeout(() => comboDisplay.classList.remove('scale-125'), 100);
+            } else {
+                comboDisplay.classList.add('opacity-0');
+                comboDisplayMobile.classList.add('opacity-0');
+            }
+        }
+
         function tryChaosEvent() {
-            if (!state.isRunning || state.isLagging) return;
+            if (!state.isRunning || state.isLagging || state.timeFrozen) return;
             const roll = Math.random();
 
             if (roll < 0.3) {
@@ -849,7 +916,7 @@
         }
 
         function tryTriggerLag() {
-            if (!state.isRunning || state.isLagging || state.timeLeft < 5) return;
+            if (!state.isRunning || state.isLagging || state.timeLeft < 5 || state.timeFrozen) return;
             
             if (Math.random() < 0.15) {
                 state.isLagging = true;
@@ -869,6 +936,14 @@
             }
         }
 
+        // --- GLOBAL REMOVE POPUP FUNCTION ---
+        window.removePopup = function(btn) {
+            const popup = btn.closest('.popup-window');
+            if (popup) popup.remove();
+            // Important: Trigger UI update immediately after removing
+            updateUI(); 
+        };
+
         function updateUI() {
             if (state.score < 0) state.score = 0;
             if (state.score > 100) state.score = 100;
@@ -878,14 +953,35 @@
             if (progressBarMobile) progressBarMobile.style.width = scoreStr;
             progressText.textContent = scoreStr;
 
+            const r = RESOURCES[state.language];
+            
+            // Check active popups
+            const activePopups = document.querySelectorAll('.popup-window').length;
+            
+            // Logic for Button State
             if (state.score >= 100) {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('bg-gray-400', 'text-gray-600', 'cursor-not-allowed', 'border-gray-600');
-                submitBtn.classList.add('bg-green-500', 'text-white', 'hover:bg-green-600', 'cursor-pointer', 'border-green-700', 'animate-bounce');
+                if (activePopups === 0) {
+                    // Ready to Submit
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('bg-gray-400', 'text-gray-600', 'cursor-not-allowed', 'border-gray-600');
+                    submitBtn.classList.add('bg-green-500', 'text-white', 'hover:bg-green-600', 'cursor-pointer', 'border-green-700', 'animate-bounce');
+                    uiSubmitBtn.textContent = r.submit;
+                    btnIcon.className = "fas fa-paper-plane mr-2 group-hover:translate-x-1 transition-transform";
+                } else {
+                    // Blocked by Errors
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('bg-gray-400', 'text-gray-600', 'cursor-not-allowed', 'border-gray-600');
+                    submitBtn.classList.remove('bg-green-500', 'text-white', 'hover:bg-green-600', 'cursor-pointer', 'border-green-700', 'animate-bounce');
+                    uiSubmitBtn.textContent = r.closeErrors;
+                    btnIcon.className = "fas fa-exclamation-circle mr-2 text-red-600";
+                }
             } else {
+                // Not 100% yet
                 submitBtn.disabled = true;
                 submitBtn.classList.add('bg-gray-400', 'text-gray-600', 'cursor-not-allowed', 'border-gray-600');
                 submitBtn.classList.remove('bg-green-500', 'text-white', 'hover:bg-green-600', 'cursor-pointer', 'border-green-700', 'animate-bounce');
+                uiSubmitBtn.textContent = r.submit;
+                btnIcon.className = "fas fa-paper-plane mr-2";
             }
         }
 
@@ -915,16 +1011,28 @@
             if (!state.isRunning || state.isLagging) return;
             
             const r = RESOURCES[state.language];
-            const isBad = Math.random() < 0.35;
-            const itemData = isBad 
-                ? r.badwords[Math.floor(Math.random() * r.badwords.length)]
-                : r.buzzwords[Math.floor(Math.random() * r.buzzwords.length)];
+            
+            // Item Type Logic
+            let itemType = 'good'; // default
+            const roll = Math.random();
+            if (roll < 0.05) itemType = 'coffee'; // 5% chance
+            else if (roll < 0.40) itemType = 'bad'; // 35% chance
+
+            let itemData;
+            if (itemType === 'coffee') {
+                itemData = { text: "Coffee", color: "bg-orange-700 text-white border-orange-900", icon: "fa-mug-hot", type: "coffee" };
+            } else if (itemType === 'bad') {
+                itemData = r.badwords[Math.floor(Math.random() * r.badwords.length)];
+                itemData.type = "bad";
+            } else {
+                itemData = r.buzzwords[Math.floor(Math.random() * r.buzzwords.length)];
+                itemData.type = "good";
+            }
 
             const el = document.createElement('div');
             el.className = `falling-item absolute px-4 py-3 rounded-lg shadow-md border-2 font-bold flex items-center gap-2 ${itemData.color} hover:brightness-110 active:scale-95 select-none`;
             el.innerHTML = `<i class="fas ${itemData.icon}"></i> ${itemData.text}`;
             
-            // Adjust max width for item width estimation (approx 150px)
             const maxLeft = workspace.clientWidth - 150;
             const startLeft = Math.random() * Math.max(0, maxLeft);
             el.style.left = `${startLeft}px`;
@@ -933,36 +1041,40 @@
             const handleInteraction = (e) => {
                 if(state.isLagging) return;
                 
-                // Prevent double firing if both events trigger
                 if (el.dataset.clicked) return;
                 el.dataset.clicked = "true";
 
-                // Get coordinates for explosion
                 const clientX = e.clientX || (e.touches && e.touches[0].clientX);
                 const clientY = e.clientY || (e.touches && e.touches[0].clientY);
                 createExplosion(clientX + 'px', clientY + 'px');
                 
-                if (isBad) {
+                if (itemData.type === 'coffee') {
+                    triggerCoffeeBreak();
+                } else if (itemData.type === 'bad') {
                     state.score -= itemData.damage;
+                    state.combo = 1; // Reset combo
                     audioEngine.playSFX('bad');
                     showFloatingText(el.style.left, el.style.top, `-${itemData.damage}%`, 'text-red-600');
                 } else {
-                    state.score += itemData.points;
+                    const points = Math.floor(itemData.points * (1 + (state.combo - 1) * 0.5)); // 50% bonus per combo level
+                    state.score += points;
+                    state.combo = Math.min(state.combo + 1, 5); // Max 5x combo
                     audioEngine.playSFX('good');
-                    showFloatingText(el.style.left, el.style.top, `+${itemData.points}%`, 'text-green-600');
+                    showFloatingText(el.style.left, el.style.top, `+${points}%`, 'text-green-600');
                 }
+                
+                updateComboUI();
                 updateUI();
                 el.remove();
             };
 
-            // Use pointerdown for better mobile responsiveness (replaces both mouse and touch)
             el.onpointerdown = handleInteraction;
 
             workspace.appendChild(el);
 
             let pos = -60;
             let drift = (Math.random() - 0.5) * 1; 
-            const speed = (2.5 + Math.random() * 2) * state.difficultyMultiplier;
+            const speed = (2.5 + Math.random() * 2) * state.difficultyMultiplier * (state.timeFrozen ? 0.5 : 1);
             
             const anim = setInterval(() => {
                 if (!state.isRunning) {
@@ -980,6 +1092,11 @@
                 el.style.left = `${currentLeft + drift}px`;
 
                 if (pos > workspace.clientHeight) {
+                    // Missed a good item -> reset combo
+                    if (itemData.type === 'good' && !el.dataset.clicked) {
+                        state.combo = 1;
+                        updateComboUI();
+                    }
                     el.remove();
                     clearInterval(anim);
                 }
@@ -987,7 +1104,7 @@
         }
 
         function trySpawnPopup() {
-            if (!state.isRunning || state.isLagging) return;
+            if (!state.isRunning || state.isLagging || state.timeFrozen) return;
             if (Math.random() > 0.5) return;
 
             audioEngine.playSFX('popup');
@@ -1004,26 +1121,29 @@
 
             const data = r.popups[Math.floor(Math.random() * r.popups.length)];
 
+            // Updated close button to call global removePopup function
             popup.innerHTML = `
                 <div class="bg-blue-800 text-white text-xs px-2 py-1 flex justify-between items-center">
                     <span class="font-bold truncate">${data.title}</span>
-                    <button class="hover:bg-red-500 px-2 rounded-sm p-2" onclick="this.closest('.popup-window').remove()">X</button>
+                    <button class="hover:bg-red-500 px-2 rounded-sm p-2" onclick="removePopup(this)">X</button>
                 </div>
                 <div class="p-4 flex flex-col items-center text-center bg-gray-50">
                     <i class="fas ${data.icon} text-red-500 text-3xl mb-3"></i>
                     <p class="text-sm font-medium mb-4 text-gray-700">${data.msg}</p>
-                    <button onclick="this.closest('.popup-window').remove()" class="bg-gray-200 hover:bg-gray-300 border border-black px-6 py-2 text-sm shadow active:translate-y-1 touch-manipulation">
+                    <button onclick="removePopup(this)" class="bg-gray-200 hover:bg-gray-300 border border-black px-6 py-2 text-sm shadow active:translate-y-1 touch-manipulation">
                         OK
                     </button>
                 </div>
             `;
 
             workspace.appendChild(popup);
+            updateUI(); // Check UI immediately on spawn
         }
 
-        function showFloatingText(x, y, text, colorClass) {
+        function showFloatingText(x, y, text, colorClass, size = 24) {
             const float = document.createElement('div');
-            float.className = `absolute text-2xl font-black ${colorClass} z-20 pointer-events-none drop-shadow-md`;
+            float.className = `absolute font-black ${colorClass} z-20 pointer-events-none drop-shadow-md`;
+            float.style.fontSize = size + 'px';
             float.style.left = x;
             float.style.top = y;
             float.innerText = text;
@@ -1046,10 +1166,11 @@
         function trySubmit() {
             if (!state.isRunning) return;
             if (state.score < 100) return;
+            // Prevent submission if popups exist (though button should be disabled)
+            if (document.querySelectorAll('.popup-window').length > 0) return;
 
             if(Math.random() > 0.3 && state.timeLeft > 5) {
                 const btn = document.getElementById('submit-btn');
-                // Reduced movement for mobile so it doesn't go off screen
                 const moveX = (Math.random() * 30) - 15;
                 const moveY = (Math.random() * 30) - 15;
                 btn.style.transform = `translate(${moveX}px, ${moveY}px)`;
@@ -1069,6 +1190,7 @@
             document.body.classList.remove('shake-screen');
             document.body.classList.remove('inverted-mode');
             gameContainer.classList.remove('tilted-mode');
+            stressVignette.style.background = 'transparent';
 
             const btn = document.getElementById('submit-btn');
             const btnText = document.getElementById('ui-submit-btn');
