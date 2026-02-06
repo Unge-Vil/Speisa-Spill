@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="no">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Erasmus+ Panikken: Deadline Day</title>
+    <!-- Updated viewport for mobile games: prevents zooming -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Erasmus+ Panic: Deadline Day</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -12,8 +13,11 @@
         body {
             font-family: 'Roboto', sans-serif;
             overflow: hidden;
-            touch-action: manipulation;
+            /* Prevents pull-to-refresh and other browser gestures */
+            overscroll-behavior: none; 
+            touch-action: none;
             user-select: none;
+            -webkit-user-select: none; /* Safari specific */
         }
 
         .eu-blue { background-color: #003399; }
@@ -46,6 +50,9 @@
             cursor: pointer;
             transition: transform 0.1s;
             z-index: 10;
+            /* Better touch targets */
+            padding: 12px 16px; 
+            touch-action: none;
         }
 
         .falling-item:active {
@@ -55,6 +62,8 @@
         .popup-window {
             box-shadow: 6px 6px 0px rgba(0,0,0,0.5);
             animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* Ensure popups are easily tappable */
+            touch-action: none;
         }
 
         @keyframes popIn {
@@ -116,6 +125,11 @@
             50% { transform: translateY(-10px); }
             100% { transform: translateY(0px); }
         }
+
+        /* Mobile specific safe area spacing */
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
     </style>
 </head>
 <body class="bg-gray-200 h-screen w-screen relative overflow-hidden text-gray-800">
@@ -128,35 +142,45 @@
             <div class="flex items-center gap-2">
                 <i class="fas fa-flag-europe text-yellow-400 text-2xl"></i>
                 <div>
-                    <h1 class="font-bold text-sm leading-none">Erasmus+ Portal v3.0 (Unstable)</h1>
+                    <h1 id="ui-title" class="font-bold text-sm leading-none">Erasmus+ Portal v3.0</h1>
                     <span class="text-xs text-blue-200">Session ID: <span id="oid-display">894102...</span></span>
                 </div>
             </div>
             
-            <div class="flex gap-4 items-center">
-                <button id="mute-btn" onclick="toggleMute()" class="text-blue-200 hover:text-white focus:outline-none">
+            <div class="flex gap-2 sm:gap-4 items-center">
+                <button onclick="toggleLanguage()" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2 py-1 rounded border border-blue-400 font-bold w-10 sm:w-12 text-center">
+                    <span id="lang-btn-text">NO</span>
+                </button>
+
+                <button id="mute-btn" onclick="toggleMute()" class="text-blue-200 hover:text-white focus:outline-none px-2">
                     <i id="mute-icon" class="fas fa-volume-up text-lg"></i>
                 </button>
 
-                <div class="text-center">
-                    <div class="text-xs uppercase text-blue-300">Søknadskvalitet</div>
+                <div class="text-center hidden sm:block">
+                    <div id="ui-quality" class="text-xs uppercase text-blue-300">Application Quality</div>
                     <div class="w-32 h-4 bg-gray-700 rounded-full overflow-hidden border border-white relative">
                         <div id="progress-bar" class="h-full bg-green-500 w-0 transition-all duration-200"></div>
-                        <!-- Goal marker -->
                         <div class="absolute top-0 bottom-0 right-0 w-1 bg-white opacity-50"></div>
                     </div>
                     <div id="progress-text" class="text-xs font-bold">0%</div>
                 </div>
 
-                <div class="text-center bg-red-900 px-3 py-1 rounded border border-red-500 shadow-inner">
-                    <div class="text-xs text-red-200 uppercase">DEADLINE:</div>
-                    <div id="timer" class="text-2xl font-mono font-bold text-red-500">60.00</div>
+                <!-- Mobile optimized condensed view for small screens -->
+                <div class="sm:hidden flex flex-col items-center">
+                    <div class="w-16 h-2 bg-gray-700 rounded-full overflow-hidden border border-white relative mb-1">
+                        <div id="progress-bar-mobile" class="h-full bg-green-500 w-0 transition-all duration-200"></div>
+                    </div>
+                </div>
+
+                <div class="text-center bg-red-900 px-2 py-1 rounded border border-red-500 shadow-inner min-w-[60px]">
+                    <div id="ui-deadline" class="text-[10px] text-red-200 uppercase sm:block hidden">DEADLINE:</div>
+                    <div id="timer" class="text-lg sm:text-2xl font-mono font-bold text-red-500">60.00</div>
                 </div>
             </div>
         </div>
 
         <!-- Main Workspace (Play Area) -->
-        <div id="workspace" class="flex-1 relative bg-[#e0e0e0] overflow-hidden cursor-crosshair">
+        <div id="workspace" class="flex-1 relative bg-[#e0e0e0] overflow-hidden cursor-crosshair touch-none">
             <!-- Background Decoration -->
             <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
                 <i class="fas fa-stamp text-9xl"></i>
@@ -171,7 +195,7 @@
             </div>
 
             <!-- Fake Blue Screen Flash -->
-            <div id="bsod-flash" class="hidden absolute inset-0 bg-blue-900 z-50 flex items-center justify-center text-white font-mono p-10">
+            <div id="bsod-flash" class="hidden absolute inset-0 bg-blue-900 z-50 flex items-center justify-center text-white font-mono p-4 sm:p-10">
                 <div>
                     <h1 class="text-2xl mb-4">:(</h1>
                     <p>Your PC ran into a problem and needs to restart.</p>
@@ -179,67 +203,91 @@
                 </div>
             </div>
 
-            <!-- Submit Button (Only active at 100%) -->
-            <div class="absolute bottom-4 right-4 z-10">
-                <button id="submit-btn" disabled onclick="trySubmit()" class="group relative bg-gray-400 text-gray-600 font-bold py-4 px-8 rounded shadow-inner border-b-4 border-gray-600 text-xl cursor-not-allowed transition-all transform overflow-hidden">
+            <!-- In-game Branding Link -->
+            <div class="absolute bottom-2 left-2 z-20 opacity-50 hover:opacity-100 transition-opacity safe-area-bottom">
+                <a href="https://www.ungevil.no/" target="_blank" class="text-[10px] sm:text-xs text-gray-500 font-bold hover:text-blue-600 flex items-center gap-1">
+                    <i class="fas fa-external-link-alt"></i> Powered by Unge Vil
+                </a>
+            </div>
+
+            <!-- Submit Button (Only active at 100%) - Adjusted for mobile safe area -->
+            <div class="absolute bottom-4 right-4 z-10 safe-area-bottom">
+                <button id="submit-btn" disabled onclick="trySubmit()" class="group relative bg-gray-400 text-gray-600 font-bold py-3 px-6 sm:py-4 sm:px-8 rounded shadow-inner border-b-4 border-gray-600 text-lg sm:text-xl cursor-not-allowed transition-all transform overflow-hidden touch-manipulation">
                     <span class="relative z-10 flex items-center">
-                        <i class="fas fa-paper-plane mr-2 group-hover:translate-x-1 transition-transform"></i> SEND INN
+                        <i class="fas fa-paper-plane mr-2 group-hover:translate-x-1 transition-transform"></i> <span id="ui-submit-btn">SUBMIT</span>
                     </span>
                     <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
                 </button>
             </div>
 
             <!-- Hint Text -->
-            <div id="hint-text" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded shadow border border-yellow-400 z-0 text-sm animate-pulse">
-                Klikk på buzzordene! Lukk feilmeldinger!
+            <div id="hint-text" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-yellow-100 text-yellow-800 px-4 py-2 rounded shadow border border-yellow-400 z-0 text-xs sm:text-sm animate-pulse w-max max-w-[90%] text-center">
+                Click the buzzwords! Close errors!
             </div>
         </div>
     </div>
 
     <!-- Start Screen -->
     <div id="start-screen" class="absolute inset-0 bg-blue-900 z-50 flex flex-col items-center justify-center text-white p-4">
-        <div class="bg-white text-blue-900 p-8 rounded-lg shadow-2xl max-w-lg w-full text-center border-4 border-yellow-400 relative overflow-hidden">
-            <div class="absolute -right-10 -top-10 text-yellow-100 text-9xl opacity-50 transform rotate-12">
+        <div class="bg-white text-blue-900 p-6 sm:p-8 rounded-lg shadow-2xl max-w-lg w-full text-center border-4 border-yellow-400 relative overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="absolute top-4 right-4 z-50">
+                <button onclick="toggleLanguage()" class="bg-blue-100 hover:bg-blue-200 text-blue-900 text-sm px-3 py-1 rounded border border-blue-400 font-bold">
+                    <i class="fas fa-globe mr-1"></i> <span id="start-lang-btn">Norsk</span>
+                </button>
+            </div>
+
+            <div class="absolute -right-10 -top-10 text-yellow-100 text-9xl opacity-50 transform rotate-12 pointer-events-none">
                 <i class="fas fa-file-contract"></i>
             </div>
             
-            <i class="fas fa-star text-yellow-500 text-6xl mb-4 relative z-10"></i>
-            <h1 class="text-3xl font-bold mb-2 relative z-10">Erasmus+ Panikken</h1>
-            <p class="text-gray-600 mb-6 relative z-10">Klokka er 11:59. Serveren er overbelastet. Binders-Bernt er plagsom.</p>
+            <i class="fas fa-star text-yellow-500 text-5xl sm:text-6xl mb-4 relative z-10"></i>
+            <h1 id="start-title" class="text-2xl sm:text-3xl font-bold mb-2 relative z-10">Erasmus+ Panic</h1>
+            <p id="start-desc" class="text-sm sm:text-base text-gray-600 mb-6 relative z-10">It's 11:59. The server is overloaded. Paperclip-Paul is annoying.</p>
             
-            <div class="text-left bg-gray-100 p-4 rounded mb-6 text-sm border border-gray-300 relative z-10 shadow-inner">
-                <p class="font-bold mb-2">Instruksjoner:</p>
-                <ul class="list-disc pl-5 space-y-1">
-                    <li><span class="text-green-600 font-bold">FANG:</span> Buzzord (f.eks. "Synergi")</li>
-                    <li><span class="text-red-600 font-bold">UNNGÅ:</span> Tabber (f.eks. "Ferie")</li>
-                    <li><span class="text-blue-600 font-bold">LUKK:</span> Feilmeldinger!</li>
-                    <li><span class="text-purple-600 font-bold">NYHET:</span> Ignorer Binders-Bernt. Han mener det godt, men...</li>
+            <div class="text-left bg-gray-100 p-4 rounded mb-6 text-sm border border-gray-300 relative z-10 shadow-inner overflow-y-auto">
+                <p id="start-instr-title" class="font-bold mb-2">Instructions:</p>
+                <ul id="start-instr-list" class="list-disc pl-5 space-y-1">
+                    <!-- Populated by JS -->
                 </ul>
                 <div class="mt-4 text-center text-xs text-gray-500">
-                    <i class="fas fa-music"></i> Inneholder panikkskapende musikk
+                    <i class="fas fa-music"></i> <span id="start-audio-warn">Contains panic-inducing music</span>
                 </div>
             </div>
 
-            <button onclick="startGame()" class="relative z-10 bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-black py-4 px-10 rounded-full text-xl shadow-lg transform transition hover:scale-105 active:scale-95 border-b-4 border-yellow-600">
-                START SØKNADSPROSESSEN
+            <button onclick="startGame()" id="start-btn" class="relative z-10 bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-black py-3 px-6 sm:py-4 sm:px-10 rounded-full text-lg sm:text-xl shadow-lg transform transition hover:scale-105 active:scale-95 border-b-4 border-yellow-600 touch-manipulation mb-4">
+                START APPLICATION
             </button>
+
+            <!-- Footer / Credits -->
+            <div class="relative z-10 pt-4 border-t border-gray-200 mt-auto">
+                <p class="text-sm font-bold text-blue-800 mb-1" id="start-powered">Powered by Unge Vil</p>
+                <p class="text-xs text-gray-500 mb-2 italic" id="start-parody">Intended as a fun parody</p>
+                <a href="https://www.ungevil.no/" target="_blank" class="text-blue-500 hover:text-blue-700 underline text-xs font-bold" id="start-link">
+                    www.ungevil.no <i class="fas fa-external-link-alt ml-1"></i>
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- Game Over Screen -->
     <div id="game-over-screen" class="hidden absolute inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded shadow-2xl max-w-md w-full text-center border-t-8 border-red-500">
-            <h2 id="end-title" class="text-3xl font-bold mb-2">SØKNAD AVVIST</h2>
-            <div id="end-icon" class="text-6xl my-4">😞</div>
-            <p id="end-reason" class="text-lg text-gray-700 mb-6 font-medium">Fristen gikk ut mens du drakk kaffe.</p>
-            <div class="bg-gray-100 p-4 rounded mb-6 text-left font-mono text-sm border border-gray-300">
+        <div class="bg-white p-6 sm:p-8 rounded shadow-2xl max-w-md w-full text-center border-t-8 border-red-500">
+            <h2 id="end-title" class="text-2xl sm:text-3xl font-bold mb-2">APPLICATION REJECTED</h2>
+            <div id="end-icon" class="text-5xl sm:text-6xl my-4">😞</div>
+            <p id="end-reason" class="text-base sm:text-lg text-gray-700 mb-6 font-medium">The deadline passed while you were getting coffee.</p>
+            <div class="bg-gray-100 p-4 rounded mb-6 text-left font-mono text-xs sm:text-sm border border-gray-300">
                 <div>Status: <span id="final-status" class="font-bold">FAILED</span></div>
                 <div>Score: <span id="final-score">0</span>% completed</div>
                 <div>Server Load: 104% (Fire hazard)</div>
             </div>
-            <button onclick="location.reload()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded hover:bg-blue-700 shadow-lg transform transition active:translate-y-1">
-                PRØV NESTE DEADLINE
+            <button onclick="location.reload()" id="end-retry-btn" class="bg-blue-600 text-white font-bold py-3 px-8 rounded hover:bg-blue-700 shadow-lg transform transition active:translate-y-1 touch-manipulation">
+                TRY NEXT DEADLINE
             </button>
+            <div class="mt-6 pt-4 border-t border-gray-200">
+                <a href="https://www.ungevil.no/" target="_blank" class="text-gray-400 hover:text-blue-600 text-xs font-bold">
+                    Powered by Unge Vil
+                </a>
+            </div>
         </div>
     </div>
 
@@ -247,7 +295,179 @@
     <div class="absolute inset-0 pointer-events-none scanlines z-40"></div>
 
     <script>
-        // --- AUDIO ENGINE ---
+        // --- LOCALIZATION DATA ---
+        const RESOURCES = {
+            en: {
+                title: "Erasmus+ Portal v3.0 (Unstable)",
+                appQuality: "Application Quality",
+                deadline: "DEADLINE:",
+                submit: "SUBMIT",
+                hint: "Tap buzzwords! Close errors!",
+                
+                startTitle: "Erasmus+ Panic",
+                startDesc: "It's 11:59. The server is overloaded. Paperclip-Paul is annoying.",
+                instrTitle: "Instructions:",
+                instructions: [
+                    "<span class='text-green-600 font-bold'>TAP:</span> Buzzwords (e.g. 'Synergy')",
+                    "<span class='text-red-600 font-bold'>AVOID:</span> Mistakes (e.g. 'Holiday')",
+                    "<span class='text-blue-600 font-bold'>CLOSE:</span> Error popups!",
+                    "<span class='text-purple-600 font-bold'>NEW:</span> Ignore Paperclip-Paul. He means well..."
+                ],
+                audioWarn: "Contains panic-inducing music",
+                startBtn: "START APPLICATION PROCESS",
+
+                // Footer / Credits
+                poweredBy: "Powered by Unge Vil",
+                parody: "Intended as a fun parody",
+                
+                validating: "VALIDATING...",
+                formError: "FORM ERROR...",
+                forcedSend: "FORCED SEND",
+                successMsg: "Congratulations! Submitted with 2 seconds to spare.",
+                forcedMsg: "PHEW! System rejected it, but we hacked it through.",
+                
+                gameOverAccepted: "SUBMISSION ACCEPTED!",
+                gameOverRejected: "DEADLINE MISSED",
+                statusFailed: "FAILED",
+                statusAccepted: "ACCEPTED",
+                retryBtn: "TRY NEXT DEADLINE",
+
+                buzzwords: [
+                    { text: "Synergy", color: "bg-blue-100 border-blue-500 text-blue-800", points: 5, icon: "fa-link" },
+                    { text: "Sustainability", color: "bg-green-100 border-green-500 text-green-800", points: 5, icon: "fa-leaf" },
+                    { text: "Inclusion", color: "bg-purple-100 border-purple-500 text-purple-800", points: 6, icon: "fa-users" },
+                    { text: "Innovation", color: "bg-yellow-100 border-yellow-500 text-yellow-800", points: 7, icon: "fa-lightbulb" },
+                    { text: "Mobility", color: "bg-indigo-100 border-indigo-500 text-indigo-800", points: 4, icon: "fa-plane" },
+                    { text: "Digitalization", color: "bg-cyan-100 border-cyan-500 text-cyan-800", points: 5, icon: "fa-laptop" },
+                    { text: "Transnational", color: "bg-blue-200 border-blue-600 text-blue-900", points: 8, icon: "fa-globe-europe" },
+                    { text: "Dissemination", color: "bg-pink-100 border-pink-500 text-pink-800", points: 10, icon: "fa-bullhorn" },
+                    { text: "AI-Driven", color: "bg-teal-100 border-teal-500 text-teal-800", points: 9, icon: "fa-robot" },
+                    { text: "Green Deal", color: "bg-green-200 border-green-600 text-green-900", points: 6, icon: "fa-seedling" }
+                ],
+                badwords: [
+                    { text: "Holiday?", color: "bg-red-100 border-red-500 text-red-800", damage: 10, icon: "fa-umbrella-beach" },
+                    { text: "Lost Passport", color: "bg-red-100 border-red-500 text-red-800", damage: 15, icon: "fa-passport" },
+                    { text: "No Mandate", color: "bg-gray-300 border-gray-600 text-gray-800", damage: 20, icon: "fa-file-signature" },
+                    { text: "Invalid OID", color: "bg-orange-100 border-orange-500 text-orange-800", damage: 10, icon: "fa-id-card" },
+                    { text: "Google Translate", color: "bg-red-50 border-red-400 text-red-900", damage: 12, icon: "fa-language" },
+                    { text: "Budget Cuts", color: "bg-red-200 border-red-600 text-red-900", damage: 25, icon: "fa-scissors" },
+                    { text: "Comic Sans", color: "bg-pink-200 border-pink-500 text-pink-900", damage: 8, icon: "fa-font" }
+                ],
+                popups: [
+                    { title: "Network Error", msg: "Lost connection to Brussels. Reconnecting...", icon: "fa-wifi" },
+                    { title: "Session Expired", msg: "Inactive for 3 seconds. Please login again.", icon: "fa-clock" },
+                    { title: "System Error 503", msg: "The server is out for lunch.", icon: "fa-server" },
+                    { title: "Missing File", msg: "File 'Budget_Final_v2_FINAL(1).xlsx' is corrupt.", icon: "fa-file-excel" },
+                    { title: "Partner Update", msg: "Your Spanish partner went on holiday.", icon: "fa-umbrella-beach" },
+                    { title: "Validation", msg: "Please confirm you are not a robot.", icon: "fa-robot" }
+                ],
+                quotes: [
+                    "Looks like you're writing a grant. Need help procrastinating?",
+                    "I just deleted page 42 for you. You're welcome!",
+                    "Are you sure about that word? Very bold.",
+                    "Only 400 pages of the guide left to read.",
+                    "Have you remembered to take 3 coffee breaks?",
+                    "I didn't save. Oops.",
+                    "The Rector is calling. Should I hang up?",
+                    "This looks expensive."
+                ],
+                loseReasons: [
+                    "You forgot to check 'Honour Declaration'.",
+                    "The PDF was 1MB too large.",
+                    "Server crashed at 11:59:59.",
+                    "You used the wrong OID number.",
+                    "Power outage at the office.",
+                    "You accidentally uploaded your grocery list instead of CV.",
+                    "The EU Commission didn't like your font choice."
+                ]
+            },
+            no: {
+                title: "Erasmus+ Portal v3.0 (Ustabilt)",
+                appQuality: "Søknadskvalitet",
+                deadline: "FRIST:",
+                submit: "SEND INN",
+                hint: "Trykk på buzzordene! Lukk feilmeldinger!",
+                
+                startTitle: "Erasmus+ Panikken",
+                startDesc: "Klokka er 11:59. Serveren er overbelastet. Binders-Bernt er plagsom.",
+                instrTitle: "Instruksjoner:",
+                instructions: [
+                    "<span class='text-green-600 font-bold'>TRYKK:</span> Buzzord (f.eks. 'Synergi')",
+                    "<span class='text-red-600 font-bold'>UNNGÅ:</span> Tabber (f.eks. 'Ferie')",
+                    "<span class='text-blue-600 font-bold'>LUKK:</span> Feilmeldinger!",
+                    "<span class='text-purple-600 font-bold'>NYHET:</span> Ignorer Binders-Bernt. Han mener det godt, men..."
+                ],
+                audioWarn: "Inneholder panikkskapende musikk",
+                startBtn: "START SØKNADSPROSESSEN",
+
+                // Footer / Credits
+                poweredBy: "Powered by Unge Vil",
+                parody: "Ment som en morsom parodi",
+                
+                validating: "VALIDERER...",
+                formError: "FEIL I SKJEMA...",
+                forcedSend: "TVANGSSENDT",
+                successMsg: "GRATULERER! Søknaden ble levert med 2 sekunder margin.",
+                forcedMsg: "PUH! Systemet nektet først, men vi hacket det til.",
+                
+                gameOverAccepted: "SØKNAD LEVERT!",
+                gameOverRejected: "SØKNAD AVVIST",
+                statusFailed: "AVVIST",
+                statusAccepted: "GODKJENT",
+                retryBtn: "PRØV NESTE DEADLINE",
+
+                buzzwords: [
+                    { text: "Synergi", color: "bg-blue-100 border-blue-500 text-blue-800", points: 5, icon: "fa-link" },
+                    { text: "Bærekraft", color: "bg-green-100 border-green-500 text-green-800", points: 5, icon: "fa-leaf" },
+                    { text: "Inkludering", color: "bg-purple-100 border-purple-500 text-purple-800", points: 6, icon: "fa-users" },
+                    { text: "Innovasjon", color: "bg-yellow-100 border-yellow-500 text-yellow-800", points: 7, icon: "fa-lightbulb" },
+                    { text: "Mobilitet", color: "bg-indigo-100 border-indigo-500 text-indigo-800", points: 4, icon: "fa-plane" },
+                    { text: "Digitalisering", color: "bg-cyan-100 border-cyan-500 text-cyan-800", points: 5, icon: "fa-laptop" },
+                    { text: "Transnasjonal", color: "bg-blue-200 border-blue-600 text-blue-900", points: 8, icon: "fa-globe-europe" },
+                    { text: "Disseminering", color: "bg-pink-100 border-pink-500 text-pink-800", points: 10, icon: "fa-bullhorn" },
+                    { text: "AI-drevet", color: "bg-teal-100 border-teal-500 text-teal-800", points: 9, icon: "fa-robot" },
+                    { text: "Grønt Skifte", color: "bg-green-200 border-green-600 text-green-900", points: 6, icon: "fa-seedling" }
+                ],
+                badwords: [
+                    { text: "Ferie?", color: "bg-red-100 border-red-500 text-red-800", damage: 10, icon: "fa-umbrella-beach" },
+                    { text: "Glemt Pass", color: "bg-red-100 border-red-500 text-red-800", damage: 15, icon: "fa-passport" },
+                    { text: "Ingen Mandat", color: "bg-gray-300 border-gray-600 text-gray-800", damage: 20, icon: "fa-file-signature" },
+                    { text: "Ugyldig OID", color: "bg-orange-100 border-orange-500 text-orange-800", damage: 10, icon: "fa-id-card" },
+                    { text: "Google Translate", color: "bg-red-50 border-red-400 text-red-900", damage: 12, icon: "fa-language" },
+                    { text: "Budsjettkutt", color: "bg-red-200 border-red-600 text-red-900", damage: 25, icon: "fa-scissors" },
+                    { text: "Comic Sans", color: "bg-pink-200 border-pink-500 text-pink-900", damage: 8, icon: "fa-font" }
+                ],
+                popups: [
+                    { title: "Network Error", msg: "Mistet kontakten med Brussel. Kobler til...", icon: "fa-wifi" },
+                    { title: "Session Expired", msg: "Du har vært inaktiv i 3 sekunder. Logg inn på nytt.", icon: "fa-clock" },
+                    { title: "System Error 503", msg: "Serveren er ute til lunsj.", icon: "fa-server" },
+                    { title: "Mangler Vedlegg", msg: "Filen 'Budsjett_Final_v2_FINAL(1).xlsx' er korrupt.", icon: "fa-file-excel" },
+                    { title: "Partner Update", msg: "Din spanske partner har dratt på ferie.", icon: "fa-umbrella-beach" },
+                    { title: "Validering", msg: "Vennligst bekreft at du ikke er en robot.", icon: "fa-robot" }
+                ],
+                quotes: [
+                    "Ser ut som du prøver å skrive en søknad. Trenger du hjelp med å prokrastinere?",
+                    "Jeg slettet nettopp side 42 for deg. Ingen årsak!",
+                    "Er du sikker på at du vil bruke det ordet? Veldig modig.",
+                    "Det er bare 400 sider igjen av programguiden.",
+                    "Har du husket å ta 3 kaffepauser?",
+                    "Jeg lagret ikke. Ops.",
+                    "Rektor ringer. Skal jeg legge på?",
+                    "Dette ser dyrt ut."
+                ],
+                loseReasons: [
+                    "Du glemte å krysse av for 'Honour Declaration'.",
+                    "PDF-filen var 1MB for stor.",
+                    "Serveren krasjet kl 11:59:59.",
+                    "Du brukte feil OID-nummer.",
+                    "Strømmen gikk på kontoret.",
+                    "Du kom i skade for å laste opp handlelisten din i stedet for CV.",
+                    "EU-kommisjonen likte ikke fontvalget ditt."
+                ]
+            }
+        };
+
+        // --- AUDIO ENGINE (unchanged logic) ---
         const audioEngine = {
             ctx: null,
             isPlaying: false,
@@ -255,13 +475,14 @@
             tempo: 110,
             nextNoteTime: 0,
             timerID: null,
-            sequence: [110, 110, 220, 110, 165, 110, 220, 110], // Base frequencies
+            sequence: [110, 110, 220, 110, 165, 110, 220, 110], 
             noteIndex: 0,
 
             init() {
                 if (!this.ctx) {
                     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
                 }
+                // Important for Mobile Safari: Resume context on user gesture
                 if (this.ctx.state === 'suspended') {
                     this.ctx.resume();
                 }
@@ -299,10 +520,8 @@
 
             scheduler() {
                 if (!this.isPlaying) return;
-                // Schedule notes ahead
                 while (this.nextNoteTime < this.ctx.currentTime + 0.1) {
                     this.playNote(this.nextNoteTime);
-                    // 16th notes
                     const secondsPerBeat = 60.0 / this.tempo;
                     this.nextNoteTime += 0.25 * secondsPerBeat;
                 }
@@ -313,37 +532,25 @@
                 if (this.muted) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
-
-                // Alternating sequence
                 const freq = this.sequence[this.noteIndex % this.sequence.length];
-                // Pitch shift up as tempo increases for more panic
                 const pitchShift = Math.max(0, (this.tempo - 110) * 0.5);
-
                 osc.frequency.value = freq + pitchShift;
-                osc.type = 'square'; // Arcade sound
-
-                // Envelope
+                osc.type = 'square'; 
                 gain.gain.setValueAtTime(0.03, time);
                 gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
-
                 osc.start(time);
                 osc.stop(time + 0.1);
-
                 this.noteIndex++;
             },
 
-            // SFX Functions
             playSFX(type) {
                 if (this.muted || !this.ctx) return;
-                
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
-
                 const now = this.ctx.currentTime;
 
                 if (type === 'good') {
@@ -371,7 +578,6 @@
                     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
                     osc.start(now);
                     osc.stop(now + 0.15);
-                    
                     const osc2 = this.ctx.createOscillator();
                     const gain2 = this.ctx.createGain();
                     osc2.connect(gain2);
@@ -392,7 +598,6 @@
                     osc.stop(now + 0.05);
                 }
                 else if (type === 'assistant') {
-                    // Funny high pitched noise
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(800, now);
                     osc.frequency.linearRampToValueAtTime(1200, now + 0.1);
@@ -404,10 +609,10 @@
                 }
                 else if (type === 'win') {
                     osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(523.25, now); // C
-                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E
-                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G
-                    osc.frequency.setValueAtTime(1046.50, now + 0.3); // High C
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.1);
+                    osc.frequency.setValueAtTime(783.99, now + 0.2);
+                    osc.frequency.setValueAtTime(1046.50, now + 0.3);
                     gain.gain.setValueAtTime(0.1, now);
                     gain.gain.linearRampToValueAtTime(0, now + 0.8);
                     osc.start(now);
@@ -437,70 +642,87 @@
             popupLoop: null,
             lagLoop: null,
             chaosLoop: null,
-            difficultyMultiplier: 1
+            difficultyMultiplier: 1,
+            language: 'en' // Default language
         };
 
-        const BUZZWORDS = [
-            { text: "Synergi", color: "bg-blue-100 border-blue-500 text-blue-800", points: 5, icon: "fa-link" },
-            { text: "Bærekraft", color: "bg-green-100 border-green-500 text-green-800", points: 5, icon: "fa-leaf" },
-            { text: "Inkludering", color: "bg-purple-100 border-purple-500 text-purple-800", points: 6, icon: "fa-users" },
-            { text: "Innovasjon", color: "bg-yellow-100 border-yellow-500 text-yellow-800", points: 7, icon: "fa-lightbulb" },
-            { text: "Mobilitet", color: "bg-indigo-100 border-indigo-500 text-indigo-800", points: 4, icon: "fa-plane" },
-            { text: "Digitalisering", color: "bg-cyan-100 border-cyan-500 text-cyan-800", points: 5, icon: "fa-laptop" },
-            { text: "Transnasjonal", color: "bg-blue-200 border-blue-600 text-blue-900", points: 8, icon: "fa-globe-europe" },
-            { text: "Disseminering", color: "bg-pink-100 border-pink-500 text-pink-800", points: 10, icon: "fa-bullhorn" },
-            { text: "AI-drevet", color: "bg-teal-100 border-teal-500 text-teal-800", points: 9, icon: "fa-robot" },
-            { text: "Grønt Skifte", color: "bg-green-200 border-green-600 text-green-900", points: 6, icon: "fa-seedling" }
-        ];
+        // UI Element References
+        const uiTitle = document.getElementById('ui-title');
+        const uiQuality = document.getElementById('ui-quality');
+        const uiDeadline = document.getElementById('ui-deadline');
+        const uiSubmitBtn = document.getElementById('ui-submit-btn');
+        const hintText = document.getElementById('hint-text');
+        
+        const startTitle = document.getElementById('start-title');
+        const startDesc = document.getElementById('start-desc');
+        const startInstrTitle = document.getElementById('start-instr-title');
+        const startInstrList = document.getElementById('start-instr-list');
+        const startAudioWarn = document.getElementById('start-audio-warn');
+        const startBtn = document.getElementById('start-btn');
+        const startLangBtn = document.getElementById('start-lang-btn');
+        const langBtnText = document.getElementById('lang-btn-text');
+        
+        // Start Screen Footer elements
+        const startPowered = document.getElementById('start-powered');
+        const startParody = document.getElementById('start-parody');
+        // No need to dynamically update link URL since it is static, but good to know we can
 
-        const BAD_WORDS = [
-            { text: "Ferie?", color: "bg-red-100 border-red-500 text-red-800", damage: 10, icon: "fa-umbrella-beach" },
-            { text: "Glemt Pass", color: "bg-red-100 border-red-500 text-red-800", damage: 15, icon: "fa-passport" },
-            { text: "Ingen Mandat", color: "bg-gray-300 border-gray-600 text-gray-800", damage: 20, icon: "fa-file-signature" },
-            { text: "Ugyldig OID", color: "bg-orange-100 border-orange-500 text-orange-800", damage: 10, icon: "fa-id-card" },
-            { text: "Google Translate", color: "bg-red-50 border-red-400 text-red-900", damage: 12, icon: "fa-language" },
-            { text: "Budsjettkutt", color: "bg-red-200 border-red-600 text-red-900", damage: 25, icon: "fa-scissors" },
-            { text: "Comic Sans", color: "bg-pink-200 border-pink-500 text-pink-900", damage: 8, icon: "fa-font" }
-        ];
-
-        const POPUP_MESSAGES = [
-            { title: "Network Error", msg: "Mistet kontakten med Brussel. Kobler til...", icon: "fa-wifi" },
-            { title: "Session Expired", msg: "Du har vært inaktiv i 3 sekunder. Logg inn på nytt.", icon: "fa-clock" },
-            { title: "System Error 503", msg: "Serveren er ute til lunsj.", icon: "fa-server" },
-            { title: "Mangler Vedlegg", msg: "Filen 'Budsjett_Final_v2_FINAL(1).xlsx' er korrupt.", icon: "fa-file-excel" },
-            { title: "Partner Update", msg: "Din spanske partner har dratt på ferie.", icon: "fa-umbrella-beach" },
-            { title: "Validering", msg: "Vennligst bekreft at du ikke er en robot.", icon: "fa-robot" }
-        ];
-
-        const ASSISTANT_QUOTES = [
-            "Ser ut som du prøver å skrive en søknad. Trenger du hjelp med å prokrastinere?",
-            "Jeg slettet nettopp side 42 for deg. Ingen årsak!",
-            "Er du sikker på at du vil bruke det ordet? Veldig modig.",
-            "Det er bare 400 sider igjen av programguiden.",
-            "Har du husket å ta 3 kaffepauser?",
-            "Jeg lagret ikke. Ops.",
-            "Rektor ringer. Skal jeg legge på?",
-            "Dette ser dyrt ut."
-        ];
-
-        const LOSE_REASONS = [
-            "Du glemte å krysse av for 'Honour Declaration'.",
-            "PDF-filen var 1MB for stor.",
-            "Serveren krasjet kl 11:59:59.",
-            "Du brukte feil OID-nummer.",
-            "Strømmen gikk på kontoret.",
-            "Du kom i skade for å laste opp handlelisten din i stedet for CV.",
-            "EU-kommisjonen likte ikke fontvalget ditt."
-        ];
-
-        // Elements
+        const endTitle = document.getElementById('end-title');
+        const endReason = document.getElementById('end-reason');
+        const endRetryBtn = document.getElementById('end-retry-btn');
+        const finalStatus = document.getElementById('final-status');
+        
         const workspace = document.getElementById('workspace');
         const progressBar = document.getElementById('progress-bar');
+        const progressBarMobile = document.getElementById('progress-bar-mobile');
         const progressText = document.getElementById('progress-text');
         const timerDisplay = document.getElementById('timer');
         const submitBtn = document.getElementById('submit-btn');
         const lagOverlay = document.getElementById('lag-overlay');
         const gameContainer = document.getElementById('game-container');
+
+        // Initial setup
+        applyLanguage(state.language);
+
+        function toggleLanguage() {
+            state.language = state.language === 'en' ? 'no' : 'en';
+            applyLanguage(state.language);
+        }
+
+        function applyLanguage(lang) {
+            const r = RESOURCES[lang];
+            
+            // Header
+            uiTitle.textContent = r.title;
+            uiQuality.textContent = r.appQuality;
+            uiDeadline.textContent = r.deadline;
+            uiSubmitBtn.textContent = r.submit;
+            
+            // Toggle Button Text (Show the OTHER language)
+            const otherLang = lang === 'en' ? 'NO' : 'EN';
+            startLangBtn.textContent = lang === 'en' ? 'Norsk' : 'English';
+            langBtnText.textContent = otherLang;
+
+            // Hint
+            hintText.textContent = r.hint;
+
+            // Start Screen
+            startTitle.textContent = r.startTitle;
+            startDesc.textContent = r.startDesc;
+            startInstrTitle.textContent = r.instrTitle;
+            startAudioWarn.textContent = r.audioWarn;
+            startBtn.textContent = r.startBtn;
+            
+            // Start Screen Footer
+            startPowered.textContent = r.poweredBy;
+            startParody.textContent = r.parody;
+            
+            // Instructions list
+            startInstrList.innerHTML = r.instructions.map(i => `<li>${i}</li>`).join('');
+
+            // End Screen (Base text)
+            endRetryBtn.textContent = r.retryBtn;
+        }
 
         function toggleMute() {
             audioEngine.toggleMute();
@@ -523,7 +745,7 @@
             state.spawnLoop = setInterval(spawnItem, 800);
             state.popupLoop = setInterval(trySpawnPopup, 3500);
             state.lagLoop = setInterval(tryTriggerLag, 5000);
-            state.chaosLoop = setInterval(tryChaosEvent, 7000); // New chaos loop
+            state.chaosLoop = setInterval(tryChaosEvent, 7000);
         }
 
         function gameTick() {
@@ -553,12 +775,12 @@
             if (state.timeLeft < 10) state.difficultyMultiplier = 2.0;
 
             if (state.timeLeft <= 0) {
-                const randomReason = LOSE_REASONS[Math.floor(Math.random() * LOSE_REASONS.length)];
+                const r = RESOURCES[state.language];
+                const randomReason = r.loseReasons[Math.floor(Math.random() * r.loseReasons.length)];
                 endGame(false, randomReason);
             }
         }
 
-        // New: Chaos Events (Binders-Bernt & Visual Glitches)
         function tryChaosEvent() {
             if (!state.isRunning || state.isLagging) return;
             const roll = Math.random();
@@ -570,30 +792,30 @@
             } else if (roll < 0.6) {
                 triggerTilt();
             } else if (roll < 0.65) {
-                triggerBSOD(); // Rare
+                triggerBSOD(); 
             }
         }
 
         function spawnAssistant() {
-            const quote = ASSISTANT_QUOTES[Math.floor(Math.random() * ASSISTANT_QUOTES.length)];
+            const r = RESOURCES[state.language];
+            const quote = r.quotes[Math.floor(Math.random() * r.quotes.length)];
+            
             const el = document.createElement('div');
             el.className = 'assistant-bubble absolute z-50 flex flex-col items-center assistant-anim';
             
-            const x = Math.random() * (workspace.clientWidth - 200);
+            const x = Math.random() * (workspace.clientWidth - 160);
             const y = Math.random() * (workspace.clientHeight - 200);
             
             el.style.left = `${x}px`;
             el.style.top = `${y}px`;
 
             el.innerHTML = `
-                <div class="bg-yellow-100 border-2 border-black p-2 rounded-lg shadow-lg mb-2 text-xs font-bold w-40 text-center relative bubble-text">
+                <div class="bg-yellow-100 border-2 border-black p-2 rounded-lg shadow-lg mb-2 text-xs font-bold w-40 text-center relative bubble-text pointer-events-none select-none">
                     ${quote}
                     <div class="absolute -bottom-2 left-1/2 w-3 h-3 bg-yellow-100 border-r-2 border-b-2 border-black transform rotate-45 -translate-x-1/2"></div>
                 </div>
-                <div class="text-4xl text-gray-600 cursor-pointer hover:scale-110 transition-transform" onclick="this.parentElement.remove()">
+                <div class="text-4xl text-gray-600 cursor-pointer hover:scale-110 transition-transform p-2 bg-white/50 rounded-full" onclick="this.parentElement.remove()">
                     <i class="fas fa-paperclip"></i>
-                    <div class="absolute top-2 left-2 bg-white rounded-full w-2 h-2 border border-black"></div>
-                    <div class="absolute top-2 right-2 bg-white rounded-full w-2 h-2 border border-black"></div>
                 </div>
             `;
 
@@ -619,11 +841,11 @@
             const bsod = document.getElementById('bsod-flash');
             bsod.classList.remove('hidden');
             audioEngine.stopMusic();
-            audioEngine.playSFX('lose'); // reusing lose sound for drama
+            audioEngine.playSFX('lose');
             setTimeout(() => {
                 bsod.classList.add('hidden');
                 if (state.isRunning) audioEngine.playMusic();
-            }, 800); // Quick flash
+            }, 800);
         }
 
         function tryTriggerLag() {
@@ -651,8 +873,10 @@
             if (state.score < 0) state.score = 0;
             if (state.score > 100) state.score = 100;
 
-            progressBar.style.width = `${state.score}%`;
-            progressText.textContent = `${state.score}%`;
+            const scoreStr = `${state.score}%`;
+            progressBar.style.width = scoreStr;
+            if (progressBarMobile) progressBarMobile.style.width = scoreStr;
+            progressText.textContent = scoreStr;
 
             if (state.score >= 100) {
                 submitBtn.disabled = false;
@@ -690,24 +914,33 @@
         function spawnItem() {
             if (!state.isRunning || state.isLagging) return;
             
+            const r = RESOURCES[state.language];
             const isBad = Math.random() < 0.35;
             const itemData = isBad 
-                ? BAD_WORDS[Math.floor(Math.random() * BAD_WORDS.length)]
-                : BUZZWORDS[Math.floor(Math.random() * BUZZWORDS.length)];
+                ? r.badwords[Math.floor(Math.random() * r.badwords.length)]
+                : r.buzzwords[Math.floor(Math.random() * r.buzzwords.length)];
 
             const el = document.createElement('div');
-            el.className = `falling-item absolute px-4 py-2 rounded-lg shadow-md border-2 font-bold flex items-center gap-2 ${itemData.color} hover:brightness-110 active:scale-95`;
+            el.className = `falling-item absolute px-4 py-3 rounded-lg shadow-md border-2 font-bold flex items-center gap-2 ${itemData.color} hover:brightness-110 active:scale-95 select-none`;
             el.innerHTML = `<i class="fas ${itemData.icon}"></i> ${itemData.text}`;
             
-            const maxLeft = workspace.clientWidth - 180;
-            const startLeft = Math.random() * maxLeft;
+            // Adjust max width for item width estimation (approx 150px)
+            const maxLeft = workspace.clientWidth - 150;
+            const startLeft = Math.random() * Math.max(0, maxLeft);
             el.style.left = `${startLeft}px`;
             el.style.top = '-60px';
 
-            el.onmousedown = (e) => {
+            const handleInteraction = (e) => {
                 if(state.isLagging) return;
+                
+                // Prevent double firing if both events trigger
+                if (el.dataset.clicked) return;
+                el.dataset.clicked = "true";
 
-                createExplosion(e.clientX + 'px', e.clientY + 'px');
+                // Get coordinates for explosion
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                createExplosion(clientX + 'px', clientY + 'px');
                 
                 if (isBad) {
                     state.score -= itemData.damage;
@@ -721,6 +954,9 @@
                 updateUI();
                 el.remove();
             };
+
+            // Use pointerdown for better mobile responsiveness (replaces both mouse and touch)
+            el.onpointerdown = handleInteraction;
 
             workspace.appendChild(el);
 
@@ -755,27 +991,28 @@
             if (Math.random() > 0.5) return;
 
             audioEngine.playSFX('popup');
+            const r = RESOURCES[state.language];
 
             const popup = document.createElement('div');
-            popup.className = 'popup-window absolute bg-gray-100 border-2 border-blue-800 w-72 p-1 z-30 select-none shadow-2xl';
+            popup.className = 'popup-window absolute bg-gray-100 border-2 border-blue-800 w-64 sm:w-72 p-1 z-30 select-none shadow-2xl';
             
-            const rX = 20 + Math.random() * (workspace.clientWidth - 300);
+            const rX = 20 + Math.random() * (workspace.clientWidth - 280);
             const rY = 20 + Math.random() * (workspace.clientHeight - 250);
             
-            popup.style.left = `${rX}px`;
-            popup.style.top = `${rY}px`;
+            popup.style.left = `${Math.max(0, rX)}px`;
+            popup.style.top = `${Math.max(0, rY)}px`;
 
-            const data = POPUP_MESSAGES[Math.floor(Math.random() * POPUP_MESSAGES.length)];
+            const data = r.popups[Math.floor(Math.random() * r.popups.length)];
 
             popup.innerHTML = `
                 <div class="bg-blue-800 text-white text-xs px-2 py-1 flex justify-between items-center">
                     <span class="font-bold truncate">${data.title}</span>
-                    <button class="hover:bg-red-500 px-2 rounded-sm" onclick="this.closest('.popup-window').remove()">X</button>
+                    <button class="hover:bg-red-500 px-2 rounded-sm p-2" onclick="this.closest('.popup-window').remove()">X</button>
                 </div>
                 <div class="p-4 flex flex-col items-center text-center bg-gray-50">
                     <i class="fas ${data.icon} text-red-500 text-3xl mb-3"></i>
                     <p class="text-sm font-medium mb-4 text-gray-700">${data.msg}</p>
-                    <button onclick="this.closest('.popup-window').remove()" class="bg-gray-200 hover:bg-gray-300 border border-black px-6 py-1 text-sm shadow active:translate-y-1">
+                    <button onclick="this.closest('.popup-window').remove()" class="bg-gray-200 hover:bg-gray-300 border border-black px-6 py-2 text-sm shadow active:translate-y-1 touch-manipulation">
                         OK
                     </button>
                 </div>
@@ -812,7 +1049,10 @@
 
             if(Math.random() > 0.3 && state.timeLeft > 5) {
                 const btn = document.getElementById('submit-btn');
-                btn.style.transform = `translate(${Math.random()*50 - 25}px, ${Math.random()*50 - 25}px)`;
+                // Reduced movement for mobile so it doesn't go off screen
+                const moveX = (Math.random() * 30) - 15;
+                const moveY = (Math.random() * 30) - 15;
+                btn.style.transform = `translate(${moveX}px, ${moveY}px)`;
                 setTimeout(() => btn.style.transform = 'translate(0,0)', 300);
                 audioEngine.playSFX('glitch');
                 return; 
@@ -831,20 +1071,24 @@
             gameContainer.classList.remove('tilted-mode');
 
             const btn = document.getElementById('submit-btn');
-            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> VALIDERER...';
+            const btnText = document.getElementById('ui-submit-btn');
+            const r = RESOURCES[state.language];
+
+            btnText.textContent = r.validating;
             btn.classList.remove('animate-bounce');
             
             setTimeout(() => {
                 if (Math.random() > 0.4) {
                     audioEngine.playSFX('win');
-                    endGame(true, "GRATULERER! Søknaden ble levert med 2 sekunder margin. Du får nå 2 års pause.");
+                    endGame(true, r.successMsg);
                 } else {
-                    btn.innerHTML = '<i class="fas fa-exclamation-triangle text-yellow-300"></i> FEIL I SKJEMA...';
+                    btnText.textContent = r.formError;
+                    btn.innerHTML = `<i class="fas fa-exclamation-triangle text-yellow-300"></i> ${r.formError}`;
                     audioEngine.playSFX('popup');
                     setTimeout(() => {
-                        btn.innerHTML = '<i class="fas fa-check"></i> TVANGSSENDT';
+                        btn.innerHTML = `<i class="fas fa-check"></i> ${r.forcedSend}`;
                         audioEngine.playSFX('win');
-                        endGame(true, "PUH! Systemet nektet først, men vi hacket det til. Du er reddet!");
+                        endGame(true, r.forcedMsg);
                     }, 2500);
                 }
             }, 1500);
@@ -867,6 +1111,7 @@
             const reason = document.getElementById('end-reason');
             const icon = document.getElementById('end-icon');
             const status = document.getElementById('final-status');
+            const r = RESOURCES[state.language];
             
             screen.classList.remove('hidden');
             document.getElementById('final-score').innerText = Math.floor(state.score);
@@ -874,23 +1119,23 @@
             if (won) {
                 screen.querySelector('.bg-white').classList.remove('border-red-500');
                 screen.querySelector('.bg-white').classList.add('border-green-500');
-                title.innerText = "SØKNAD LEVERT!";
+                title.innerText = r.gameOverAccepted;
                 title.classList.add('text-green-600');
                 title.classList.remove('text-red-600');
                 icon.innerHTML = '<i class="fas fa-check-circle text-green-500"></i>';
                 reason.innerText = message;
-                status.innerText = "ACCEPTED";
+                status.innerText = r.statusAccepted;
                 status.classList.add('text-green-600');
             } else {
                 audioEngine.playSFX('lose');
                 screen.querySelector('.bg-white').classList.add('border-red-500');
                 screen.querySelector('.bg-white').classList.remove('border-green-500');
-                title.innerText = "DEADLINE MISSED";
+                title.innerText = r.gameOverRejected;
                 title.classList.remove('text-green-600');
                 title.classList.add('text-red-600');
                 icon.innerHTML = '💀';
                 reason.innerText = message;
-                status.innerText = "REJECTED";
+                status.innerText = r.statusFailed;
                 status.classList.add('text-red-600');
             }
         }
