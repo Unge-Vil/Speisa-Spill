@@ -312,6 +312,22 @@
         <div class="retro-text" style="color: #ffff00; margin-top: 20px;">MENY: HAMMEREN ER DIN PEKER!</div>
         <button onclick="startGame()">INIT SYSTEM</button>
         <div class="small-text">Anbefales på PC (men funker på mobil)</div>
+
+        <!-- DEV MODE CONTROLS -->
+        <div id="dev-controls" style="display: none; margin-top: 20px; border: 1px solid red; padding: 10px;">
+            <div style="color: red; margin-bottom: 5px;">DEV MODE: WARP</div>
+            <select id="level-select" style="font-family: 'VT323'; font-size: 1.5rem; background: #000; color: #fff; border: 1px solid #fff;">
+                <option value="1">Level 1: Void</option>
+                <option value="2">Level 2: IRC</option>
+                <option value="3">Level 3: Predator</option>
+                <option value="4">Level 4: Fugle-App</option>
+                <option value="5">Level 5: Mørkenett</option>
+                <option value="6">Level 6: Fest</option>
+                <option value="7">Level 7: Desktop</option>
+                <option value="8">Level 8: Boss</option>
+            </select>
+            <button onclick="startDevGame()" style="font-size: 1rem; margin-top: 5px;">GO</button>
+        </div>
     </div>
 
     <div id="level-up-screen">
@@ -354,6 +370,10 @@
     let noteIndex = 0;
     let beatPulse = 0; 
 
+    // Custom music for Level 6
+    const partyMusic = new Audio('607307__szegvari__space-dance-2-edm-house-techno-soundtrack-film-dance-music-sfx-eq-mastered.wav');
+    partyMusic.loop = true;
+
     const SEQUENCES = {
         1: [55, 0, 55, 0, 65, 0, 55, 0], 
         2: [220, 220, 261, 261, 330, 220, 196, 220],
@@ -374,6 +394,9 @@
         isMuted = !isMuted;
         const btn = document.getElementById('mute-btn');
         btn.innerText = isMuted ? "🔇" : "🔊";
+        
+        partyMusic.muted = isMuted; // Mute external track
+
         if (isMuted) { stopMusic(); if(audioCtx) audioCtx.suspend(); } 
         else { if(audioCtx) audioCtx.resume(); if(gameActive) startMusic(); }
     }
@@ -381,6 +404,15 @@
     function startMusic() {
         if (isMusicPlaying || isMuted || !audioCtx) return;
         isMusicPlaying = true;
+        
+        if (currentLevel === 6) {
+            // Level 6: Play external file, start schedule for visuals only
+            partyMusic.currentTime = 0;
+            partyMusic.play().catch(e => console.log(e));
+        } else {
+            partyMusic.pause();
+        }
+
         noteIndex = 0;
         scheduleMusicNote();
     }
@@ -388,6 +420,7 @@
     function stopMusic() {
         isMusicPlaying = false;
         if (musicTimer) clearTimeout(musicTimer);
+        partyMusic.pause();
     }
 
     function scheduleMusicNote() {
@@ -396,28 +429,31 @@
         const seq = SEQUENCES[currentLevel] || SEQUENCES[1];
         const freq = seq[noteIndex % seq.length];
         
-        if (freq > 0) {
-            if (currentLevel === 8) { // Boss
-                playTone('sawtooth', freq, freq/2, 0.1, now, 0.3);
-                playTone('square', freq*2, freq, 0.05, now, 0.1); 
-            } else if (currentLevel === 7) { // Desktop
-                playTone('sine', freq, freq, 0.2, now, 0.1); // Elevator music
-            } else if (currentLevel === 6) {
-                if(noteIndex % 2 !== 0) playTone('sawtooth', 60, 60, 0.2, now, 0.5); 
-                if(noteIndex % 8 === 0) playTone('square', 440, 440, 0.2, now, 0.1);
-            } else if (currentLevel === 5) {
-                playTone('sawtooth', freq, freq/2, 0.1, now, 0.2);
-            } else if (currentLevel === 4) playTone('sine', freq, freq, 0.05, now, 0.1);
-            else if (currentLevel === 3) playTone('sawtooth', freq, freq + Math.random()*5, 0.3, now, 0.15);
-            else if (currentLevel === 2) playTone('square', freq, freq, 0.1, now, 0.1);
-            else playTone('triangle', freq, freq * 0.5, 0.4, now, 0.3);
-        }
+        // IF Level 6, we use external audio, but keep this loop running for visuals (beatPulse)
+        if (currentLevel !== 6) {
+            if (freq > 0) {
+                if (currentLevel === 8) { // Boss
+                    playTone('sawtooth', freq, freq/2, 0.1, now, 0.3);
+                    playTone('square', freq*2, freq, 0.05, now, 0.1); 
+                } else if (currentLevel === 7) { // Desktop
+                    playTone('sine', freq, freq, 0.2, now, 0.1); 
+                } else if (currentLevel === 5) {
+                    playTone('sawtooth', freq, freq/2, 0.1, now, 0.2);
+                } else if (currentLevel === 4) playTone('sine', freq, freq, 0.05, now, 0.1);
+                else if (currentLevel === 3) playTone('sawtooth', freq, freq + Math.random()*5, 0.3, now, 0.15);
+                else if (currentLevel === 2) playTone('square', freq, freq, 0.1, now, 0.1);
+                else playTone('triangle', freq, freq * 0.5, 0.4, now, 0.3);
+            }
 
-        if (currentLevel >= 2 && noteIndex % 2 === 0) playNoise(0.02, now, 0.05); 
-        if (currentLevel >= 4 && noteIndex % 4 === 0) playNoise(0.1, now, 0.1); 
-        if (currentLevel === 6 || currentLevel === 8) {
-            if(noteIndex % 2 === 0) { playTone('sine', 150, 40, 0.15, now, 0.8); playNoise(0.01, now, 0.2); beatPulse = 1.0; }
-            if(noteIndex % 2 !== 0) playNoise(0.1, now, 0.2); 
+            if (currentLevel >= 2 && noteIndex % 2 === 0) playNoise(0.02, now, 0.05); 
+            if (currentLevel >= 4 && noteIndex % 4 === 0) playNoise(0.1, now, 0.1); 
+            if (currentLevel === 8) {
+                if(noteIndex % 2 === 0) { playTone('sine', 150, 40, 0.15, now, 0.8); playNoise(0.01, now, 0.2); beatPulse = 1.0; }
+                if(noteIndex % 2 !== 0) playNoise(0.1, now, 0.2); 
+            }
+        } else {
+            // Level 6 Visual Sync Only
+            if(noteIndex % 2 === 0) beatPulse = 1.0; 
         }
 
         noteIndex++;
@@ -427,7 +463,7 @@
         if (currentLevel === 3) tempo = 300; 
         if (currentLevel === 4) tempo = 120; 
         if (currentLevel === 5) tempo = 100; 
-        if (currentLevel === 6) tempo = 125;
+        if (currentLevel === 6) tempo = 234; // Sync roughly to ~128 BPM track (468ms beat / 2)
         if (currentLevel === 7) tempo = 200; 
         if (currentLevel === 8) tempo = 90; 
 
@@ -591,6 +627,18 @@
     const matrixChars = "010101XYZA";
     const hashtags = ["#Trending", "#Viral", "#News", "#CatVideo", "#BanHammer"];
 
+    // CHECK DEV MODE
+    const urlParams = new URLSearchParams(window.location.search);
+    const isDev = urlParams.has('dev');
+    if (isDev) {
+        document.getElementById('dev-controls').style.display = 'block';
+    }
+
+    function startDevGame() {
+        const lvl = parseInt(document.getElementById('level-select').value);
+        startGame(lvl);
+    }
+
     function resize() {
         width = window.innerWidth;
         height = window.innerHeight;
@@ -619,6 +667,9 @@
         mouseY = touch.clientY - 80; 
 
         if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.id === 'mom-phone-btn') return;
+        // Don't block interactions with select dropdown in dev mode
+        if (e.target.tagName === 'SELECT') return;
+        
         if (e.cancelable) e.preventDefault();
     };
 
@@ -1202,7 +1253,16 @@
 
         if (rageMode) {
             handleColor = '#330000'; headColor = '#FF4500'; headStroke = '#FFFF00'; glowColor = '#FF4500'; blur = 40;
-        } else if (score > 1000) { 
+        } else if (combo > 1) { 
+            // COMBO GLOW LOGIC
+            let intensity = Math.min(10, combo); // Max glow at 10
+            blur = intensity * 2;
+            glowColor = '#FFD700'; // Gold glow for combo
+            headStroke = '#FFFFE0';
+        }
+        
+        // Specific Level / Score skins override standard glow
+        if (score > 1000) { 
             const hue = (frame * 5) % 360;
             handleColor = '#000'; headColor = '#111'; headStroke = `hsl(${hue}, 100%, 50%)`; glowColor = headStroke; blur = 30;
         } else if (score > 600) { 
@@ -1221,6 +1281,28 @@
         cursorCtx.fillText("BAN", 0, -10);
         
         cursorCtx.restore();
+    }
+
+    function setupLevelStyle(lvl) {
+        levelEl.innerText = `LEVEL: ${lvl} - ${LEVEL_NAMES[lvl]}`;
+        uiLayer.style.color = '#33ff00'; 
+        vignetteOverlay.style.opacity = 0; 
+        
+        if (lvl === 3) { levelEl.style.color = '#ff0055'; uiLayer.style.color = '#ff0055'; vignetteOverlay.style.opacity = 1; }
+        else if (lvl === 4) { levelEl.style.color = '#1DA1F2'; uiLayer.style.color = '#1DA1F2'; }
+        else if (lvl === 5) { levelEl.style.color = '#00ff00'; uiLayer.style.color = '#00ff00'; }
+        else if (lvl === 6) { levelEl.style.color = '#FFFF00'; uiLayer.style.color = '#FFFF00'; }
+        else if (lvl === 7) { levelEl.style.color = '#008080'; uiLayer.style.color = '#008080'; }
+        else if (lvl === 8) { 
+            levelEl.style.color = '#FF0000'; uiLayer.style.color = '#FF0000'; 
+            bossHud.style.display = 'block';
+            initBossFight();
+        } else {
+            bossHud.style.display = 'none';
+        }
+        
+        if (lvl !== 8) initBackgroundElements();
+        stopMusic(); startMusic(); 
     }
 
     function checkLevelProgress() {
@@ -1259,24 +1341,8 @@
 
     function nextLevel() {
         levelUpEl.style.display = 'none';
-        levelEl.innerText = `LEVEL: ${currentLevel} - ${LEVEL_NAMES[currentLevel]}`;
-        
-        uiLayer.style.color = '#33ff00'; 
-        vignetteOverlay.style.opacity = 0; 
-
-        if (currentLevel === 3) { levelEl.style.color = '#ff0055'; uiLayer.style.color = '#ff0055'; vignetteOverlay.style.opacity = 1; }
-        else if (currentLevel === 4) { levelEl.style.color = '#1DA1F2'; uiLayer.style.color = '#1DA1F2'; }
-        else if (currentLevel === 5) { levelEl.style.color = '#00ff00'; uiLayer.style.color = '#00ff00'; }
-        else if (currentLevel === 6) { levelEl.style.color = '#FFFF00'; uiLayer.style.color = '#FFFF00'; }
-        else if (currentLevel === 7) { levelEl.style.color = '#008080'; uiLayer.style.color = '#008080'; } // Teal
-        else if (currentLevel === 8) { 
-            levelEl.style.color = '#FF0000'; uiLayer.style.color = '#FF0000'; 
-            bossHud.style.display = 'block';
-            initBossFight();
-        }
-        
-        updateProgressBar(); stopMusic(); startMusic(); 
-        if (currentLevel !== 8) initBackgroundElements(); 
+        setupLevelStyle(currentLevel);
+        updateProgressBar();
         gameActive = true;
     }
 
@@ -1292,12 +1358,25 @@
         bossTimer = 0;
     }
 
-    function startGame() {
-        initAudio(); startMusic(); gameActive = true;
-        score = 0; combo = 0; serverLoad = 0; currentLevel = 1; drunkLevel = 0; rageMode = false;
+    function startDevGame() {
+        const lvl = parseInt(document.getElementById('level-select').value);
+        startGame(lvl);
+    }
+
+    function startGame(startLevel = 1) {
+        initAudio(); 
+        gameActive = true;
+        score = 0; 
+        combo = 0; 
+        serverLoad = 0; 
+        currentLevel = startLevel; 
+        drunkLevel = 0; 
+        rageMode = false;
+        
+        if (startLevel > 1) score = LEVEL_THRESHOLDS[startLevel];
+
         entities = []; particles = []; floatText = []; shockwaves = [];
         scoreEl.innerText = score; livesEl.innerText = serverLoad;
-        levelEl.innerText = "LEVEL: 1 - THE VOID";
         
         uiLayer.style.color = '#33ff00'; vignetteOverlay.style.opacity = 0;
         comboDisplayEl.style.display = 'none'; rageDisplayEl.style.display = 'none';
@@ -1306,6 +1385,7 @@
         bossHud.style.display = 'none'; momPhoneBtn.style.display = 'none';
         progressContainer.style.display = 'flex';
         
+        setupLevelStyle(currentLevel);
         resize(); updateProgressBar();
     }
 
@@ -1448,7 +1528,9 @@
             } else {
                 // NORMAL SPAWN
                 if (frame % 60 === 0) {
-                    const max = 5 + (currentLevel * 3) + Math.min(10, score/50);
+                    // FIX: Spawn rate never drops due to negative score
+                    // Use Math.max(0, score) to prevent negative impact
+                    const max = 5 + (currentLevel * 3) + Math.min(10, Math.max(0, score)/50);
                     if (entities.length < max) {
                         const r = Math.random(); let type = 'troll';
                         if (Math.random() < 0.005) { type = 'golden_troll'; } 
@@ -1514,6 +1596,10 @@
     
     function incrementCombo() { combo++; }
     function resetCombo() { 
+        if(combo > 2) {
+            floatText.push(new FloatingText(mouseX, mouseY, "COMBO LOST!", "#888"));
+            sfx.bad();
+        }
         combo = 0; 
         if(rageMode) { // End rage mode if combo drops
             rageMode = false;
