@@ -27,17 +27,17 @@
                         'neon-purple': '#bd00ff'
                     },
                     animation: {
-                        'float': 'float 6s ease-in-out infinite',
                         'pulse-glow': 'pulse-glow 3s infinite',
+                        'cursor-blink': 'blink 1s step-end infinite',
                     },
                     keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-10px)' },
-                        },
                         'pulse-glow': {
                             '0%, 100%': { boxShadow: '0 0 10px #bd00ff' },
                             '50%': { boxShadow: '0 0 25px #00ffff' },
+                        },
+                        'blink': {
+                            '0%, 100%': { opacity: '1' },
+                            '50%': { opacity: '0' },
                         }
                     }
                 }
@@ -49,18 +49,23 @@
             background-color: #050510;
             color: #ffffff;
             overflow-x: hidden;
+            perspective: 1000px; /* Nødvendig for 3D-effekter */
+        }
+
+        /* Dynamisk stjernebakgrunn */
+        #star-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 110%;
+            height: 110%;
             background-image: 
                 radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
                 radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
                 radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
             background-size: 550px 550px, 350px 350px, 250px 250px;
-            background-position: 0 0, 40px 60px, 130px 270px;
-            animation: starMove 100s linear infinite;
-        }
-
-        @keyframes starMove {
-            from { background-position: 0 0, 40px 60px, 130px 270px; }
-            to { background-position: 550px 550px, 590px 610px, 680px 820px; }
+            z-index: -1;
+            transition: transform 0.1s ease-out;
         }
 
         .glass-panel {
@@ -70,28 +75,51 @@
             border: 1px solid rgba(0, 255, 255, 0.1);
         }
 
-        .game-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
-            border-color: #00ffff;
+        /* 3D TILT EFFEKT */
+        .game-card {
+            transition: transform 0.1s ease-out, box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+        
+        .game-card-inner {
+            transform: translateZ(0); /* Hardware acceleration */
         }
 
         .neon-text {
             text-shadow: 0 0 10px rgba(189, 0, 255, 0.7);
         }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050510; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00ffff; 
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ff00ff; 
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col" id="main-body">
+
+    <!-- Parallax Background Layer -->
+    <div id="star-bg"></div>
 
     <!-- Header / Navigasjon -->
     <header class="glass-panel sticky top-0 z-50 border-b border-gray-800">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <div class="flex items-center gap-6">
                 <!-- LOGO -->
-                <a href="https://ungevil.no" target="_blank" class="block">
+                <a href="https://ungevil.no" target="_blank" class="block group">
                     <img src="https://www.ungevil.no/wp-content/uploads/2024/01/UngeVil-dark-line.png" 
                          alt="Unge Vil Logo" 
-                         class="h-10 md:h-12 w-auto filter drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] hover:scale-105 transition-transform duration-300">
+                         class="h-10 md:h-12 w-auto filter drop-shadow-[0_0_8px_rgba(255,255,255,0.4)] group-hover:drop-shadow-[0_0_15px_rgba(0,255,255,0.6)] transition-all duration-300">
                 </a>
                 
                 <div class="hidden sm:block border-l border-gray-600 pl-6 h-8 flex items-center">
@@ -100,11 +128,11 @@
                     </h1>
                 </div>
             </div>
-            <a href="https://github.com" target="_blank" class="text-gray-400 hover:text-neon-blue transition duration-300">
+            <a href="https://github.com" target="_blank" class="text-gray-400 hover:text-neon-blue transition duration-300 transform hover:rotate-12">
                 <i class="fa-brands fa-github text-3xl"></i>
             </a>
         </div>
-        <!-- Mobil tittel (vises kun på små skjermer) -->
+        <!-- Mobil tittel -->
         <div class="sm:hidden text-center pb-2">
             <h1 class="text-xl font-black tracking-widest font-scifi uppercase bg-clip-text text-transparent bg-gradient-to-r from-neon-pink to-neon-blue">
                 SPEISA SPILL
@@ -113,30 +141,40 @@
     </header>
 
     <!-- Hero Seksjon -->
-    <div class="container mx-auto px-6 py-16 text-center relative">
-        <!-- Dekorativ planet effekt (bakgrunn) -->
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-neon-purple rounded-full blur-[100px] opacity-20 -z-10"></div>
+    <div class="container mx-auto px-6 py-16 text-center relative z-10">
+        <!-- Dekorativ planet effekt -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-neon-purple rounded-full blur-[100px] opacity-20 -z-10 animate-pulse"></div>
 
-        <h2 class="text-3xl md:text-5xl font-bold mb-6 font-scifi text-white neon-text">Velkommen til Portalrommet</h2>
-        <p class="text-blue-200 text-lg max-w-2xl mx-auto mb-10 font-light tracking-wide">
-            Utforsk vårt univers av AI-genererte spill. Velg en destinasjon nedenfor og gjør deg klar for oppskytning!
-        </p>
+        <h2 class="text-3xl md:text-5xl font-bold mb-6 font-scifi text-white neon-text">
+            Velkommen til <span class="text-neon-blue">Portalrommet</span>
+        </h2>
+        
+        <!-- Typewriter Text Container -->
+        <div class="h-16 md:h-12 flex items-center justify-center mb-8">
+            <p id="typewriter" class="text-blue-200 text-lg md:text-xl font-mono tracking-wide">
+                <!-- Tekst skrives her av JS -->
+            </p>
+            <span class="animate-cursor-blink w-2 h-6 bg-neon-pink ml-1 inline-block"></span>
+        </div>
         
         <!-- Søkefelt -->
-        <div class="relative max-w-md mx-auto group">
-            <input type="text" id="searchInput" placeholder="Søk i universet..." 
-                class="w-full bg-space-dark bg-opacity-80 border border-neon-blue/30 rounded-none py-4 px-6 pl-12 focus:outline-none focus:border-neon-pink focus:ring-1 focus:ring-neon-pink transition text-white font-mono placeholder-gray-500 clip-path-polygon">
-            <i class="fa-solid fa-rocket absolute left-4 top-4 text-neon-blue group-hover:animate-bounce"></i>
+        <div class="relative max-w-md mx-auto group transform hover:scale-105 transition-transform duration-300">
+            <div class="absolute -inset-1 bg-gradient-to-r from-neon-pink to-neon-blue rounded-lg blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+            <div class="relative">
+                <input type="text" id="searchInput" placeholder="Søk i universet..." 
+                    class="w-full bg-space-dark bg-opacity-90 border border-gray-700 rounded-lg py-4 px-6 pl-12 focus:outline-none text-white font-mono placeholder-gray-500 shadow-2xl">
+                <i class="fa-solid fa-rocket absolute left-4 top-4 text-neon-blue group-hover:animate-bounce"></i>
+            </div>
         </div>
     </div>
 
     <!-- Spill Grid -->
     <main class="container mx-auto px-6 pb-24 flex-grow z-10">
-        <div id="gameGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <!-- Spinner mens vi laster data -->
+        <div id="gameGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 perspective-container">
+            <!-- Spinner -->
             <div class="col-span-full text-center py-20">
                 <i class="fa-solid fa-spinner fa-spin text-4xl text-neon-blue"></i>
-                <p class="mt-4 text-gray-400">Kobler til databasen...</p>
+                <p class="mt-4 text-gray-400">Kobler til spill-databasen...</p>
             </div>
         </div>
 
@@ -145,33 +183,110 @@
             <i class="fa-solid fa-meteor text-6xl text-gray-600 mb-4 animate-spin-slow"></i>
             <p class="text-xl text-gray-400 font-scifi">Ingen livstegn funnet...</p>
         </div>
-        
-        <!-- Feilmelding boks (skjult som standard) -->
+
+        <!-- Feilmelding (hvis JSON mangler eller er ødelagt) -->
         <div id="errorMsg" class="hidden text-center py-10">
             <i class="fa-solid fa-triangle-exclamation text-6xl text-red-500 mb-4"></i>
-            <p class="text-xl text-gray-400">Kunne ikke laste spilldata (spill.json).</p>
+            <p class="text-xl text-gray-400">SYSTEM FEIL: Kunne ikke lese spilldata.</p>
+            <p class="text-sm text-gray-600 mt-2">Sjekk at spill.json finnes og er gyldig.</p>
         </div>
     </main>
 
     <!-- Footer -->
-    <footer class="glass-panel py-8 text-center text-gray-400 text-sm border-t border-gray-800 mt-auto">
-        <p class="font-mono">SYSTEM STATUS: ONLINE | &copy; 2026 Unge Vil</p>
+    <footer class="glass-panel py-8 text-center text-gray-400 text-sm border-t border-gray-800 mt-auto z-10">
+        <p class="font-mono">SYSTEM STATUS: ONLINE | &copy; <span id="year"></span> Unge Vil</p>
     </footer>
 
     <!-- LOGIKK OG DATA -->
     <script>
         // ==========================================
-        // SYSTEM FOR Å VISE SPILLENE
+        // KONFIGURASJON OG VARIABLER
         // ==========================================
-
+        
+        let spillListe = []; 
         const gameGrid = document.getElementById('gameGrid');
         const searchInput = document.getElementById('searchInput');
         const noResults = document.getElementById('noResults');
         const errorMsg = document.getElementById('errorMsg');
-        
-        let spillListe = []; // Tom liste som fylles fra JSON
 
-        // Funksjon for å generere HTML for spillkortene
+        // Dynamisk årstall i footer
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // ==========================================
+        // 1. VISUELLE EFFEKTER
+        // ==========================================
+
+        // 3D Tilt Effekt for spillkort
+        function addTiltEffect(card) {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Regn ut rotasjon basert på musens posisjon i kortet
+                const xPct = x / rect.width;
+                const yPct = y / rect.height;
+                
+                const xRotation = (yPct - 0.5) * 20 * -1; // Opp/Ned tilt
+                const yRotation = (xPct - 0.5) * 20;      // Venstre/Høyre tilt
+                
+                card.style.transform = `perspective(1000px) rotateX(${xRotation}deg) rotateY(${yRotation}deg) scale(1.05)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                // Reset posisjon når musen forlater
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+            });
+        }
+
+        // Typewriter effekt for velkomsttekst
+        const textToType = "Utforsk vårt univers av AI-genererte spill.";
+        const typeContainer = document.getElementById('typewriter');
+        let typeIndex = 0;
+
+        function typeWriter() {
+            if (typeIndex < textToType.length) {
+                typeContainer.innerHTML += textToType.charAt(typeIndex);
+                typeIndex++;
+                setTimeout(typeWriter, 50); // Hastighet på skrivingen
+            }
+        }
+
+        // Parallax Bakgrunn (Stjerner flytter seg med musen)
+        document.addEventListener('mousemove', (e) => {
+            const bg = document.getElementById('star-bg');
+            const x = (window.innerWidth - e.pageX * 2) / 100;
+            const y = (window.innerHeight - e.pageY * 2) / 100;
+            bg.style.transform = `translateX(${x}px) translateY(${y}px)`;
+        });
+
+        // ==========================================
+        // 2. LASTE DATA (JSON)
+        // ==========================================
+
+        async function initSystem() {
+            try {
+                // Henter spill.json. ?v=... brukes for å unngå at nettleseren husker gamle versjoner.
+                const response = await fetch('spill.json?v=' + Date.now());
+                
+                if (!response.ok) throw new Error('Fant ikke filen');
+                
+                spillListe = await response.json();
+                renderGames(spillListe);
+                
+            } catch (error) {
+                console.error("Kritisk feil: Kunne ikke laste spill.json", error);
+                // Skjul loading spinner (ved å tømme grid)
+                gameGrid.innerHTML = ''; 
+                // Vis feilmelding til brukeren
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        // ==========================================
+        // 3. RENDERING OG SØK
+        // ==========================================
+
         function renderGames(games) {
             gameGrid.innerHTML = '';
             
@@ -182,52 +297,44 @@
                 
                 games.forEach(spill => {
                     const card = document.createElement('div');
-                    card.className = `game-card glass-panel rounded-lg overflow-hidden flex flex-col h-full hover:border-neon-blue transition-all duration-300`;
+                    // Merk: transition-transform er fjernet her for å unngå konflikt med JS-tilt
+                    card.className = `game-card glass-panel rounded-lg overflow-hidden flex flex-col h-full border border-gray-800 hover:border-neon-blue shadow-lg`;
                     
                     card.innerHTML = `
-                        <div class="h-40 ${spill.farge} flex items-center justify-center relative overflow-hidden group border-b border-gray-700">
-                            <i class="${spill.ikon} text-7xl text-white opacity-90 group-hover:scale-110 group-hover:text-neon-blue transition-all duration-500 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]"></i>
-                            
-                            <!-- Grid effekt i bakgrunnen av kortet -->
-                            <div class="absolute inset-0 opacity-20" 
-                                style="background-image: linear-gradient(#00ffff 1px, transparent 1px), linear-gradient(90deg, #00ffff 1px, transparent 1px); background-size: 20px 20px;">
+                        <div class="game-card-inner h-full flex flex-col">
+                            <div class="h-44 ${spill.farge} flex items-center justify-center relative overflow-hidden border-b border-gray-700">
+                                <i class="${spill.ikon} text-7xl text-white opacity-90 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)] z-10"></i>
+                                
+                                <!-- Scanningslinje effekt -->
+                                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-transparent w-full h-full animate-[float_3s_ease-in-out_infinite] opacity-30"></div>
+                                
+                                <!-- Grid effekt -->
+                                <div class="absolute inset-0 opacity-20" 
+                                    style="background-image: linear-gradient(#00ffff 1px, transparent 1px), linear-gradient(90deg, #00ffff 1px, transparent 1px); background-size: 30px 30px;">
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="p-6 flex flex-col flex-grow">
-                            <h3 class="text-xl font-bold mb-2 text-white font-scifi tracking-wide">${spill.tittel}</h3>
-                            <p class="text-blue-100/70 text-sm mb-6 flex-grow font-mono leading-relaxed">${spill.beskrivelse}</p>
                             
-                            <a href="${spill.url}" class="group relative block text-center w-full py-3 bg-transparent border border-neon-blue text-neon-blue font-bold rounded overflow-hidden hover:text-black transition-colors duration-300">
-                                <span class="absolute inset-0 w-full h-full bg-neon-blue transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300 ease-out"></span>
-                                <span class="relative flex items-center justify-center gap-2">
-                                    START SPILL <i class="fa-solid fa-play text-xs"></i>
-                                </span>
-                            </a>
+                            <div class="p-6 flex flex-col flex-grow bg-opacity-40 bg-black">
+                                <h3 class="text-xl font-bold mb-2 text-white font-scifi tracking-wide group-hover:text-neon-pink transition-colors">${spill.tittel}</h3>
+                                <p class="text-blue-100/70 text-sm mb-6 flex-grow font-mono leading-relaxed">${spill.beskrivelse}</p>
+                                
+                                <a href="${spill.url}" class="relative block text-center w-full py-3 border border-neon-blue text-neon-blue font-bold rounded overflow-hidden hover:bg-neon-blue hover:text-black transition-all duration-300 shadow-[0_0_10px_rgba(0,255,255,0.2)] hover:shadow-[0_0_20px_rgba(0,255,255,0.6)]">
+                                    <span class="relative z-10 flex items-center justify-center gap-2">
+                                        START PROTOKOLL <i class="fa-solid fa-play text-xs"></i>
+                                    </span>
+                                </a>
+                            </div>
                         </div>
                     `;
                     gameGrid.appendChild(card);
+                    
+                    // Aktiver 3D-tilt på kortet
+                    addTiltEffect(card);
                 });
             }
         }
 
-        // Funksjon for å hente data fra spill.json
-        async function lastInnSpill() {
-            try {
-                const response = await fetch('spill.json');
-                if (!response.ok) {
-                    throw new Error('Nettverksfeil ved lasting av JSON');
-                }
-                spillListe = await response.json();
-                renderGames(spillListe);
-            } catch (error) {
-                console.error("Feil:", error);
-                gameGrid.innerHTML = ''; // Tøm loading spinner
-                errorMsg.classList.remove('hidden');
-            }
-        }
-
-        // Setup søkefunksjonalitet
+        // Søkefunksjonalitet
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             const filteredGames = spillListe.filter(spill => 
@@ -237,8 +344,9 @@
             renderGames(filteredGames);
         });
 
-        // Start appen ved å laste inn data
-        lastInnSpill();
+        // Start systemet
+        initSystem();
+        setTimeout(typeWriter, 500); 
 
     </script>
 </body>
