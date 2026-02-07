@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BAN HAMMER 9000 - PARTY MODE</title>
+    <title>BAN HAMMER 9000 - ULTIMATE</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
@@ -175,6 +175,7 @@
             h1 { font-size: 2.5rem; }
             h2 { font-size: 2rem; }
             #audio-controls { top: 10px; right: 10px; }
+            #mom-phone-btn { width: 80px; height: 80px; bottom: 20px; right: 20px; font-size: 30px; }
         }
 
         .hud-item {
@@ -187,7 +188,7 @@
         #combo-display { color: #ff00ff; display: none; font-size: 2.5rem; animation: pulse 0.2s infinite; }
         #highscore-display { color: #00ffff; font-size: 1.5rem; }
 
-        #game-over, #level-up-screen, .start-screen {
+        #game-over, #level-up-screen, .start-screen, #game-win {
             position: absolute;
             top: 0;
             left: 0;
@@ -201,9 +202,9 @@
         }
 
         .start-screen { background: rgba(0, 0, 0, 0.85); }
-        #game-over, #level-up-screen { background: rgba(0, 0, 0, 0.9); display: none; }
+        #game-over, #level-up-screen, #game-win { background: rgba(0, 0, 0, 0.9); display: none; }
 
-        #game-over-content, #level-up-content {
+        #game-over-content, #level-up-content, #game-win-content {
              border: 2px solid #33ff00;
              padding: 2rem;
              background: #000;
@@ -239,6 +240,13 @@
             text-align: center;
             padding: 0 20px;
         }
+        
+        .small-text {
+            color: #888;
+            font-size: 1rem;
+            margin-top: 30px;
+            text-transform: uppercase;
+        }
 
         .warning-text {
             color: #ff0055;
@@ -272,34 +280,45 @@
         <button class="icon-btn" id="mute-btn" onclick="toggleMute()">🔊</button>
     </div>
 
+    <!-- Phone Button (Hidden until 8 digits) -->
+    <div id="mom-phone-btn" onclick="callMom()" style="display: none;">☎️</div>
+
     <div id="ui-layer">
         <div class="hud-item">SCORE: <span id="score">0</span></div>
         <div class="hud-item" id="highscore-display">HIGH SCORE: <span id="highscore">0</span></div>
         <div class="hud-item" id="level-indicator">LEVEL: 1 - THE VOID</div>
         
-        <div class="hud-item" style="padding: 5px; display: flex; flex-direction: column; gap: 2px; width: 200px;">
+        <div class="hud-item" id="progress-container" style="padding: 5px; display: flex; flex-direction: column; gap: 2px; width: 200px;">
             <div style="font-size: 1rem; opacity: 0.8;">NEXT LEVEL:</div>
             <div style="width: 100%; height: 10px; background: rgba(0,0,0,0.5); border: 1px solid currentColor;">
                 <div id="progress-fill" style="width: 0%; height: 100%; background: currentColor; transition: width 0.2s;"></div>
             </div>
         </div>
 
+        <div id="boss-hud">
+            <div>MOM'S PHONE #:</div>
+            <div id="phone-number-display" style="font-size: 2rem; letter-spacing: 5px;">_ _ _ _ _ _ _ _</div>
+        </div>
+
         <div class="hud-item">SERVER LOAD: <span id="lives">0</span>%</div>
         <div id="combo-display">COMBO x<span id="combo-count">0</span></div>
+        <div id="rage-display" style="color: red; font-size: 2rem; display: none; animation: pulse 0.1s infinite;">🔥 RAGE MODE 🔥</div>
     </div>
 
     <div id="start-screen" class="start-screen">
         <h1 style="color: #33ff00;">BAN HAMMER 9000</h1>
         <div class="retro-text">OPPDRAG: RENS CHATTEN FOR TROLL.</div>
-        <div class="retro-text warning-text">NYE FIENDER: BOTS, VIRUS & IRL FEST!</div>
+        <div class="retro-text warning-text">NYE FIENDER: BOTS, POP-UPS & BINDERS!</div>
         <div class="retro-text" style="color: #ffff00; margin-top: 20px;">MENY: HAMMEREN ER DIN PEKER!</div>
         <button onclick="startGame()">INIT SYSTEM</button>
+        <div class="small-text">Anbefales på PC (men funker på mobil)</div>
     </div>
 
     <div id="level-up-screen">
         <div id="level-up-content">
             <h2>LEVEL OPP!</h2>
             <div class="retro-text" id="level-desc">Nytt miljø lastet inn...</div>
+            <div class="retro-text" id="level-hint" style="color: #ffff00; font-size: 1.2rem; margin-top: 15px;"></div>
             <button onclick="nextLevel()">FORTSETT</button>
         </div>
     </div>
@@ -307,9 +326,20 @@
     <div id="game-over">
         <div id="game-over-content">
             <h1>SYSTEM CRASH</h1>
-            <p class="retro-text">Serveren ble overbelastet.</p>
+            <p class="retro-text" id="game-over-reason">Serveren ble overbelastet.</p>
             <p class="retro-text">Final Score: <span id="final-score">0</span></p>
             <button onclick="resetGame()">REBOOT</button>
+        </div>
+    </div>
+
+    <div id="game-win">
+        <div id="game-win-content">
+            <h1 style="color: #00ff00;">SEIER!</h1>
+            <p class="retro-text">"MAMMA! HAN SLÅR MEG!"</p>
+            <p class="retro-text">Mega Trollet løp hjem.</p>
+            <p class="retro-text">Chatten er trygg... for nå.</p>
+            <p class="retro-text">Score: <span id="win-score">0</span></p>
+            <button onclick="resetGame()">SPILL IGJEN</button>
         </div>
     </div>
 </div>
@@ -322,8 +352,6 @@
     let musicTimer;
     let isMusicPlaying = false;
     let noteIndex = 0;
-    
-    // Beat pulse for visual sync
     let beatPulse = 0; 
 
     const SEQUENCES = {
@@ -332,7 +360,9 @@
         3: [65, 69, 73, 69, 65, 69, 73, 77],
         4: [440, 0, 880, 0, 440, 880, 440, 0],
         5: [110, 108, 110, 55, 110, 108, 110, 220],
-        6: [110, 0, 110, 0, 110, 0, 110, 0]
+        6: [110, 0, 110, 0, 110, 0, 110, 0],
+        7: [220, 220, 0, 220, 220, 0, 440, 0], 
+        8: [55, 55, 65, 55, 82, 82, 73, 55] 
     };
 
     function initAudio() {
@@ -344,13 +374,8 @@
         isMuted = !isMuted;
         const btn = document.getElementById('mute-btn');
         btn.innerText = isMuted ? "🔇" : "🔊";
-        if (isMuted) {
-            stopMusic();
-            if(audioCtx) audioCtx.suspend();
-        } else {
-            if(audioCtx) audioCtx.resume();
-            if(gameActive) startMusic();
-        }
+        if (isMuted) { stopMusic(); if(audioCtx) audioCtx.suspend(); } 
+        else { if(audioCtx) audioCtx.resume(); if(gameActive) startMusic(); }
     }
 
     function startMusic() {
@@ -368,42 +393,30 @@
     function scheduleMusicNote() {
         if (!isMusicPlaying || !audioCtx) return;
         const now = audioCtx.currentTime;
-        
         const seq = SEQUENCES[currentLevel] || SEQUENCES[1];
         const freq = seq[noteIndex % seq.length];
         
-        // --- INSTRUMENTS ---
         if (freq > 0) {
-            if (currentLevel === 1) playTone('triangle', freq, freq * 0.5, 0.4, now, 0.3);
-            else if (currentLevel === 2) playTone('square', freq, freq, 0.1, now, 0.1);
-            else if (currentLevel === 3) playTone('sawtooth', freq, freq + Math.random()*5, 0.3, now, 0.15);
-            else if (currentLevel === 4) playTone('sine', freq, freq, 0.05, now, 0.1);
-            else if (currentLevel === 5) {
-                playTone('sawtooth', freq, freq/2, 0.1, now, 0.2);
-                if(Math.random() > 0.7) playNoise(0.05, now, 0.2);
+            if (currentLevel === 8) { // Boss
+                playTone('sawtooth', freq, freq/2, 0.1, now, 0.3);
+                playTone('square', freq*2, freq, 0.05, now, 0.1); 
+            } else if (currentLevel === 7) { // Desktop
+                playTone('sine', freq, freq, 0.2, now, 0.1); // Elevator music
             } else if (currentLevel === 6) {
-                // Party Bass - Offbeat
                 if(noteIndex % 2 !== 0) playTone('sawtooth', 60, 60, 0.2, now, 0.5); 
-                // Party Melody
                 if(noteIndex % 8 === 0) playTone('square', 440, 440, 0.2, now, 0.1);
-                if(noteIndex % 8 === 2) playTone('square', 554, 554, 0.2, now, 0.1);
-            }
+            } else if (currentLevel === 5) {
+                playTone('sawtooth', freq, freq/2, 0.1, now, 0.2);
+            } else if (currentLevel === 4) playTone('sine', freq, freq, 0.05, now, 0.1);
+            else if (currentLevel === 3) playTone('sawtooth', freq, freq + Math.random()*5, 0.3, now, 0.15);
+            else if (currentLevel === 2) playTone('square', freq, freq, 0.1, now, 0.1);
+            else playTone('triangle', freq, freq * 0.5, 0.4, now, 0.3);
         }
 
-        // --- DRUMS & PULSE ---
         if (currentLevel >= 2 && noteIndex % 2 === 0) playNoise(0.02, now, 0.05); 
         if (currentLevel >= 4 && noteIndex % 4 === 0) playNoise(0.1, now, 0.1); 
-        
-        // LEVEL 6: HOUSE BEAT (KICK ON EVERY BEAT)
-        if (currentLevel === 6) {
-            if(noteIndex % 2 === 0) {
-                // KICK
-                playTone('sine', 150, 40, 0.15, now, 0.8);
-                playNoise(0.01, now, 0.2); // Click for punch
-                // Visual Pulse
-                beatPulse = 1.0; 
-            }
-            // Open Hat offbeat
+        if (currentLevel === 6 || currentLevel === 8) {
+            if(noteIndex % 2 === 0) { playTone('sine', 150, 40, 0.15, now, 0.8); playNoise(0.01, now, 0.2); beatPulse = 1.0; }
             if(noteIndex % 2 !== 0) playNoise(0.1, now, 0.2); 
         }
 
@@ -414,7 +427,9 @@
         if (currentLevel === 3) tempo = 300; 
         if (currentLevel === 4) tempo = 120; 
         if (currentLevel === 5) tempo = 100; 
-        if (currentLevel === 6) tempo = 125; // ~120 BPM
+        if (currentLevel === 6) tempo = 125;
+        if (currentLevel === 7) tempo = 200; 
+        if (currentLevel === 8) tempo = 90; 
 
         musicTimer = setTimeout(scheduleMusicNote, tempo);
     }
@@ -424,15 +439,13 @@
         const t = startTime || audioCtx.currentTime;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        osc.connect(gain); gain.connect(audioCtx.destination);
         osc.type = type;
         osc.frequency.setValueAtTime(startFreq, t);
         osc.frequency.exponentialRampToValueAtTime(Math.max(1, endFreq), t + duration);
         gain.gain.setValueAtTime(vol, t);
         gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
-        osc.start(t);
-        osc.stop(t + duration);
+        osc.start(t); osc.stop(t + duration);
     }
 
     function playNoise(duration, startTime, vol = 0.3) {
@@ -445,8 +458,7 @@
         const noise = audioCtx.createBufferSource();
         noise.buffer = buffer;
         const gain = audioCtx.createGain();
-        noise.connect(gain);
-        gain.connect(audioCtx.destination);
+        noise.connect(gain); gain.connect(audioCtx.destination);
         gain.gain.setValueAtTime(vol, t);
         gain.gain.exponentialRampToValueAtTime(0.01, t + duration);
         noise.start(t);
@@ -458,23 +470,16 @@
         bad: () => playTone('sawtooth', 100, 50, 0.3, 0, 0.2),
         error: () => { 
              if(!audioCtx || isMuted) return;
-             playTone('sawtooth', 50, 200, 0.1, 0, 0.2);
-             setTimeout(() => playTone('square', 200, 50, 0.1, 0, 0.2), 100);
+             playTone('sawtooth', 50, 200, 0.1, 0, 0.2); setTimeout(() => playTone('square', 200, 50, 0.1, 0, 0.2), 100);
         },
         powerup: () => {
             if(!audioCtx || isMuted) return;
-            const now = audioCtx.currentTime;
-            [440, 554, 659].forEach((f, i) => playTone('sine', f, f, 0.3, now + i*0.1, 0.1));
+            const now = audioCtx.currentTime; [440, 554, 659].forEach((f, i) => playTone('sine', f, f, 0.3, now + i*0.1, 0.1));
         },
-        drunk: () => {
-            if(!audioCtx || isMuted) return;
-            playTone('sine', 200, 150, 0.5, 0, 0.2);
-        },
-        rare: () => { 
-            if(!audioCtx || isMuted) return;
-            playTone('square', 880, 1760, 0.5, 0, 0.3);
-            setTimeout(() => playTone('square', 1760, 880, 0.5, 0, 0.3), 100);
-        }
+        drunk: () => { if(!audioCtx || isMuted) return; playTone('sine', 200, 150, 0.5, 0, 0.2); },
+        rare: () => { if(!audioCtx || isMuted) return; playTone('square', 880, 1760, 0.5, 0, 0.3); setTimeout(() => playTone('square', 1760, 880, 0.5, 0, 0.3), 100); },
+        win: () => { if(!audioCtx || isMuted) return; [523, 659, 784, 1046].forEach((f, i) => playTone('triangle', f, f, 0.5, audioCtx.currentTime + i*0.2, 0.3)); },
+        pop: () => { if(!audioCtx || isMuted) return; playTone('triangle', 300, 350, 0.05, 0, 0.1); }
     };
 
     // --- GAME VARIABLES ---
@@ -490,18 +495,28 @@
     const levelEl = document.getElementById('level-indicator');
     const comboDisplayEl = document.getElementById('combo-display');
     const comboCountEl = document.getElementById('combo-count');
+    const rageDisplayEl = document.getElementById('rage-display');
     const progressFillEl = document.getElementById('progress-fill');
+    const progressContainer = document.getElementById('progress-container');
     
     const gameOverEl = document.getElementById('game-over');
+    const gameOverReasonEl = document.getElementById('game-over-reason');
+    const gameWinEl = document.getElementById('game-win');
     const levelUpEl = document.getElementById('level-up-screen');
     const levelDescEl = document.getElementById('level-desc');
+    const levelHintEl = document.getElementById('level-hint');
     const startScreenEl = document.getElementById('start-screen');
     const finalScoreEl = document.getElementById('final-score');
+    const winScoreEl = document.getElementById('win-score');
     
     const flashOverlay = document.getElementById('flash-overlay');
     const blackoutOverlay = document.getElementById('blackout-overlay');
     const vignetteOverlay = document.getElementById('vignette-overlay');
     const drunkOverlay = document.getElementById('drunk-overlay');
+    
+    const bossHud = document.getElementById('boss-hud');
+    const phoneNumberDisplay = document.getElementById('phone-number-display');
+    const momPhoneBtn = document.getElementById('mom-phone-btn');
 
     let width, height;
     let score = 0;
@@ -515,6 +530,8 @@
     let combo = 0;
     let isTouchInput = false;
     let drunkLevel = 0;
+    let rageMode = false;
+    let rageTimer = 0;
 
     let mouseX = width/2;
     let mouseY = height/2;
@@ -528,17 +545,46 @@
     let shockwaves = [];
     let bgElements = [];
 
+    // Boss Variables
+    let boss = null;
+    let collectedDigits = [];
+    let nextDigit = 1;
+    let bossState = 'idle'; // idle, attack, cooldown
+    let bossTimer = 0;
+
     highscoreEl.innerText = highScore;
 
-    const LEVEL_THRESHOLDS = { 1: 0, 2: 50, 3: 150, 4: 350, 5: 600, 6: 900 };
-    const LEVEL_NAMES = { 1: "THE VOID", 2: "IRC CHATROOM", 3: "PREDATOR ALLEY", 4: "FUGLE-APPEN", 5: "MØRKENETTET", 6: "IRL FEST" };
+    const LEVEL_THRESHOLDS = { 1: 0, 2: 50, 3: 150, 4: 350, 5: 600, 6: 900, 7: 1200, 8: 1500 };
+    const LEVEL_NAMES = { 
+        1: "THE VOID", 
+        2: "IRC CHATROOM", 
+        3: "PREDATOR ALLEY", 
+        4: "FUGLE-APPEN", 
+        5: "MØRKENETTET", 
+        6: "IRL FEST", 
+        7: "DESKTOP HELL", 
+        8: "BOSS FIGHT" 
+    };
+
+    const LEVEL_HINTS = {
+        2: "HINT: Chatten ruller fort. Hold fokus!",
+        3: "ADVARSEL: PREDATORS jakter på barna. Beskytt dem!",
+        4: "NY FIENDE: BOTS spammer serveren. Slå dem!",
+        5: "ADVARSEL: VIRUS oppdaget. Rør og du mister poeng!",
+        6: "HINT: Unngå alkohol, ellers blir du full!",
+        7: "SYSTEM FEIL: Pop-ups formerer seg hvis du er treg!",
+        8: "BOSS FIGHT: Beskytt barna og samle telefonnummeret!"
+    };
 
     const trollInsults = ["Noob!", "Hax!", "Ratio", "Ez", "Taper", "Bot", "Cringe", "Lag!", "Cry more"];
+    const complaintWords = ["DÅRLIG!", "KJEDELIG!", "HAT!", "UNFOLLOW!", "DISLIKE!", "DUM!", "TEIT!"];
     const nicePhrases = ["Hei!", "GG!", "Kult!", "Venn?", ":)", "Bra spilt", "Lykke til"];
     const predatorPhrases = ["...", "Sulten", "Kom hit", "Nam nam", "Bli med", "Mørket..."];
     const botPhrases = ["BEEP", "BUY CRYPTO", "CLICK HERE", "FREE IPHONE", "BOOP", "FOLLOW ME"];
     const partyInsults = ["Skål!", "Chug!", "En til?", "Hvor er ølet?", "Kjedelig!", "Fest!"];
     const goldenPhrases = ["GULL!", "STONKS!", "CATCH ME!", "RICH!", "$$$"];
+    const popupPhrases = ["WIN $1M", "HOT SINGLES", "ERROR 404", "DOWNLOAD RAM", "VIRUS DETECTED", "CLICK ME"];
+    const clippyPhrases = ["Trenger du hjelp?", "Skal jeg banne?", "Jeg ser du sliter...", "Hei på deg!"];
     
     const ircNames = ["<Slayer>", "<Admin>", "<Guest>", "<TrollHunter>"];
     const ircChat = ["lol", "brb", "asl?", "xD", "rofl"];
@@ -572,7 +618,7 @@
         mouseX = touch.clientX;
         mouseY = touch.clientY - 80; 
 
-        if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+        if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.id === 'mom-phone-btn') return;
         if (e.cancelable) e.preventDefault();
     };
 
@@ -599,6 +645,15 @@
             isClicking = false;
             hammerRotation = 0;
         }, 200);
+    }
+
+    function callMom() {
+        gameActive = false;
+        sfx.win();
+        winScoreEl.innerText = score;
+        gameWinEl.style.display = 'flex';
+        momPhoneBtn.style.display = 'none';
+        bossHud.style.display = 'none';
     }
 
     function initBackgroundElements() {
@@ -643,6 +698,7 @@
             this.phraseTimer = Math.floor(Math.random() * 60);
             this.showPhrase = false;
             this.pulse = 0;
+            this.timer = 0; // Generic timer
 
             if (type === 'troll') {
                 this.speedX = (Math.random() - 0.5) * 5; this.speedY = -Math.random() * 4 - 3;
@@ -690,10 +746,121 @@
                 this.phrase = goldenPhrases[Math.floor(Math.random() * goldenPhrases.length)];
                 this.scoreValue = 50; this.loadImpact = -50;
                 this.state = 'roaming';
+            } else if (type === 'boss') {
+                this.radius = 100; this.x = width/2; this.y = -100; this.targetY = 150;
+                this.speedX = 0; this.speedY = 2;
+                this.color = '#8B0000'; // Dark Red
+                this.phrase = "JEG ER SJEFEN!";
+                this.scoreValue = 0; this.loadImpact = 0;
+            } else if (type === 'complaint') {
+                this.radius = 20; this.color = '#FF0000';
+                this.phrase = complaintWords[Math.floor(Math.random() * complaintWords.length)];
+                this.scoreValue = 1; this.loadImpact = 0;
+                this.state = 'roaming';
+            } else if (type === 'digit') {
+                this.radius = 30; this.color = '#FFFFFF';
+                this.phrase = nextDigit.toString();
+                this.scoreValue = 0; this.loadImpact = 0;
+                this.speedY = 2; this.x = width/2; this.y = 150; // Spit from boss
+                this.state = 'falling';
+            } else if (type === 'popup') {
+                this.radius = 40; this.speedX = 0; this.speedY = 0;
+                this.x = Math.random() * (width - 100) + 50;
+                this.y = Math.random() * (height - 100) + 50;
+                this.color = '#C0C0C0'; // classic windows grey
+                this.phrase = popupPhrases[Math.floor(Math.random() * popupPhrases.length)];
+                this.scoreValue = 3; this.loadImpact = 0;
+                this.state = 'static';
+                this.timer = 0;
+            } else if (type === 'clippy') {
+                this.radius = 20; 
+                this.speedX = (Math.random() - 0.5) * 15; // fast zigzag
+                this.speedY = (Math.random() - 0.5) * 15;
+                this.color = '#C0C0C0';
+                this.phrase = clippyPhrases[Math.floor(Math.random() * clippyPhrases.length)];
+                this.scoreValue = 10; this.loadImpact = -5;
+                this.state = 'roaming';
             }
         }
 
         update() {
+            if (this.type === 'boss') {
+                if (this.y < this.targetY) this.y += this.speedY;
+                this.x = width/2 + Math.sin(frame * 0.02) * 100; // Hover
+                return;
+            }
+
+            if (this.type === 'popup') {
+                this.timer++;
+                // Multiply if alive too long (3 seconds = 180 frames)
+                if (this.timer > 180) {
+                    this.timer = 0;
+                    this.markedForDeletion = true;
+                    // Spawn 2 new ones
+                    for(let i=0; i<2; i++) {
+                        let p = new Entity('popup');
+                        p.x = Math.max(50, Math.min(width-50, this.x + (Math.random()-0.5)*100));
+                        p.y = Math.max(50, Math.min(height-50, this.y + (Math.random()-0.5)*100));
+                        entities.push(p);
+                    }
+                    createExplosion(this.x, this.y, '#C0C0C0', false);
+                    sfx.pop();
+                }
+                return;
+            }
+
+            if (this.type === 'clippy') {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                // Bounce
+                if (this.x < 20 || this.x > width - 20) this.speedX *= -1;
+                if (this.y < 20 || this.y > height - 20) this.speedY *= -1;
+                // Change direction randomly
+                if(Math.random() < 0.05) {
+                    this.speedX = (Math.random() - 0.5) * 15;
+                    this.speedY = (Math.random() - 0.5) * 15;
+                }
+            }
+
+            if (this.type === 'complaint') {
+                // Track nearest innocent
+                let nearest = null; let minDistSq = 9999999;
+                entities.forEach(e => {
+                    if (e.type === 'innocent') {
+                        const distSq = (e.x-this.x)**2 + (e.y-this.y)**2;
+                        if (distSq < minDistSq) { minDistSq = distSq; nearest = e; }
+                    }
+                });
+                
+                if (nearest) {
+                    const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
+                    this.x += Math.cos(angle) * 3; this.y += Math.sin(angle) * 3;
+                    if (minDistSq < (this.radius + nearest.radius)**2) {
+                        // INFECT!
+                        this.markedForDeletion = true;
+                        nearest.type = 'troll'; // Transform
+                        nearest.color = '#ff0055';
+                        nearest.phrase = "BLÆ!";
+                        createExplosion(nearest.x, nearest.y, '#ff0055', false);
+                        sfx.bad();
+                    }
+                } else {
+                    this.y += 2; // Fall if no target
+                }
+                if(this.y > height + 50) this.markedForDeletion = true;
+                return;
+            }
+
+            if (this.type === 'digit') {
+                this.y += this.speedY;
+                if (this.y > height + 50) {
+                    // Missed digit, respawn it later? For now, just delete and boss cycle will repeat
+                    this.markedForDeletion = true;
+                }
+                return;
+            }
+
+            // --- STANDARD MOVEMENT LOGIC REUSED ---
             if (this.type === 'predator' && this.state === 'roaming') {
                 let nearest = null; let minDistSq = 9999999;
                 entities.forEach(e => {
@@ -752,12 +919,32 @@
             ctx.shadowBlur = 0; this.pulse += 0.1;
             if (this.type === 'predator') { ctx.shadowBlur = 10 + Math.sin(this.pulse) * 5; ctx.shadowColor = '#ff00ff'; } 
             else if (this.type === 'virus') { ctx.shadowBlur = 15; ctx.shadowColor = '#00ff00'; }
-            else if (this.type === 'party_troll') { ctx.shadowBlur = 10 + (beatPulse*20); ctx.shadowColor = '#00ffff'; } // Beat pulse glow
+            else if (this.type === 'party_troll') { ctx.shadowBlur = 10 + (beatPulse*20); ctx.shadowColor = '#00ffff'; }
             else if (this.type === 'golden_troll') { ctx.shadowBlur = 20; ctx.shadowColor = '#FFD700'; }
+            else if (this.type === 'boss') { ctx.shadowBlur = 30; ctx.shadowColor = '#ff0000'; }
 
             ctx.fillStyle = this.color;
             
-            if (this.type === 'predator') {
+            if (this.type === 'boss') {
+                // MEGA TROLL
+                ctx.fillRect(this.x - 100, this.y - 80, 200, 160);
+                // Big Eyes
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(this.x - 60, this.y - 40, 40, 40);
+                ctx.fillRect(this.x + 20, this.y - 40, 40, 40);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(this.x - 50, this.y - 30, 20, 20);
+                ctx.fillRect(this.x + 30, this.y - 30, 20, 20);
+                // Mouth
+                ctx.fillRect(this.x - 80, this.y + 40, 160, 20);
+                // Teeth
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(this.x - 70, this.y + 40, 20, 10);
+                ctx.fillRect(this.x + 50, this.y + 40, 20, 10);
+            } else if (this.type === 'digit') {
+                ctx.beginPath(); ctx.arc(this.x, this.y, 30, 0, Math.PI*2);
+                ctx.fill(); ctx.strokeStyle = '#000'; ctx.stroke();
+            } else if (this.type === 'predator') {
                 ctx.beginPath(); ctx.moveTo(this.x, this.y - 30); ctx.lineTo(this.x + 25, this.y + 20); ctx.lineTo(this.x - 25, this.y + 20); ctx.fill();
             } else if (this.type === 'coffee') {
                 ctx.fillRect(this.x - 15, this.y - 15, 30, 30);
@@ -772,6 +959,7 @@
                 ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 2;
                 ctx.fillRect(this.x - 20, this.y - 20, 40, 40); ctx.strokeRect(this.x - 22, this.y - 22, 44, 44);
             } else if (this.type === 'alcohol') {
+                // Beer glass
                 ctx.fillStyle = '#FFA500';
                 ctx.fillRect(this.x - 10, this.y - 15, 20, 30);
                 ctx.fillStyle = '#FFF'; 
@@ -780,6 +968,7 @@
                 ctx.strokeRect(this.x - 10, this.y - 15, 20, 30);
             } else if (this.type === 'party_troll') {
                 ctx.fillRect(this.x - 20, this.y - 20, 40, 40);
+                // Party Hat
                 ctx.fillStyle = '#FFFF00';
                 ctx.beginPath(); ctx.moveTo(this.x - 20, this.y - 20); ctx.lineTo(this.x, this.y - 50); ctx.lineTo(this.x + 20, this.y - 20); ctx.fill();
             } else if (this.type === 'golden_troll') {
@@ -788,11 +977,42 @@
                 ctx.fillStyle = '#FFF';
                 ctx.beginPath(); 
                 ctx.moveTo(this.x - 20, this.y - 30); ctx.lineTo(this.x - 10, this.y - 20); ctx.lineTo(this.x, this.y - 35); ctx.lineTo(this.x + 10, this.y - 20); ctx.lineTo(this.x + 20, this.y - 30); ctx.lineTo(this.x + 20, this.y - 20); ctx.lineTo(this.x - 20, this.y - 20); ctx.fill();
+            } else if (this.type === 'popup') {
+                ctx.fillStyle = '#C0C0C0';
+                ctx.fillRect(this.x - 40, this.y - 30, 80, 60);
+                // Title bar
+                ctx.fillStyle = '#000080';
+                ctx.fillRect(this.x - 38, this.y - 28, 76, 15);
+                // X button
+                ctx.fillStyle = '#C0C0C0';
+                ctx.fillRect(this.x + 25, this.y - 26, 10, 10);
+                // Text
+                ctx.fillStyle = '#000';
+                ctx.font = "12px 'VT323'";
+                ctx.textAlign = 'center';
+                ctx.fillText(this.phrase, this.x, this.y + 10);
+            } else if (this.type === 'clippy') {
+                // Paperclip shape simplified
+                ctx.strokeStyle = '#C0C0C0';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y - 10, 10, Math.PI, 0);
+                ctx.lineTo(this.x + 10, this.y + 10);
+                ctx.arc(this.x, this.y + 10, 10, 0, Math.PI);
+                ctx.lineTo(this.x - 10, this.y);
+                ctx.stroke();
+                // Eyes
+                ctx.fillStyle = '#000';
+                ctx.fillRect(this.x - 5, this.y - 15, 3, 3);
+                ctx.fillRect(this.x + 2, this.y - 15, 3, 3);
+            } else if (this.type === 'complaint') {
+                // Just a bubble, drawn below
             } else {
                 ctx.fillRect(this.x - 20, this.y - 20, 40, 40);
             }
             
-            if (['coffee', 'virus', 'alcohol'].indexOf(this.type) === -1) {
+            // Faces (Skip for items)
+            if (['coffee', 'virus', 'alcohol', 'boss', 'digit', 'complaint', 'popup', 'clippy'].indexOf(this.type) === -1) {
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(this.x - 12, this.y - 10, 10, 10); ctx.fillRect(this.x + 2, this.y - 10, 10, 10);
                 ctx.fillStyle = '#000';
@@ -806,49 +1026,89 @@
                 }
             }
             
-            if (this.showPhrase) {
+            if (this.showPhrase || this.type === 'boss' || this.type === 'digit' || this.type === 'complaint' || this.type === 'clippy') {
                 ctx.save();
                 ctx.font = currentLevel === 4 ? "bold 22px Arial" : "28px 'VT323'";
                 
-                ctx.fillStyle = '#fff'; 
-                ctx.strokeStyle = '#000';
-                ctx.lineWidth = 2;
-                
-                const w = ctx.measureText(this.phrase).width + 20;
-                const h = 40; 
-                const bY = this.y - 75; 
-                
-                ctx.fillRect(this.x - w/2, bY, w, h);
-                ctx.strokeRect(this.x - w/2, bY, w, h);
-                
-                ctx.beginPath();
-                ctx.moveTo(this.x, bY + h);
-                ctx.lineTo(this.x - 5, bY + h + 8);
-                ctx.lineTo(this.x + 5, bY + h);
-                ctx.fill();
-                ctx.stroke();
+                if (this.type === 'digit') {
+                    ctx.fillStyle = '#000'; ctx.font = "bold 40px 'VT323'"; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(this.phrase, this.x, this.y);
+                } else if (this.type === 'complaint') {
+                    ctx.fillStyle = '#FF0000'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+                    const w = ctx.measureText(this.phrase).width + 10;
+                    ctx.fillRect(this.x - w/2, this.y - 15, w, 30); ctx.strokeRect(this.x - w/2, this.y - 15, w, 30);
+                    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(this.phrase, this.x, this.y);
+                } else if (this.type === 'popup') {
+                    // Text already handled
+                } else {
+                    ctx.fillStyle = '#fff'; 
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 2;
+                    
+                    const w = ctx.measureText(this.phrase).width + 20;
+                    const h = 40; 
+                    const bY = (this.type === 'boss') ? this.y + 80 : this.y - 75; 
+                    
+                    ctx.fillRect(this.x - w/2, bY, w, h);
+                    ctx.strokeRect(this.x - w/2, bY, w, h);
+                    
+                    if (this.type !== 'boss') {
+                        ctx.beginPath();
+                        ctx.moveTo(this.x, bY + h);
+                        ctx.lineTo(this.x - 5, bY + h + 8);
+                        ctx.lineTo(this.x + 5, bY + h);
+                        ctx.fill(); ctx.stroke();
+                    }
 
-                ctx.fillStyle = '#000'; 
-                ctx.textAlign = 'center'; 
-                ctx.textBaseline = 'middle';
-                ctx.fillText(this.phrase, this.x, bY + h/2 + 2); 
+                    ctx.fillStyle = '#000'; 
+                    ctx.textAlign = 'center'; 
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.phrase, this.x, bY + h/2 + 2); 
+                }
                 ctx.restore();
             }
         }
     }
 
     function checkHits() {
+        let hitSomething = false;
+
         for (let i = entities.length - 1; i >= 0; i--) {
             const e = entities[i];
             const distSq = (e.x - mouseX)**2 + (e.y - mouseY)**2;
-            let radius = e.type === 'predator' ? 80 : 70;
+            let radius = e.type === 'predator' ? 80 : (e.type === 'boss' ? 100 : 70);
+            
+            // RAGE MODE RADIUS
+            if (rageMode) radius *= 2;
+            
             if (isTouchInput) radius *= 1.4; 
 
             if (distSq < radius * radius) { 
+                hitSomething = true;
                 let points = e.scoreValue;
                 let isGoodHit = false;
 
-                if (e.type === 'troll' || e.type === 'bot' || e.type === 'party_troll') {
+                if (rageMode) points *= 2;
+
+                if (e.type === 'boss') {
+                    createExplosion(e.x, e.y + 50, '#ff0000', true);
+                    sfx.hit();
+                } else if (e.type === 'digit') {
+                    isGoodHit = true;
+                    createExplosion(e.x, e.y, '#fff', true);
+                    collectedDigits.push(e.phrase);
+                    updatePhoneDisplay();
+                    sfx.powerup();
+                    if(collectedDigits.length >= 8) {
+                        momPhoneBtn.style.display = 'flex';
+                        floatText.push(new FloatingText(width/2, height/2, "RING NÅ!", "#fff"));
+                    }
+                } else if (e.type === 'complaint') {
+                    isGoodHit = true;
+                    createExplosion(e.x, e.y, '#ff0000', false);
+                    sfx.hit();
+                } else if (e.type === 'troll' || e.type === 'bot' || e.type === 'party_troll' || e.type === 'popup' || e.type === 'clippy') {
                     isGoodHit = true; if(e.type === 'bot') points = 5;
                     createExplosion(e.x, e.y, e.color, true); incrementCombo();
                 } else if (e.type === 'predator') {
@@ -863,7 +1123,8 @@
                     isGoodHit = true; createExplosion(e.x, e.y, '#fff', true);
                     serverLoad = Math.max(0, serverLoad - 20); 
                     drunkLevel = Math.max(0, drunkLevel - 50); 
-                    floatText.push(new FloatingText(e.x, e.y, "EDRU!", "#fff"));
+                    let msg = (currentLevel === 6) ? "EDRU!" : "CAFFEINE!";
+                    floatText.push(new FloatingText(e.x, e.y, msg, "#fff"));
                     sfx.powerup();
                 } else if (e.type === 'innocent') {
                     resetCombo(); createExplosion(e.x, e.y, e.color, false);
@@ -882,16 +1143,30 @@
                     sfx.hit(); score += points * (1 + Math.floor(combo/5)); serverLoad += e.loadImpact; triggerFlash();
                 } else if (e.type === 'golden_troll') {
                     score += points * (1 + Math.floor(combo/5)); serverLoad += e.loadImpact; triggerFlash();
-                } else if (!isGoodHit && e.type !== 'virus' && e.type !== 'alcohol') {
+                } else if (!isGoodHit && e.type !== 'virus' && e.type !== 'alcohol' && e.type !== 'boss') {
                     score += points; serverLoad += e.loadImpact; sfx.bad();
                 }
                 
                 scoreEl.innerText = score;
-                entities.splice(i, 1);
+                if (e.type !== 'boss') entities.splice(i, 1); 
+                
                 checkLevelProgress();
                 if (entities.length === 0) return;
             }
         }
+
+        if (!hitSomething) {
+            resetCombo();
+        }
+    }
+
+    function updatePhoneDisplay() {
+        let display = "";
+        for(let i=0; i<8; i++) {
+            if (i < collectedDigits.length) display += collectedDigits[i] + " ";
+            else display += "_ ";
+        }
+        phoneNumberDisplay.innerText = display;
     }
 
     function createExplosion(x, y, colorStr, isBig) {
@@ -916,13 +1191,18 @@
         cursorCtx.translate(mouseX + swayX, mouseY);
         cursorCtx.rotate((hammerRotation + swayRot) * Math.PI / 180);
         
+        // RAGE MODE SCALE
+        if (rageMode) cursorCtx.scale(1.5, 1.5);
+
         let handleColor = '#8B4513';
         let headColor = '#555';
         let headStroke = '#999';
         let glowColor = 'transparent';
         let blur = 0;
 
-        if (score > 1000) { 
+        if (rageMode) {
+            handleColor = '#330000'; headColor = '#FF4500'; headStroke = '#FFFF00'; glowColor = '#FF4500'; blur = 40;
+        } else if (score > 1000) { 
             const hue = (frame * 5) % 360;
             handleColor = '#000'; headColor = '#111'; headStroke = `hsl(${hue}, 100%, 50%)`; glowColor = headStroke; blur = 30;
         } else if (score > 600) { 
@@ -955,6 +1235,7 @@
     }
 
     function updateProgressBar() {
+        if (currentLevel === 8) { progressContainer.style.display = 'none'; return; }
         const currentThresh = LEVEL_THRESHOLDS[currentLevel];
         const nextThresh = LEVEL_THRESHOLDS[currentLevel + 1];
         if (!nextThresh) { progressFillEl.style.width = '100%'; return; }
@@ -967,28 +1248,64 @@
     function triggerLevelUp(lvl) {
         gameActive = false; currentLevel = lvl;
         levelDescEl.innerText = `Laster inn: ${LEVEL_NAMES[lvl]}`;
+        // SHOW HINT
+        if(LEVEL_HINTS[lvl]) {
+            levelHintEl.innerText = LEVEL_HINTS[lvl];
+        } else {
+            levelHintEl.innerText = "";
+        }
         levelUpEl.style.display = 'flex'; entities = []; sfx.powerup(); 
     }
 
     function nextLevel() {
         levelUpEl.style.display = 'none';
         levelEl.innerText = `LEVEL: ${currentLevel} - ${LEVEL_NAMES[currentLevel]}`;
-        uiLayer.style.color = '#33ff00'; vignetteOverlay.style.opacity = 0; 
+        
+        uiLayer.style.color = '#33ff00'; 
+        vignetteOverlay.style.opacity = 0; 
+
         if (currentLevel === 3) { levelEl.style.color = '#ff0055'; uiLayer.style.color = '#ff0055'; vignetteOverlay.style.opacity = 1; }
         else if (currentLevel === 4) { levelEl.style.color = '#1DA1F2'; uiLayer.style.color = '#1DA1F2'; }
         else if (currentLevel === 5) { levelEl.style.color = '#00ff00'; uiLayer.style.color = '#00ff00'; }
         else if (currentLevel === 6) { levelEl.style.color = '#FFFF00'; uiLayer.style.color = '#FFFF00'; }
-        updateProgressBar(); stopMusic(); startMusic(); initBackgroundElements(); gameActive = true;
+        else if (currentLevel === 7) { levelEl.style.color = '#008080'; uiLayer.style.color = '#008080'; } // Teal
+        else if (currentLevel === 8) { 
+            levelEl.style.color = '#FF0000'; uiLayer.style.color = '#FF0000'; 
+            bossHud.style.display = 'block';
+            initBossFight();
+        }
+        
+        updateProgressBar(); stopMusic(); startMusic(); 
+        if (currentLevel !== 8) initBackgroundElements(); 
+        gameActive = true;
+    }
+
+    function initBossFight() {
+        entities = [];
+        entities.push(new Entity('boss'));
+        // Spawn innocent hostages
+        for(let i=0; i<6; i++) entities.push(new Entity('innocent'));
+        collectedDigits = [];
+        nextDigit = 1;
+        updatePhoneDisplay();
+        bossState = 'attack';
+        bossTimer = 0;
     }
 
     function startGame() {
         initAudio(); startMusic(); gameActive = true;
-        score = 0; combo = 0; serverLoad = 0; currentLevel = 1; drunkLevel = 0;
+        score = 0; combo = 0; serverLoad = 0; currentLevel = 1; drunkLevel = 0; rageMode = false;
         entities = []; particles = []; floatText = []; shockwaves = [];
         scoreEl.innerText = score; livesEl.innerText = serverLoad;
         levelEl.innerText = "LEVEL: 1 - THE VOID";
+        
         uiLayer.style.color = '#33ff00'; vignetteOverlay.style.opacity = 0;
-        comboDisplayEl.style.display = 'none'; startScreenEl.style.display = 'none'; gameOverEl.style.display = 'none';
+        comboDisplayEl.style.display = 'none'; rageDisplayEl.style.display = 'none';
+        startScreenEl.style.display = 'none'; 
+        gameOverEl.style.display = 'none'; gameWinEl.style.display = 'none';
+        bossHud.style.display = 'none'; momPhoneBtn.style.display = 'none';
+        progressContainer.style.display = 'flex';
+        
         resize(); updateProgressBar();
     }
 
@@ -1003,35 +1320,18 @@
     function drawBackground() {
         if (currentLevel === 4) ctx.fillStyle = '#002244'; 
         else if (currentLevel === 6) {
-            // Neon lights
-            ctx.fillStyle = '#050505';
-            ctx.fillRect(0, 0, width, height);
-            
-            // Draw Spotlights/Beams
-            ctx.save();
-            ctx.globalCompositeOperation = 'lighter';
-            const time = frame * 0.05;
-            
-            // Beam 1
-            ctx.fillStyle = `hsla(${time * 50}, 100%, 50%, ${0.1 + beatPulse * 0.2})`;
-            ctx.beginPath(); ctx.moveTo(0, height); ctx.lineTo(width/2 + Math.sin(time)*300, 0); ctx.lineTo(width/2 + Math.sin(time)*300 + 50, 0); ctx.fill();
-            
-            // Beam 2
-            ctx.fillStyle = `hsla(${(time * 50) + 180}, 100%, 50%, ${0.1 + beatPulse * 0.2})`;
-            ctx.beginPath(); ctx.moveTo(width, height); ctx.lineTo(width/2 + Math.cos(time)*300, 0); ctx.lineTo(width/2 + Math.cos(time)*300 + 50, 0); ctx.fill();
-            
-            // Pulse circle center
-            ctx.fillStyle = `rgba(255, 255, 255, ${beatPulse * 0.1})`;
-            ctx.beginPath(); ctx.arc(width/2, height/2, width * (0.2 + beatPulse * 0.1), 0, Math.PI*2); ctx.fill();
-            
-            ctx.restore();
-            return; // Skip normal bg drawing for lvl 6
+            const hue = (frame * 2) % 360;
+            ctx.fillStyle = `hsl(${hue}, 50%, 10%)`; 
+        } else if (currentLevel === 8) {
+            ctx.fillStyle = '#100'; // Dark red for boss
+        } else if (currentLevel === 7) {
+            ctx.fillStyle = '#008080'; // Windows Teal
         }
         else ctx.fillStyle = '#000'; 
         
         ctx.fillRect(0, 0, width, height);
 
-        if (currentLevel >= 2) {
+        if (currentLevel >= 2 && currentLevel !== 8) {
             ctx.font = currentLevel === 4 ? "20px Arial" : "16px 'VT323'"; ctx.textAlign = 'left';
             let spawnRate = 20; if(currentLevel === 5) spawnRate = 5; 
             if (frame % spawnRate === 0) bgElements.push(createBgElement());
@@ -1063,21 +1363,35 @@
                 
                 if (currentLevel === 2 && el.y < 40) bgElements.splice(i, 1); 
                 else if (currentLevel === 5 && el.y > height) bgElements.splice(i, 1);
-                else if (currentLevel === 4 && el.x > width - 200) bgElements.splice(i, 1); 
+                else if (currentLevel === 4 && el.x > width - 200) bgElements.splice(i, 1);
+                else if (currentLevel === 7 && el.y > height) bgElements.splice(i, 1); // Desktop rain? No, maybe static elements?
             }
         }
     }
 
     function animate() {
         drawHammer();
-        
-        // Beat Pulse Decay
         beatPulse *= 0.9;
-
         if (hitStop > 0) { hitStop--; requestAnimationFrame(animate); return; }
         drawBackground();
 
         if (gameActive) {
+            // RAGE MODE LOGIC
+            if (combo > 15 && !rageMode) {
+                rageMode = true;
+                rageTimer = 300; // 5 seconds
+                rageDisplayEl.style.display = 'block';
+                sfx.powerup();
+            }
+            if (rageMode) {
+                rageTimer--;
+                if(rageTimer <= 0) {
+                    rageMode = false;
+                    rageDisplayEl.style.display = 'none';
+                }
+            }
+
+            // DRUNK LOGIC
             if (drunkLevel > 0) {
                 drunkLevel -= 0.1; 
                 const swayX = Math.sin(frame * 0.05) * (drunkLevel * 0.5);
@@ -1101,24 +1415,68 @@
             if (totalShake > 0) { ctx.save(); ctx.translate((Math.random()-0.5)*totalShake, (Math.random()-0.5)*totalShake); }
             if (shakeIntensity > 0) { shakeIntensity *= 0.9; if (shakeIntensity < 0.5) shakeIntensity = 0; }
 
-            if (frame % 60 === 0) {
-                const max = 5 + (currentLevel * 3) + Math.min(10, score/50);
-                if (entities.length < max) {
-                    const r = Math.random(); let type = 'troll';
-                    if (Math.random() < 0.005) { type = 'golden_troll'; } 
-                    else if (Math.random() < 0.05) { type = 'coffee'; }
-                    else if (currentLevel === 4) { if (r < 0.3) type = 'bot'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
-                    else if (currentLevel === 5) { if (r < 0.15) type = 'virus'; else if (r < 0.3) type = 'predator'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
-                    else if (currentLevel === 6) { if (r < 0.2) type = 'alcohol'; else if (r < 0.5) type = 'party_troll'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
-                    else if (currentLevel === 3) { if (r < 0.2) type = 'predator'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
-                    else { if (r < 0.7) type = 'troll'; else type = 'innocent'; }
-                    entities.push(new Entity(type));
+            // --- BOSS LOGIC ---
+            if (currentLevel === 8) {
+                bossTimer++;
+                // Check fail condition: No innocents left
+                const innocents = entities.filter(e => e.type === 'innocent');
+                if (innocents.length === 0) {
+                    gameOverReasonEl.innerText = "Alle barna ble til troll!";
+                    gameOver();
+                }
+
+                if (bossState === 'attack' && bossTimer > 100) {
+                    // Fire complaints
+                    for(let i=0; i<3; i++) {
+                        let c = new Entity('complaint');
+                        c.x = width/2 + (Math.random()-0.5)*100;
+                        c.y = 150;
+                        entities.push(c);
+                    }
+                    bossState = 'cooldown';
+                    bossTimer = 0;
+                } else if (bossState === 'cooldown' && bossTimer > 200) {
+                    // Spit digit
+                    if (collectedDigits.length < 8) {
+                        let d = new Entity('digit');
+                        d.phrase = Math.floor(Math.random()*10); // Random digit 0-9
+                        entities.push(d);
+                    }
+                    bossState = 'attack';
+                    bossTimer = 0;
+                }
+            } else {
+                // NORMAL SPAWN
+                if (frame % 60 === 0) {
+                    const max = 5 + (currentLevel * 3) + Math.min(10, score/50);
+                    if (entities.length < max) {
+                        const r = Math.random(); let type = 'troll';
+                        if (Math.random() < 0.005) { type = 'golden_troll'; } 
+                        else if (Math.random() < 0.05) { type = 'coffee'; }
+                        else if (currentLevel === 4) { if (r < 0.3) type = 'bot'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
+                        else if (currentLevel === 5) { if (r < 0.15) type = 'virus'; else if (r < 0.3) type = 'predator'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
+                        else if (currentLevel === 6) { 
+                            if (r < 0.2) type = 'alcohol'; 
+                            else if (r < 0.5) type = 'party_troll';
+                            else if (r < 0.7) type = 'troll';
+                            else type = 'innocent'; 
+                        }
+                        else if (currentLevel === 7) { 
+                            if (r < 0.2) type = 'clippy'; 
+                            else if (r < 0.5) type = 'popup';
+                            else if (r < 0.7) type = 'troll';
+                            else type = 'innocent'; 
+                        }
+                        else if (currentLevel === 3) { if (r < 0.2) type = 'predator'; else if (r < 0.7) type = 'troll'; else type = 'innocent'; }
+                        else { if (r < 0.7) type = 'troll'; else type = 'innocent'; }
+                        entities.push(new Entity(type));
+                    }
                 }
             }
             
             if (frame % 30 === 0) {
                 let loadIncrease = 0.2; 
-                entities.forEach(e => loadIncrease += (e.type === 'bot' ? 2 : (e.type === 'troll' || e.type === 'party_troll' ? 0.5 : 0)));
+                entities.forEach(e => loadIncrease += (e.type === 'bot' ? 2 : (e.type === 'troll' || e.type === 'party_troll' || e.type === 'popup' || e.type === 'clippy' ? 0.5 : 0)));
                 serverLoad += loadIncrease;
                 if (serverLoad > 100) gameOver();
                 livesEl.innerText = Math.floor(serverLoad);
@@ -1155,7 +1513,13 @@
     }
     
     function incrementCombo() { combo++; }
-    function resetCombo() { combo = 0; }
+    function resetCombo() { 
+        combo = 0; 
+        if(rageMode) { // End rage mode if combo drops
+            rageMode = false;
+            rageDisplayEl.style.display = 'none';
+        }
+    }
     function triggerFlash() { flashOverlay.style.opacity = "0.4"; setTimeout(() => flashOverlay.style.opacity = "0", 80); }
 
     class FloatingText {
