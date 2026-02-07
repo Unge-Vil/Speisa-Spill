@@ -17,8 +17,8 @@
     },
         {
         "id": 3,
-        "tittel": "Stickman Duel",
-        "beskrivelse": "Flerspiller stickman-slåssespill",
+        "tittel": "Neon Mayhem",
+        "beskrivelse": "Flerspiller neon-slåssespill",
         "url": "stickman/",
         "ikon": "fa-solid fa-khanda",
         "farge": "bg-gradient-to-br from-purple-900 to-black"
