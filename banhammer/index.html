@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BAN HAMMER 9000 - BOSS RAGE</title>
+    <title>BAN HAMMER 9000 - ULTIMATE FIX</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
@@ -166,7 +166,7 @@
             position: absolute;
             bottom: 30px;
             right: 30px;
-            width: 120px; /* Større for SVG */
+            width: 120px; 
             height: 120px;
             z-index: 103;
             cursor: pointer;
@@ -175,7 +175,7 @@
             align-items: center;
             pointer-events: auto;
             user-select: none;
-            filter: drop-shadow(0 0 10px #ff0000); /* Rød glød rundt SVG */
+            filter: drop-shadow(0 0 10px #ff0000); 
         }
         
         #mom-phone-btn img {
@@ -275,6 +275,7 @@
             margin-top: 20px;
             position: relative;
             z-index: 101;
+            animation: pulse 2s infinite;
         }
         button:hover { background: #fff; }
 
@@ -305,9 +306,9 @@
         }
 
         @keyframes pulse {
-            0% { opacity: 0.7; transform: scale(0.98); }
+            0% { opacity: 0.8; transform: scale(0.98); }
             50% { opacity: 1; transform: scale(1.02); }
-            100% { opacity: 0.7; transform: scale(0.98); }
+            100% { opacity: 0.8; transform: scale(0.98); }
         }
 
     </style>
@@ -450,9 +451,7 @@
         isMuted = !isMuted;
         const btn = document.getElementById('mute-btn');
         btn.innerText = isMuted ? "🔇" : "🔊";
-        
         partyMusic.muted = isMuted; 
-
         if (isMuted) { stopMusic(); if(audioCtx) audioCtx.suspend(); } 
         else { if(audioCtx) audioCtx.resume(); if(gameActive) startMusic(); }
     }
@@ -486,7 +485,7 @@
         
         if (currentLevel !== 6 && currentLevel !== 9) {
             if (freq > 0) {
-                if (currentLevel === 8) { // Boss
+                if (currentLevel === 8) { 
                     playTone('sawtooth', freq, freq/2, 0.1, now, 0.3);
                     playTone('square', freq*2, freq, 0.05, now, 0.1); 
                 } else if (currentLevel === 7) { 
@@ -569,14 +568,14 @@
         rare: () => { if(!audioCtx || isMuted) return; playTone('square', 880, 1760, 0.5, 0, 0.3); setTimeout(() => playTone('square', 1760, 880, 0.5, 0, 0.3), 100); },
         win: () => { if(!audioCtx || isMuted) return; [523, 659, 784, 1046].forEach((f, i) => playTone('triangle', f, f, 0.5, audioCtx.currentTime + i*0.2, 0.3)); },
         pop: () => { if(!audioCtx || isMuted) return; playTone('triangle', 300, 350, 0.05, 0, 0.1); },
-        call: () => { // Ringing sound
+        call: () => { 
             if(!audioCtx || isMuted) return; 
             playTone('square', 800, 800, 0.05, 0, 0.2); 
             setTimeout(() => playTone('square', 800, 800, 0.05, 0, 0.2), 100);
         },
         tink: () => {
             if(!audioCtx || isMuted) return;
-            playTone('square', 500, 100, 0.05, 0, 0.1); // Metallic tink for invulnerable hit
+            playTone('square', 500, 100, 0.05, 0, 0.1); 
         }
     };
 
@@ -647,9 +646,9 @@
     let boss = null;
     let collectedDigits = [];
     let nextDigit = 1;
-    let bossState = 'idle'; // idle, attack, cooldown
+    let bossState = 'idle'; 
     let bossTimer = 0;
-    let bossMouthOpen = false; // For animation
+    let bossMouthOpen = false; 
 
     highscoreEl.innerText = highScore;
 
@@ -691,7 +690,6 @@
     const matrixChars = "010101XYZA";
     const hashtags = ["#Trending", "#Viral", "#News", "#CatVideo", "#BanHammer"];
 
-    // CHECK DEV MODE
     const urlParams = new URLSearchParams(window.location.search);
     const isDev = urlParams.has('dev');
     if (isDev) {
@@ -715,7 +713,6 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // --- INPUT HANDLING ---
     document.addEventListener('mousemove', (e) => {
         isTouchInput = false; 
         mouseX = e.clientX;
@@ -750,7 +747,7 @@
         hammerRotation = -45; 
         setTimeout(() => {
             hammerRotation = 60; 
-            if (gameActive && currentLevel !== 9) { // No hits in victory mode
+            if (gameActive && currentLevel !== 9) { 
                 checkHits();
                 if(shakeIntensity < 2) shakeIntensity = 2; 
             }
@@ -762,25 +759,22 @@
     }
 
     function callMom() {
-        sfx.call(); // Play ring sound
+        sfx.call(); 
         setTimeout(() => {
-            gameActive = false; // Stop game logic
-            currentLevel = 9; // VICTORY LEVEL
+            gameActive = false; 
+            currentLevel = 9; 
             
             sfx.win();
             winScoreEl.innerText = score;
             
-            // Hide UI but keep game running for party visuals
             momPhoneBtn.style.display = 'none';
             bossHud.style.display = 'none';
             uiLayer.style.display = 'none';
             
-            // Show Win Screen transparently
             gameWinEl.style.display = 'flex';
             
-            // Party Music & Visuals
             startMusic();
-        }, 500); // Small delay for ring sound
+        }, 500); 
     }
 
     function initBackgroundElements() {
@@ -816,8 +810,7 @@
         constructor(type) {
             this.type = type; 
             this.radius = 30;
-            // Safer Spawning Logic
-            const margin = 50;
+            const margin = 100; 
             this.x = Math.random() * (width - (margin*2)) + margin;
             this.y = height + 50; 
             this.targetY = Math.random() * (height - 200) + 100;
@@ -828,11 +821,11 @@
             this.showPhrase = false;
             this.pulse = 0;
             this.timer = 0; 
-            
+            this.hitFlash = 0;
+
             this.speedX = (Math.random() - 0.5) * 5;
             this.speedY = -Math.random() * 4 - 3;
             
-            // ... (Same initialization logic as before for all types) ...
             if (type === 'troll') {
                 this.color = Math.random() > 0.5 ? '#ff0055' : '#ff3300';
                 this.phrase = trollInsults[Math.floor(Math.random() * trollInsults.length)];
@@ -892,40 +885,41 @@
                 this.phrase = complaintWords[Math.floor(Math.random() * complaintWords.length)];
                 this.scoreValue = 1; this.loadImpact = 0;
                 this.state = 'roaming';
-                // WIDER SPREAD LOGIC
-                this.speedX = (Math.random() - 0.5) * 10; // More horizontal spread
-                this.speedY = 4 + Math.random() * 3; // Fast down
-                this.x = width/2; this.y = 150; // Spawn at boss
+                this.speedX = (Math.random() - 0.5) * 10; 
+                this.speedY = 4 + Math.random() * 3; 
+                this.x = width/2; this.y = 150; 
             } else if (type === 'digit') {
                 this.radius = 30; this.color = '#FFFFFF';
                 this.phrase = nextDigit.toString();
                 this.scoreValue = 0; this.loadImpact = 0;
-                this.speedX = (Math.random() - 0.5) * 8; // Spread digits too
+                this.speedX = (Math.random() - 0.5) * 8; 
                 this.speedY = 3; 
                 this.x = width/2; this.y = 150; 
                 this.state = 'falling';
             } else if (type === 'popup') {
                 this.radius = 40; this.speedX = 0; this.speedY = 0;
-                this.x = Math.random() * (width - 100) + 50;
-                this.y = Math.random() * (height - 100) + 50;
-                this.color = '#C0C0C0'; // classic windows grey
+                this.x = Math.random() * (width - 200) + 100;
+                this.y = Math.random() * (height - 200) + 100;
+                this.color = '#C0C0C0'; 
                 this.phrase = popupPhrases[Math.floor(Math.random() * popupPhrases.length)];
                 this.scoreValue = 3; this.loadImpact = 0;
                 this.state = 'static';
                 this.timer = 0;
             } else if (type === 'clippy') {
                 this.radius = 20; 
-                this.speedX = (Math.random() - 0.5) * 15; // fast zigzag
+                this.speedX = (Math.random() - 0.5) * 15; 
                 this.speedY = (Math.random() - 0.5) * 15;
                 this.color = '#C0C0C0';
                 this.phrase = clippyPhrases[Math.floor(Math.random() * clippyPhrases.length)];
                 this.scoreValue = 10; this.loadImpact = -5;
                 this.state = 'roaming';
+                this.x = Math.random() * (width - 200) + 100;
+                this.y = Math.random() * (height - 200) + 100;
             } else if (type === 'minion') {
                 this.radius = 20; 
                 this.speedX = (Math.random() - 0.5) * 10; 
                 this.speedY = 2 + Math.random() * 3;
-                this.color = '#00FF00'; // Green
+                this.color = '#00FF00'; 
                 this.phrase = "HEHEHE";
                 this.scoreValue = 3; this.loadImpact = -2;
                 this.x = width/2 + (Math.random()-0.5)*100;
@@ -934,28 +928,25 @@
         }
 
         update() {
+            if (this.hitFlash > 0) this.hitFlash--;
+
             if (this.type === 'boss') {
                 if (this.y < this.targetY) this.y += this.speedY;
-                // Crazy shake
                 this.x = width/2 + Math.sin(frame * 0.5) * 10 + (Math.random()-0.5)*5; 
                 this.y = this.targetY + Math.cos(frame * 0.3) * 10 + (Math.random()-0.5)*5;
-                
-                // Mouth Logic
-                bossMouthOpen = (bossState === 'attack' && frame % 10 < 5); // Flap mouth when attacking
+                bossMouthOpen = (bossState === 'attack' && frame % 10 < 5); 
                 return;
             }
 
             if (this.type === 'popup') {
                 this.timer++;
-                // Multiply if alive too long (3 seconds = 180 frames)
                 if (this.timer > 180) {
                     this.timer = 0;
                     this.markedForDeletion = true;
-                    // Spawn 2 new ones
                     for(let i=0; i<2; i++) {
                         let p = new Entity('popup');
-                        p.x = Math.max(50, Math.min(width-50, this.x + (Math.random()-0.5)*100));
-                        p.y = Math.max(50, Math.min(height-50, this.y + (Math.random()-0.5)*100));
+                        p.x = Math.max(100, Math.min(width-100, this.x + (Math.random()-0.5)*100));
+                        p.y = Math.max(100, Math.min(height-100, this.y + (Math.random()-0.5)*100));
                         entities.push(p);
                     }
                     createExplosion(this.x, this.y, '#C0C0C0', false);
@@ -967,10 +958,8 @@
             if (this.type === 'clippy') {
                 this.x += this.speedX;
                 this.y += this.speedY;
-                // Bounce
-                if (this.x < 20 || this.x > width - 20) this.speedX *= -1;
-                if (this.y < 20 || this.y > height - 20) this.speedY *= -1;
-                // Change direction randomly
+                if (this.x < 50 || this.x > width - 50) this.speedX *= -1;
+                if (this.y < 50 || this.y > height - 50) this.speedY *= -1;
                 if(Math.random() < 0.05) {
                     this.speedX = (Math.random() - 0.5) * 15;
                     this.speedY = (Math.random() - 0.5) * 15;
@@ -978,11 +967,9 @@
             }
 
             if (this.type === 'complaint') {
-                // SPREAD MOVEMENT
                 this.x += this.speedX;
                 this.y += this.speedY;
 
-                // Track nearest innocent
                 let nearest = null; let minDistSq = 9999999;
                 entities.forEach(e => {
                     if (e.type === 'innocent') {
@@ -992,15 +979,13 @@
                 });
                 
                 if (nearest) {
-                    // Slight homing, but mostly keep momentum
                     const angle = Math.atan2(nearest.y - this.y, nearest.x - this.x);
                     this.x += Math.cos(angle) * 1; 
                     this.y += Math.sin(angle) * 1;
                     
                     if (minDistSq < (this.radius + nearest.radius)**2) {
-                        // INFECT!
                         this.markedForDeletion = true;
-                        nearest.type = 'troll'; // Transform
+                        nearest.type = 'troll'; 
                         nearest.color = '#ff0055';
                         nearest.phrase = "BLÆ!";
                         createExplosion(nearest.x, nearest.y, '#ff0055', false);
@@ -1014,10 +999,7 @@
             if (this.type === 'minion') {
                 this.x += this.speedX;
                 this.y += this.speedY;
-                
-                // Erratic movement
                 this.x += Math.sin(frame * 0.1 + this.y) * 5;
-
                 if(this.y > height + 50) this.markedForDeletion = true;
                 return;
             }
@@ -1026,13 +1008,11 @@
                 this.x += this.speedX;
                 this.y += this.speedY;
                 if (this.y > height + 50) {
-                    // Missed digit, respawn it later? For now, just delete and boss cycle will repeat
                     this.markedForDeletion = true;
                 }
                 return;
             }
 
-            // --- STANDARD MOVEMENT LOGIC REUSED ---
             if (this.type === 'predator' && this.state === 'roaming') {
                 let nearest = null; let minDistSq = 9999999;
                 entities.forEach(e => {
@@ -1096,11 +1076,16 @@
             else if (this.type === 'boss') { ctx.shadowBlur = 30 + Math.random()*20; ctx.shadowColor = '#ff4500'; }
             else if (this.type === 'minion') { ctx.shadowBlur = 5; ctx.shadowColor = '#00FF00'; }
 
-            ctx.fillStyle = this.color;
+            // Flash White on Hit
+            if (this.hitFlash > 0) {
+                ctx.fillStyle = '#ffffff';
+            } else {
+                ctx.fillStyle = this.color;
+            }
             
             if (this.type === 'boss') {
                 // FLAMES
-                ctx.fillStyle = '#ff4500';
+                if (this.hitFlash === 0) ctx.fillStyle = '#ff4500';
                 for(let i=0; i<8; i++) {
                     const angle = (frame*0.1 + i) % (Math.PI*2);
                     const fx = this.x + Math.cos(angle)*120;
@@ -1109,9 +1094,10 @@
                 }
 
                 // MEGA TROLL
-                ctx.fillStyle = '#8B0000';
+                if (this.hitFlash === 0) ctx.fillStyle = '#8B0000';
                 ctx.fillRect(this.x - 100, this.y - 80, 200, 160);
-                // Big Eyes (Angry)
+                
+                // Big Eyes
                 ctx.fillStyle = '#fff';
                 ctx.beginPath(); ctx.moveTo(this.x - 60, this.y - 40); ctx.lineTo(this.x - 40, this.y - 60); ctx.lineTo(this.x - 20, this.y - 40); ctx.fill();
                 ctx.beginPath(); ctx.moveTo(this.x + 20, this.y - 40); ctx.lineTo(this.x + 40, this.y - 60); ctx.lineTo(this.x + 60, this.y - 40); ctx.fill();
@@ -1120,12 +1106,10 @@
                 ctx.fillRect(this.x - 50, this.y - 45, 10, 10);
                 ctx.fillRect(this.x + 30, this.y - 45, 10, 10);
                 
-                // Mouth
                 const mouthH = bossMouthOpen ? 60 : 20;
                 ctx.fillStyle = '#000';
                 ctx.fillRect(this.x - 80, this.y + 20, 160, mouthH);
                 
-                // Teeth
                 ctx.fillStyle = '#fff';
                 if(bossMouthOpen) {
                      ctx.fillRect(this.x - 70, this.y + 20, 20, 15); ctx.fillRect(this.x + 50, this.y + 20, 20, 15);
@@ -1157,12 +1141,11 @@
                 ctx.beginPath(); ctx.moveTo(this.x, this.y-15); ctx.lineTo(this.x, this.y-25); ctx.stroke();
                 ctx.beginPath(); ctx.arc(this.x, this.y-25, 3, 0, Math.PI*2); ctx.fill();
             } else if (this.type === 'virus') {
-                ctx.fillStyle = Math.random() > 0.5 ? '#00ff00' : '#000000';
+                if (this.hitFlash === 0) ctx.fillStyle = Math.random() > 0.5 ? '#00ff00' : '#000000';
                 ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 2;
                 ctx.fillRect(this.x - 20, this.y - 20, 40, 40); ctx.strokeRect(this.x - 22, this.y - 22, 44, 44);
             } else if (this.type === 'alcohol') {
-                // Beer glass
-                ctx.fillStyle = '#FFA500';
+                if (this.hitFlash === 0) ctx.fillStyle = '#FFA500';
                 ctx.fillRect(this.x - 10, this.y - 15, 20, 30);
                 ctx.fillStyle = '#FFF'; 
                 ctx.fillRect(this.x - 12, this.y - 20, 24, 8);
@@ -1170,31 +1153,26 @@
                 ctx.strokeRect(this.x - 10, this.y - 15, 20, 30);
             } else if (this.type === 'party_troll') {
                 ctx.fillRect(this.x - 20, this.y - 20, 40, 40);
-                // Party Hat
                 ctx.fillStyle = '#FFFF00';
                 ctx.beginPath(); ctx.moveTo(this.x - 20, this.y - 20); ctx.lineTo(this.x, this.y - 50); ctx.lineTo(this.x + 20, this.y - 20); ctx.fill();
             } else if (this.type === 'golden_troll') {
-                ctx.fillStyle = '#FFD700'; 
+                if (this.hitFlash === 0) ctx.fillStyle = '#FFD700'; 
                 ctx.fillRect(this.x - 20, this.y - 20, 40, 40);
                 ctx.fillStyle = '#FFF';
                 ctx.beginPath(); 
                 ctx.moveTo(this.x - 20, this.y - 30); ctx.lineTo(this.x - 10, this.y - 20); ctx.lineTo(this.x, this.y - 35); ctx.lineTo(this.x + 10, this.y - 20); ctx.lineTo(this.x + 20, this.y - 30); ctx.lineTo(this.x + 20, this.y - 20); ctx.lineTo(this.x - 20, this.y - 20); ctx.fill();
             } else if (this.type === 'popup') {
-                ctx.fillStyle = '#C0C0C0';
+                if (this.hitFlash === 0) ctx.fillStyle = '#C0C0C0';
                 ctx.fillRect(this.x - 40, this.y - 30, 80, 60);
-                // Title bar
                 ctx.fillStyle = '#000080';
                 ctx.fillRect(this.x - 38, this.y - 28, 76, 15);
-                // X button
                 ctx.fillStyle = '#C0C0C0';
                 ctx.fillRect(this.x + 25, this.y - 26, 10, 10);
-                // Text
                 ctx.fillStyle = '#000';
                 ctx.font = "12px 'VT323'";
                 ctx.textAlign = 'center';
                 ctx.fillText(this.phrase, this.x, this.y + 10);
             } else if (this.type === 'clippy') {
-                // Paperclip shape simplified
                 ctx.strokeStyle = '#C0C0C0';
                 ctx.lineWidth = 4;
                 ctx.beginPath();
@@ -1203,13 +1181,11 @@
                 ctx.arc(this.x, this.y + 10, 10, 0, Math.PI);
                 ctx.lineTo(this.x - 10, this.y);
                 ctx.stroke();
-                // Eyes
                 ctx.fillStyle = '#000';
                 ctx.fillRect(this.x - 5, this.y - 15, 3, 3);
                 ctx.fillRect(this.x + 2, this.y - 15, 3, 3);
             } else if (this.type === 'minion') {
                 ctx.fillRect(this.x - 15, this.y - 15, 30, 30);
-                // Small horns
                 ctx.fillStyle = '#FFF';
                 ctx.beginPath(); ctx.moveTo(this.x - 10, this.y - 15); ctx.lineTo(this.x - 15, this.y - 25); ctx.lineTo(this.x - 5, this.y - 15); ctx.fill();
                 ctx.beginPath(); ctx.moveTo(this.x + 10, this.y - 15); ctx.lineTo(this.x + 15, this.y - 25); ctx.lineTo(this.x + 5, this.y - 15); ctx.fill();
@@ -1219,10 +1195,9 @@
                 ctx.fillRect(this.x - 20, this.y - 20, 40, 40);
             }
             
-            // Faces (Skip for items)
+            // Faces
             if (['coffee', 'virus', 'alcohol', 'boss', 'digit', 'complaint', 'popup', 'clippy'].indexOf(this.type) === -1) {
                 ctx.fillStyle = '#fff';
-                // Minion face adjustments
                 if (this.type === 'minion') {
                     ctx.fillRect(this.x - 8, this.y - 8, 6, 6); ctx.fillRect(this.x + 2, this.y - 8, 6, 6);
                 } else {
@@ -1239,7 +1214,7 @@
                      ctx.fillRect(this.x - 10, this.y + 8, 20, 2);
                 } else if (this.type === 'minion') {
                      ctx.fillRect(this.x - 6, this.y - 6, 2, 2); ctx.fillRect(this.x + 4, this.y - 6, 2, 2);
-                     ctx.fillRect(this.x - 8, this.y + 6, 16, 2); // Evil grin
+                     ctx.fillRect(this.x - 8, this.y + 6, 16, 2); 
                 }
             }
             
@@ -1257,7 +1232,6 @@
                     ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                     ctx.fillText(this.phrase, this.x, this.y);
                 } else if (this.type === 'popup') {
-                    // Text already handled
                 } else {
                     ctx.fillStyle = '#fff'; 
                     ctx.strokeStyle = '#000';
@@ -1296,9 +1270,7 @@
             const distSq = (e.x - mouseX)**2 + (e.y - mouseY)**2;
             let radius = e.type === 'predator' ? 80 : (e.type === 'boss' ? 100 : 70);
             
-            // RAGE MODE RADIUS
             if (rageMode) radius *= 2;
-            
             if (isTouchInput) radius *= 1.4; 
 
             if (distSq < radius * radius) { 
@@ -1309,13 +1281,12 @@
                 if (rageMode) points *= 2;
 
                 if (e.type === 'boss') {
+                    e.hitFlash = 5; 
                     if (e.vulnerable) {
-                         // HIT VULNERABLE BOSS
                          e.health -= (rageMode ? 20 : 10);
                          createExplosion(e.x, e.y + 50, '#ff0000', true);
                          sfx.hit();
                     } else {
-                         // HIT INVULNERABLE BOSS
                          createExplosion(e.x, e.y + 50, '#555', false);
                          sfx.tink();
                     }
@@ -1385,7 +1356,6 @@
         }
     }
 
-    // ... (rest of the code remains the same as previous step, ensuring animate loops and other functions are intact)
     function updatePhoneDisplay() {
         let display = "";
         for(let i=0; i<8; i++) {
@@ -1394,12 +1364,13 @@
         }
         phoneNumberDisplay.innerText = display;
     }
-    
+
     function createExplosion(x, y, colorStr, isBig) {
         const count = isBig ? 50 : 15;
         for (let i = 0; i < count; i++) particles.push({
              x: x, y: y, vx: (Math.random()-0.5)*15, vy: (Math.random()-0.5)*15, 
-             life: 1.0, color: colorStr, size: Math.random()*8+3
+             life: 1.0, color: colorStr, size: Math.random()*8+3,
+             angle: Math.random() * Math.PI, speed: (Math.random()-0.5) * 0.2
         });
         if(isBig) shockwaves.push({x:x, y:y, radius:10, color:colorStr, life:1.0});
     }
@@ -1417,7 +1388,6 @@
         cursorCtx.translate(mouseX + swayX, mouseY);
         cursorCtx.rotate((hammerRotation + swayRot) * Math.PI / 180);
         
-        // RAGE MODE SCALE
         if (rageMode) cursorCtx.scale(1.5, 1.5);
 
         let handleColor = '#8B4513';
@@ -1429,14 +1399,12 @@
         if (rageMode) {
             handleColor = '#330000'; headColor = '#FF4500'; headStroke = '#FFFF00'; glowColor = '#FF4500'; blur = 40;
         } else if (combo > 1) { 
-            // COMBO GLOW LOGIC
-            let intensity = Math.min(10, combo); // Max glow at 10
+            let intensity = Math.min(10, combo); 
             blur = intensity * 2;
-            glowColor = '#FFD700'; // Gold glow for combo
+            glowColor = '#FFD700'; 
             headStroke = '#FFFFE0';
         }
         
-        // Specific Level / Score skins override standard glow
         if (score > 1000) { 
             const hue = (frame * 5) % 360;
             handleColor = '#000'; headColor = '#111'; headStroke = `hsl(${hue}, 100%, 50%)`; glowColor = headStroke; blur = 30;
@@ -1459,25 +1427,19 @@
     }
     
     function drawDancingHammers() {
-        // Draw main hammer
         drawHammer();
-
-        // Draw background dancers
         for(let i=0; i<5; i++) {
              let offsetX = Math.sin((frame + i*100) * 0.05) * 300;
              let offsetY = Math.cos((frame + i*100) * 0.05) * 100;
              let rot = Math.sin(frame * 0.1) * 30;
-             
              cursorCtx.save();
              cursorCtx.translate(width/2 + offsetX, height/2 + offsetY);
              cursorCtx.rotate(rot * Math.PI / 180);
-             
              const hue = (frame * 5 + i * 50) % 360;
              cursorCtx.fillStyle = '#000'; cursorCtx.fillRect(-10, 0, 20, 100);
              cursorCtx.shadowBlur = 20; cursorCtx.shadowColor = `hsl(${hue}, 100%, 50%)`; 
              cursorCtx.strokeStyle = `hsl(${hue}, 100%, 50%)`; cursorCtx.fillStyle = '#111'; cursorCtx.lineWidth = 3;
              cursorCtx.fillRect(-40, -40, 80, 50); cursorCtx.strokeRect(-40, -40, 80, 50);
-             
              cursorCtx.restore();
         }
     }
@@ -1529,7 +1491,6 @@
     function triggerLevelUp(lvl) {
         gameActive = false; currentLevel = lvl;
         levelDescEl.innerText = `Laster inn: ${LEVEL_NAMES[lvl]}`;
-        // SHOW HINT
         if(LEVEL_HINTS[lvl]) {
             levelHintEl.innerText = LEVEL_HINTS[lvl];
         } else {
@@ -1547,8 +1508,8 @@
 
     function initBossFight() {
         entities = [];
-        entities.push(new Entity('boss'));
-        // Spawn innocent hostages
+        boss = new Entity('boss'); 
+        entities.push(boss);
         for(let i=0; i<6; i++) entities.push(new Entity('innocent'));
         collectedDigits = [];
         nextDigit = 1;
@@ -1564,16 +1525,10 @@
 
     function startGame(startLevel = 1) {
         initAudio(); 
+        boss = null; 
         gameActive = true;
-        score = 0; 
-        combo = 0; 
-        serverLoad = 0; 
-        currentLevel = startLevel; 
-        drunkLevel = 0; 
-        rageMode = false;
-        
+        score = 0; combo = 0; serverLoad = 0; currentLevel = startLevel; drunkLevel = 0; rageMode = false;
         if (startLevel > 1) score = LEVEL_THRESHOLDS[startLevel];
-
         entities = []; particles = []; floatText = []; shockwaves = [];
         scoreEl.innerText = score; livesEl.innerText = serverLoad;
         levelEl.innerText = "LEVEL: 1 - THE VOID";
@@ -1600,11 +1555,9 @@
     function drawBackground() {
         if (currentLevel === 4) ctx.fillStyle = '#002244'; 
         else if (currentLevel === 6 || currentLevel === 9) {
-            // Disco Lights
             const hue = (frame * 2) % 360;
             ctx.fillStyle = `hsl(${hue}, 50%, 10%)`; 
             
-            // Draw Spotlights/Beams (Shared logic with Lvl 6)
             ctx.fillRect(0, 0, width, height);
             ctx.save();
             ctx.globalCompositeOperation = 'lighter';
@@ -1618,9 +1571,9 @@
             ctx.restore();
             return; 
         } else if (currentLevel === 8) {
-            ctx.fillStyle = '#100'; // Dark red for boss
+            ctx.fillStyle = '#100'; 
         } else if (currentLevel === 7) {
-            ctx.fillStyle = '#008080'; // Windows Teal
+            ctx.fillStyle = '#008080'; 
         }
         else ctx.fillStyle = '#000'; 
         
@@ -1659,7 +1612,7 @@
                 if (currentLevel === 2 && el.y < 40) bgElements.splice(i, 1); 
                 else if (currentLevel === 5 && el.y > height) bgElements.splice(i, 1);
                 else if (currentLevel === 4 && el.x > width - 200) bgElements.splice(i, 1);
-                else if (currentLevel === 7 && el.y > height) bgElements.splice(i, 1); // Desktop rain? No, maybe static elements?
+                else if (currentLevel === 7 && el.y > height) bgElements.splice(i, 1); 
             }
         }
     }
@@ -1670,23 +1623,14 @@
         if (hitStop > 0) { hitStop--; requestAnimationFrame(animate); return; }
         drawBackground();
 
-        if (gameActive) {
-            // RAGE MODE LOGIC
-            if (combo > 15 && !rageMode) {
-                rageMode = true;
-                rageTimer = 300; // 5 seconds
-                rageDisplayEl.style.display = 'block';
-                sfx.powerup();
-            }
-            if (rageMode) {
-                rageTimer--;
-                if(rageTimer <= 0) {
-                    rageMode = false;
-                    rageDisplayEl.style.display = 'none';
-                }
-            }
+        if (currentLevel === 9) {
+            drawDancingHammers();
+            if(frame % 2 === 0) createExplosion(Math.random()*width, -20, `hsl(${Math.random()*360}, 100%, 50%)`, false);
+        } else {
+            drawHammer();
+        }
 
-            // DRUNK LOGIC
+        if (gameActive) {
             if (drunkLevel > 0) {
                 drunkLevel -= 0.1; 
                 const swayX = Math.sin(frame * 0.05) * (drunkLevel * 0.5);
@@ -1710,8 +1654,7 @@
             if (totalShake > 0) { ctx.save(); ctx.translate((Math.random()-0.5)*totalShake, (Math.random()-0.5)*totalShake); }
             if (shakeIntensity > 0) { shakeIntensity *= 0.9; if (shakeIntensity < 0.5) shakeIntensity = 0; }
 
-            // --- BOSS LOGIC ---
-            if (currentLevel === 8) {
+            if (currentLevel === 8 && boss) {
                 bossTimer++;
                 const innocents = entities.filter(e => e.type === 'innocent');
                 if (innocents.length === 0) {
@@ -1719,51 +1662,30 @@
                     gameOver();
                 }
 
-                if (bossState === 'attack') {
-                     boss.vulnerable = false;
-                     // Fire complaints
-                     if (bossTimer > 100) { 
-                         // Fire complaints - Fan spread
-                         for(let i=0; i<5; i++) {
-                             let c = new Entity('complaint');
-                             const angle = Math.PI/2 + (i - 2) * 0.3; 
-                             c.speedX = Math.cos(angle) * 5;
-                             c.speedY = Math.sin(angle) * 5;
-                             c.x = width/2;
-                             c.y = 150;
-                             entities.push(c);
-                         }
-                         bossState = 'cooldown';
-                         bossTimer = 0;
-                         boss.health = boss.maxHealth;
-                         boss.vulnerable = true;
-                     }
-                } else if (bossState === 'cooldown') {
-                     // Vulnerable phase - Spawn minions
-                     if (frame % 30 === 0) { 
-                         let minion = new Entity('minion');
-                         entities.push(minion);
-                     }
-                     
-                     if (boss.health <= 0) {
-                         // Success! Get digit.
-                         if (collectedDigits.length < 8) {
-                             let d = new Entity('digit');
-                             d.phrase = Math.floor(Math.random()*10); 
-                             // Slight random spread for digits too
-                             d.speedX = (Math.random() - 0.5) * 4;
-                             entities.push(d);
-                         }
-                         bossState = 'attack';
-                         bossTimer = 0;
-                         boss.vulnerable = false;
-                     }
+                if (bossState === 'attack' && bossTimer > 100) {
+                    for(let i=0; i<5; i++) {
+                        let c = new Entity('complaint');
+                        const angle = Math.PI/2 + (i - 2) * 0.3; 
+                        c.speedX = Math.cos(angle) * 5;
+                        c.speedY = Math.sin(angle) * 5;
+                        c.x = width/2;
+                        c.y = 150;
+                        entities.push(c);
+                    }
+                    bossState = 'cooldown';
+                    bossTimer = 0;
+                } else if (bossState === 'cooldown' && bossTimer > 200) {
+                    if (collectedDigits.length < 8) {
+                        let d = new Entity('digit');
+                        d.phrase = Math.floor(Math.random()*10); 
+                        d.speedX = (Math.random() - 0.5) * 4;
+                        entities.push(d);
+                    }
+                    bossState = 'attack';
+                    bossTimer = 0;
                 }
             } else {
-                // NORMAL SPAWN
                 if (frame % 60 === 0) {
-                    // FIX: Spawn rate never drops due to negative score
-                    // Use Math.max(0, score) to prevent negative impact
                     const max = 5 + (currentLevel * 3) + Math.min(10, Math.max(0, score)/50);
                     if (entities.length < max) {
                         const r = Math.random(); let type = 'troll';
@@ -1808,7 +1730,13 @@
 
         for (let i = particles.length - 1; i >= 0; i--) {
             let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.03; p.vy += 0.5;
-            ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fillRect(p.x, p.y, p.size, p.size); ctx.globalAlpha = 1;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            if (p.angle) { p.angle += p.speed; ctx.rotate(p.angle); }
+            ctx.fillStyle = p.color; ctx.globalAlpha = p.life; 
+            ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size); 
+            ctx.globalAlpha = 1;
+            ctx.restore();
             if (p.life <= 0) particles.splice(i, 1);
         }
         for (let i = shockwaves.length - 1; i >= 0; i--) {
@@ -1820,7 +1748,12 @@
         if (combo > 1) { comboDisplayEl.style.display = 'block'; comboCountEl.innerText = combo; } else { comboDisplayEl.style.display = 'none'; }
 
         for (let i = floatText.length - 1; i >= 0; i--) {
-            let f = floatText[i]; f.update(); f.draw();
+            let f = floatText[i]; 
+            f.x += f.vx || 0; 
+            f.y += f.vy; 
+            f.life -= 0.02;
+            f.vy += 0.1; 
+            f.draw();
             if (f.life <= 0) floatText.splice(i, 1);
         }
 
@@ -1835,7 +1768,7 @@
             sfx.bad();
         }
         combo = 0; 
-        if(rageMode) { // End rage mode if combo drops
+        if(rageMode) { 
             rageMode = false;
             rageDisplayEl.style.display = 'none';
         }
@@ -1843,9 +1776,45 @@
     function triggerFlash() { flashOverlay.style.opacity = "0.4"; setTimeout(() => flashOverlay.style.opacity = "0", 80); }
 
     class FloatingText {
-        constructor(x, y, text, color = "#ff0000") { this.x = x; this.y = y; this.text = text; this.life = 1.0; this.vy = -3; this.color = color; }
-        update() { this.y += this.vy; this.life -= 0.02; }
-        draw() { ctx.save(); ctx.globalAlpha = this.life; ctx.font = "bold 40px 'VT323'"; ctx.fillStyle = this.color; ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.textAlign = "center"; ctx.translate(this.x, this.y); ctx.rotate((Math.random() - 0.5) * 0.1); ctx.fillText(this.text, 0, 0); ctx.strokeText(this.text, 0, 0); ctx.restore(); }
+        constructor(x, y, text, color = "#ff0000") { 
+            this.x = x; this.y = y; this.text = text; this.life = 1.0; 
+            this.vy = -5; 
+            this.vx = (Math.random() - 0.5) * 4; 
+            this.color = color; 
+        }
+        draw() { 
+            ctx.save(); 
+            ctx.globalAlpha = this.life; 
+            ctx.font = "bold 40px 'VT323'"; 
+            ctx.fillStyle = this.color; 
+            ctx.strokeStyle = "#fff"; 
+            ctx.lineWidth = 2; 
+            ctx.textAlign = "center"; 
+            ctx.translate(this.x, this.y); 
+            ctx.rotate(Math.sin(frame * 0.1) * 0.1); 
+            ctx.fillText(this.text, 0, 0); 
+            ctx.strokeText(this.text, 0, 0); 
+            ctx.restore(); 
+        }
+    }
+    
+    function startGame(startLevel = 1) {
+        initAudio(); 
+        boss = null; 
+        gameActive = true;
+        score = 0; combo = 0; serverLoad = 0; currentLevel = startLevel; drunkLevel = 0; rageMode = false;
+        if (startLevel > 1) score = LEVEL_THRESHOLDS[startLevel];
+        entities = []; particles = []; floatText = []; shockwaves = [];
+        scoreEl.innerText = score; livesEl.innerText = serverLoad;
+        uiLayer.style.display = 'flex';
+        uiLayer.style.color = '#33ff00'; vignetteOverlay.style.opacity = 0;
+        comboDisplayEl.style.display = 'none'; rageDisplayEl.style.display = 'none';
+        startScreenEl.style.display = 'none'; 
+        gameOverEl.style.display = 'none'; gameWinEl.style.display = 'none';
+        bossHud.style.display = 'none'; momPhoneBtn.style.display = 'none';
+        progressContainer.style.display = 'flex';
+        setupLevelStyle(currentLevel);
+        resize(); updateProgressBar();
     }
 
     animate();
