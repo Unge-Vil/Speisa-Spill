@@ -34,11 +34,28 @@
             border: 4px solid rgba(255, 255, 255, 0.5);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
             animation: floatCard 6s ease-in-out infinite;
+            max-height: 90vh; /* Ensure it fits on mobile */
+            overflow-y: auto; /* Allow scrolling inside card if needed */
+        }
+        
+        /* Custom Scrollbar for the panel */
+        .glass-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+        .glass-panel::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        .glass-panel::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .glass-panel::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
         }
 
         @keyframes floatCard {
             0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-5px); }
         }
 
         /* Emoji Animation */
@@ -74,17 +91,23 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
         }
 
-        /* Time Selection Buttons */
-        .time-btn {
-            transition: all 0.3s ease;
+        /* Selection Buttons */
+        .select-btn {
+            transition: all 0.2s ease;
             border: 2px solid transparent;
         }
-        .time-btn.selected {
+        .select-btn.selected {
             background-color: #4f46e5; /* indigo-600 */
             color: white;
             border-color: #818cf8;
             transform: scale(1.05);
             box-shadow: 0 0 15px rgba(79, 70, 229, 0.5);
+        }
+        
+        /* Category Buttons */
+        .cat-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
         /* Wrong Answer Shake */
@@ -99,7 +122,7 @@
             40%, 60% { transform: translate3d(8px, 0, 0); }
         }
 
-        /* Right Answer Pop - FIXED VISIBILITY */
+        /* Right Answer Pop */
         .pop-success {
             animation: popSuccess 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
             background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%) !important;
@@ -116,7 +139,7 @@
             100% { transform: scale(1); }
         }
 
-        /* Wrong Answer Pop - FIXED VISIBILITY */
+        /* Wrong Answer Pop */
         .pop-fail {
             background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important;
             color: white !important;
@@ -171,38 +194,63 @@
     <div id="background-elements"></div>
 
     <!-- Main Game Container -->
-    <main class="w-full max-w-md p-4 relative z-10">
+    <main class="w-full max-w-md p-2 md:p-4 relative z-10 flex flex-col h-full justify-center">
         
         <!-- START SCREEN -->
-        <div id="start-screen" class="glass-panel rounded-3xl p-8 text-center animate-fade-in-up">
-            <h1 class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2 filter drop-shadow-sm">
-                Emoji Quiz
-            </h1>
-            <p class="text-gray-600 font-semibold mb-6 text-lg">Gjett filmen, tingen eller maten!</p>
+        <div id="start-screen" class="glass-panel rounded-3xl p-6 text-center animate-fade-in-up flex flex-col gap-4">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-1 filter drop-shadow-sm">
+                    Emoji Quiz
+                </h1>
+                <p class="text-gray-500 font-bold text-xs uppercase tracking-widest">
+                    <span id="total-questions">0</span> SPØRSMÅL I BASEN
+                </p>
+            </div>
             
-            <div class="text-8xl mb-6 emoji-bounce cursor-pointer hover:scale-110 transition-transform">
+            <div class="text-6xl md:text-7xl emoji-bounce cursor-pointer hover:scale-110 transition-transform">
                 🤔
             </div>
 
             <!-- Time Selection -->
-            <div class="mb-8">
-                <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Velg Tidsfrist</p>
-                <div class="flex justify-center gap-3">
-                    <button onclick="selectTime(5)" id="btn-5s" class="time-btn bg-white/50 hover:bg-white text-gray-700 font-bold py-2 px-4 rounded-xl shadow-sm">
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">1. Velg Tid</p>
+                <div class="flex justify-center gap-2">
+                    <button onclick="selectTime(5)" id="btn-5s" class="select-btn bg-white/50 hover:bg-white text-gray-700 font-bold py-2 px-3 rounded-xl shadow-sm text-sm">
                         ⚡ 5s
                     </button>
-                    <button onclick="selectTime(10)" id="btn-10s" class="time-btn bg-white/50 hover:bg-white text-gray-700 font-bold py-2 px-4 rounded-xl shadow-sm selected">
+                    <button onclick="selectTime(10)" id="btn-10s" class="select-btn bg-white/50 hover:bg-white text-gray-700 font-bold py-2 px-3 rounded-xl shadow-sm text-sm selected">
                         🕰️ 10s
                     </button>
-                    <button onclick="selectTime('inf')" id="btn-inf" class="time-btn bg-white/50 hover:bg-white text-gray-700 font-bold py-2 px-4 rounded-xl shadow-sm">
+                    <button onclick="selectTime('inf')" id="btn-inf" class="select-btn bg-white/50 hover:bg-white text-gray-700 font-bold py-2 px-3 rounded-xl shadow-sm text-sm">
                         🧘 ∞
                     </button>
                 </div>
             </div>
 
-            <button onclick="startGame()" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1 text-xl border-b-4 border-indigo-800 active:border-b-0 active:translate-y-1">
-                START SPILLET 🚀
-            </button>
+            <!-- Category Selection -->
+            <div>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">2. Velg Kategori</p>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <button onclick="startGame('all')" class="cat-btn w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold py-3 px-2 rounded-xl shadow hover:shadow-md transform transition-transform">
+                        🎲 Alt Blandet
+                    </button>
+                    <button onclick="startGame('movies')" class="cat-btn w-full bg-white/60 hover:bg-white text-gray-800 font-bold py-3 px-2 rounded-xl shadow-sm">
+                        🎬 Filmer
+                    </button>
+                    <button onclick="startGame('food')" class="cat-btn w-full bg-white/60 hover:bg-white text-gray-800 font-bold py-3 px-2 rounded-xl shadow-sm">
+                        🍔 Mat
+                    </button>
+                    <button onclick="startGame('animals')" class="cat-btn w-full bg-white/60 hover:bg-white text-gray-800 font-bold py-3 px-2 rounded-xl shadow-sm">
+                        🦁 Dyr
+                    </button>
+                    <button onclick="startGame('gaming')" class="cat-btn w-full bg-white/60 hover:bg-white text-gray-800 font-bold py-3 px-2 rounded-xl shadow-sm">
+                        🎮 Spill
+                    </button>
+                    <button onclick="startGame('geo')" class="cat-btn w-full bg-white/60 hover:bg-white text-gray-800 font-bold py-3 px-2 rounded-xl shadow-sm">
+                        🌍 Steder
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- GAME SCREEN -->
@@ -251,7 +299,7 @@
         </div>
 
         <!-- GAME OVER SCREEN -->
-        <div id="end-screen" class="hidden glass-panel rounded-3xl p-8 text-center">
+        <div id="end-screen" class="hidden glass-panel rounded-3xl p-8 text-center flex flex-col justify-center">
             <h2 id="end-title" class="text-4xl font-black text-indigo-800 mb-4">Bra jobba! 🎉</h2>
             
             <div class="bg-white/50 rounded-xl p-4 mb-6 border-2 border-white">
@@ -265,112 +313,244 @@
                 Du er en Emoji-ekspert!
             </p>
 
-            <button onclick="startGame()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1 text-xl border-b-4 border-emerald-800 active:border-b-0 active:translate-y-1">
-                SPILL IGJEN 🔄
+            <button onclick="location.reload()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1 text-xl border-b-4 border-emerald-800 active:border-b-0 active:translate-y-1">
+                GÅ TIL FORSIDEN 🏠
             </button>
         </div>
 
     </main>
 
     <script>
-        // --- GAME DATA WITH CATEGORIES ---
+        // --- GAME DATA WITH TYPES ---
         const levels = [
-            // FILMER & SERIER
-            { category: "Hvilken film?", emojis: "🦁👑", answer: "Løvenes Konge", options: ["Løvenes Konge", "Tigergutt", "Jungelboken", "Madagaskar"] },
-            { category: "Hvilken film?", emojis: "⚡🧙‍♂️", answer: "Harry Potter", options: ["Ringenes Herre", "Harry Potter", "Percy Jackson", "Trollmannen fra Oz"] },
-            { category: "Hvilken film?", emojis: "🚢🧊", answer: "Titanic", options: ["Båten", "Avatar", "Titanic", "Istid"] },
-            { category: "Hvilken film?", emojis: "🕷️🕸️", answer: "Spider-Man", options: ["Batman", "Spider-Man", "Venom", "Ant-Man"] },
-            { category: "Hvilken film?", emojis: "🦕🦖", answer: "Jurassic Park", options: ["Godzilla", "Jurassic Park", "Toy Story", "Istid"] },
-            { category: "Hvilken film?", emojis: "👻🚫", answer: "Ghostbusters", options: ["Casper", "Ghostbusters", "Halloween", "Frustrerte Fruer"] },
-            { category: "Hvilken film?", emojis: "👸❄️☃️", answer: "Frost", options: ["Snehvit", "Askepott", "Frost", "Narnia"] },
-            { category: "Hvilken film?", emojis: "🍫🏭🎫", answer: "Charlie og Sjokoladefabrikken", options: ["Godteriland", "Charlie og Sjokoladefabrikken", "Hans og Grete", "Kakemonsteret"] },
-            { category: "Hvilken film?", emojis: "💍🌋🦶", answer: "Ringenes Herre", options: ["Hobbiten", "Game of Thrones", "Ringenes Herre", "Dungeons & Dragons"] },
-            { category: "Hvilken film?", emojis: "🤠🚀🧸", answer: "Toy Story", options: ["Small Soldiers", "Lego Filmen", "Toy Story", "Minions"] },
-            { category: "Hvilken film?", emojis: "🤡🎈", answer: "IT", options: ["Sirkus", "IT", "Joker", "Opp"] },
-            { category: "Hvilken film?", emojis: "🐼🥋", answer: "Kung Fu Panda", options: ["Karate Kid", "Mulan", "Kung Fu Panda", "Turning Red"] },
-            { category: "Hvilken film?", emojis: "🔎🐟", answer: "Oppdrag Nemo", options: ["Den Lille Havfruen", "Oppdrag Nemo", "Haien", "Luca"] },
-            { category: "Hvilken film?", emojis: "👽🚲🌕", answer: "E.T.", options: ["Star Wars", "E.T.", "Alien", "Space Jam"] },
-            { category: "Hvilken film?", emojis: "🥊🐯", answer: "Rocky", options: ["Karate Kid", "Raging Bull", "Rocky", "Creed"] },
-            { category: "Hvilken film?", emojis: "🏴‍☠️⚓", answer: "Pirates of the Caribbean", options: ["Peter Pan", "Pirates of the Caribbean", "Skatten på Sjørøverøya", "Hook"] },
-            { category: "Hvilken helt?", emojis: "🦇👨", answer: "Batman", options: ["Superman", "Batman", "Joker", "Daredevil"] },
-            { category: "Hvilken film?", emojis: "🚔🍩", answer: "Politiskolen", options: ["Brooklyn 99", "Politiskolen", "Die Hard", "The Wire"] },
-            { category: "Hvilken film?", emojis: "🐀👨‍🍳", answer: "Ratatouille", options: ["Stuart Little", "Ratatouille", "Flukten fra Hønsegården", "Musevisa"] },
-            { category: "Hvilken film?", emojis: "🧟‍♂️🚆", answer: "Train to Busan", options: ["World War Z", "The Walking Dead", "Train to Busan", "Polarekspressen"] },
-            { category: "Hvilken film?", emojis: "👴🏠🎈", answer: "Opp", options: ["Se opp", "Opp", "Hjemme Alene", "Luftslottet"] },
-            { category: "Hvilken film-saga?", emojis: "🚀🌌⚔️", answer: "Star Wars", options: ["Star Trek", "Guardians of the Galaxy", "Star Wars", "Dune"] },
-            { category: "Hvilken film?", emojis: "🤖❤️🤖", answer: "Wall-E", options: ["Big Hero 6", "Wall-E", "Robots", "Jernkjempen"] },
-            { category: "Hvilken film?", emojis: "👿👗👠", answer: "The Devil Wears Prada", options: ["Sex and the City", "Cruella", "The Devil Wears Prada", "Moteuka"] },
-            { category: "Hvilken film?", emojis: "🐝🎬", answer: "Bee Movie", options: ["Antz", "Småkryp", "Bee Movie", "Honningbarna"] },
-            { category: "Hvilket eventyr?", emojis: "👧🌲🐺", answer: "Rødhette", options: ["Hans og Grete", "Rødhette", "Ulven kommer", "Skjønnheten og Udyret"] },
-            { category: "Hvilken serie?", emojis: "🧟🧟🧟", answer: "The Walking Dead", options: ["Zombieland", "The Last of Us", "The Walking Dead", "Thriller"] },
-            { category: "Hvilken film?", emojis: "🧊🐿️🌰", answer: "Istid", options: ["Madagaskar", "Istid", "Over Hekken", "Bambi"] },
+            // --- FILMER & SERIER (movies) ---
+            { type: "movies", category: "Hvilken film?", emojis: "🦁👑", answer: "Løvenes Konge", options: ["Løvenes Konge", "Tigergutt", "Jungelboken", "Madagaskar"] },
+            { type: "movies", category: "Hvilken film?", emojis: "⚡🧙‍♂️", answer: "Harry Potter", options: ["Ringenes Herre", "Harry Potter", "Percy Jackson", "Trollmannen fra Oz"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🚢🧊", answer: "Titanic", options: ["Båten", "Avatar", "Titanic", "Istid"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🕷️🕸️", answer: "Spider-Man", options: ["Batman", "Spider-Man", "Venom", "Ant-Man"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🦕🦖", answer: "Jurassic Park", options: ["Godzilla", "Jurassic Park", "Toy Story", "Istid"] },
+            { type: "movies", category: "Hvilken film?", emojis: "👻🚫", answer: "Ghostbusters", options: ["Casper", "Ghostbusters", "Halloween", "Frustrerte Fruer"] },
+            { type: "movies", category: "Hvilken film?", emojis: "👸❄️☃️", answer: "Frost", options: ["Snehvit", "Askepott", "Frost", "Narnia"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🍫🏭🎫", answer: "Charlie og Sjokoladefabrikken", options: ["Godteriland", "Charlie og Sjokoladefabrikken", "Hans og Grete", "Kakemonsteret"] },
+            { type: "movies", category: "Hvilken film?", emojis: "💍🌋🦶", answer: "Ringenes Herre", options: ["Hobbiten", "Game of Thrones", "Ringenes Herre", "Dungeons & Dragons"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🤠🚀🧸", answer: "Toy Story", options: ["Small Soldiers", "Lego Filmen", "Toy Story", "Minions"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🤡🎈", answer: "IT", options: ["Sirkus", "IT", "Joker", "Opp"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🐼🥋", answer: "Kung Fu Panda", options: ["Karate Kid", "Mulan", "Kung Fu Panda", "Turning Red"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🔎🐟", answer: "Oppdrag Nemo", options: ["Den Lille Havfruen", "Oppdrag Nemo", "Haien", "Luca"] },
+            { type: "movies", category: "Hvilken film?", emojis: "👽🚲🌕", answer: "E.T.", options: ["Star Wars", "E.T.", "Alien", "Space Jam"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🥊🐯", answer: "Rocky", options: ["Karate Kid", "Raging Bull", "Rocky", "Creed"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🏴‍☠️⚓", answer: "Pirates of the Caribbean", options: ["Peter Pan", "Pirates of the Caribbean", "Skatten på Sjørøverøya", "Hook"] },
+            { type: "movies", category: "Hvilken helt?", emojis: "🦇👨", answer: "Batman", options: ["Superman", "Batman", "Joker", "Daredevil"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🚔🍩", answer: "Politiskolen", options: ["Brooklyn 99", "Politiskolen", "Die Hard", "The Wire"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🐀👨‍🍳", answer: "Ratatouille", options: ["Stuart Little", "Ratatouille", "Flukten fra Hønsegården", "Musevisa"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🧟‍♂️🚆", answer: "Train to Busan", options: ["World War Z", "The Walking Dead", "Train to Busan", "Polarekspressen"] },
+            { type: "movies", category: "Hvilken film?", emojis: "👴🏠🎈", answer: "Opp", options: ["Se opp", "Opp", "Hjemme Alene", "Luftslottet"] },
+            { type: "movies", category: "Hvilken film-saga?", emojis: "🚀🌌⚔️", answer: "Star Wars", options: ["Star Trek", "Guardians of the Galaxy", "Star Wars", "Dune"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🤖❤️🤖", answer: "Wall-E", options: ["Big Hero 6", "Wall-E", "Robots", "Jernkjempen"] },
+            { type: "movies", category: "Hvilken film?", emojis: "👿👗👠", answer: "The Devil Wears Prada", options: ["Sex and the City", "Cruella", "The Devil Wears Prada", "Moteuka"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🐝🎬", answer: "Bee Movie", options: ["Antz", "Småkryp", "Bee Movie", "Honningbarna"] },
+            { type: "movies", category: "Hvilket eventyr?", emojis: "👧🌲🐺", answer: "Rødhette", options: ["Hans og Grete", "Rødhette", "Ulven kommer", "Skjønnheten og Udyret"] },
+            { type: "movies", category: "Hvilken serie?", emojis: "🧟🧟🧟", answer: "The Walking Dead", options: ["Zombieland", "The Last of Us", "The Walking Dead", "Thriller"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🧊🐿️🌰", answer: "Istid", options: ["Madagaskar", "Istid", "Over Hekken", "Bambi"] },
+            { type: "movies", category: "Hvilken film?", emojis: "👠🕛🎃", answer: "Askepott", options: ["Tornerose", "Snehvit", "Askepott", "Rødhette"] },
+            { type: "movies", category: "Hvilken serie?", emojis: "🐉🔥👸🏼", answer: "Game of Thrones", options: ["Harry Potter", "The Witcher", "Game of Thrones", "Lord of the Rings"] },
+            { type: "movies", category: "Hvilken film?", emojis: "👹🏰🫏", answer: "Shrek", options: ["Shrek", "Rapunzel", "Drage", "Fiona"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🕰️🚗⚡", answer: "Tilbake til Fremtiden", options: ["Biler", "Tilbake til Fremtiden", "Speed", "Lynet McQueen"] },
+            { type: "movies", category: "Hvilken agent?", emojis: "🕵️‍♂️🍸🔫", answer: "James Bond", options: ["Mission Impossible", "James Bond", "Bourne", "Kingsman"] },
+            { type: "movies", category: "Hvilken serie?", emojis: "🦑🚦🍬", answer: "Squid Game", options: ["Hunger Games", "Squid Game", "Battle Royale", "Alice in Borderland"] },
+            { type: "movies", category: "Hvilken film?", emojis: "👻🟢🤢", answer: "Beetlejuice", options: ["Ghostbusters", "The Mask", "Beetlejuice", "Joker"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🧸🍯🐯", answer: "Ole Brumm", options: ["Ted", "Paddington", "Ole Brumm", "Jungelboken"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🧞‍♂️🐒🕌", answer: "Aladdin", options: ["Mulan", "Aladdin", "Sinbad", "Prinsen av Persia"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🌹👹🏰", answer: "Skjønnheten og Udyret", options: ["Tornerose", "Skjønnheten og Udyret", "Shrek", "Rødhette"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🏎️🏁⚡", answer: "Biler", options: ["Herbie", "Biler", "Fast & Furious", "Turbo"] },
+            { type: "movies", category: "Hvilken film?", emojis: "💊🕶️🐇", answer: "The Matrix", options: ["John Wick", "The Matrix", "Inception", "Terminator"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🏃‍♂️🍫🦐", answer: "Forrest Gump", options: ["Big Fish", "Forrest Gump", "Rain Man", "Cast Away"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🦈🏖️😱", answer: "Haisommer", options: ["Deep Blue Sea", "Haisommer", "The Meg", "Sharknado"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🐍✈️🤬", answer: "Snakes on a Plane", options: ["Anaconda", "Snakes on a Plane", "Flight", "Con Air"] },
+            { type: "movies", category: "Hvilken film?", emojis: "👨‍👩‍👧‍👦🏠😱", answer: "Hjemme Alene", options: ["Richie Rich", "Hjemme Alene", "Dennis", "Goonies"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🏹🔥👧", answer: "Hunger Games", options: ["Divergent", "Hunger Games", "Maze Runner", "Brave"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🌋💍👁️", answer: "Ringenes Herre", options: ["Hobbiten", "Ringenes Herre", "Warcraft", "Narnia"] },
+            { type: "movies", category: "Hvilken serie?", emojis: "☕🛋️👫", answer: "Friends", options: ["Seinfeld", "Friends", "How I Met Your Mother", "Big Bang Theory"] },
+            { type: "movies", category: "Hvilken serie?", emojis: "🧪⚗️🚐", answer: "Breaking Bad", options: ["Better Call Saul", "Breaking Bad", "Narcos", "Ozark"] },
+            { type: "movies", category: "Hvilken serie?", emojis: "🚲👽🧇", answer: "Stranger Things", options: ["Dark", "Stranger Things", "E.T.", "X-Files"] },
+            { type: "movies", category: "Hvilken film?", emojis: "👽📞👉", answer: "E.T.", options: ["Alien", "E.T.", "Star Wars", "Wall-E"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🚢❤️💎", answer: "Titanic", options: ["Poseidon", "Titanic", "Pearl Harbor", "The Notebook"] },
+            { type: "movies", category: "Hvilken film?", emojis: "🦖🏞️🚙", answer: "Jurassic Park", options: ["King Kong", "Jurassic Park", "Godzilla", "Land Before Time"] },
+            { type: "movies", category: "Hvilken film?", emojis: "👻🚫🚒", answer: "Ghostbusters", options: ["Men in Black", "Ghostbusters", "Casper", "Beetlejuice"] },
+
             
-            // TING OG BEGREPER
-            { category: "Hva er dette?", emojis: "🔥🚒", answer: "Brannbil", options: ["Politi", "Brannbil", "Ambulanse", "Racerbil"] },
-            { category: "Hva er dette?", emojis: "🌧️🌈", answer: "Regnbue", options: ["Uvær", "Solskinn", "Regnbue", "Skyer"] },
-            { category: "Hvor skal vi?", emojis: "🗽🍎", answer: "New York", options: ["London", "Paris", "New York", "Oslo"] },
-            { category: "Hvor skal vi?", emojis: "🗼🥐", answer: "Paris", options: ["Roma", "Berlin", "Paris", "Madrid"] },
-            { category: "Hvilket vesen?", emojis: "🧛‍♂️⚰️", answer: "Vampyr", options: ["Zombie", "Varulv", "Vampyr", "Spøkelse"] },
-            { category: "Hvem er dette?", emojis: "🎅🎁🦌", answer: "Julenissen", options: ["Påskeharen", "Tannfeen", "Julenissen", "Snømannen"] },
-            { category: "Hvilken feiring?", emojis: "🎃🍬", answer: "Halloween", options: ["Jul", "Påske", "Halloween", "Bursdag"] },
-            { category: "Hva er dette?", emojis: "👑🏰", answer: "Slott", options: ["Hytte", "Hus", "Slott", "Telt"] },
-            { category: "Hva gjør vi?", emojis: "✈️🌴", answer: "Ferie", options: ["Jobb", "Skole", "Ferie", "Sykehus"] },
-            { category: "Hva er dette?", emojis: "🎮🕹️", answer: "Videospill", options: ["Brettspill", "Videospill", "Fotball", "Lekser"] },
-            { category: "Hvilken sport?", emojis: "⚽🥅", answer: "Fotball", options: ["Håndball", "Tennis", "Fotball", "Golf"] },
-            { category: "Hvilken sjanger?", emojis: "🎻🎼", answer: "Klassisk Musikk", options: ["Rock", "Pop", "Jazz", "Klassisk Musikk"] },
-            { category: "Hvilken mat?", emojis: "🍟🍔🥤", answer: "Fast Food", options: ["Gourmet", "Fast Food", "Frokost", "Salat"] },
-            { category: "Hva kalles det?", emojis: "📚🐛", answer: "Bokorm", options: ["Slange", "Bokorm", "Larve", "Bibliotekar"] },
-            { category: "Hva symboliseres?", emojis: "🧠💡", answer: "Idé", options: ["Hodepine", "Lyspære", "Idé", "Strømbrudd"] },
-            { category: "Hva gjør personen?", emojis: "😴💤", answer: "Søvn", options: ["Løping", "Tenking", "Søvn", "Dagdrøm"] },
-            { category: "Hva gjør personen?", emojis: "🎤🎵", answer: "Sang", options: ["Tale", "Sang", "Skrik", "Hvisking"] },
-            { category: "Hvilket sted?", emojis: "🚑🏥", answer: "Sykehus", options: ["Brannstasjon", "Skole", "Sykehus", "Butikk"] },
-            { category: "Hvem er dette?", emojis: "🤠🐴", answer: "Cowboy", options: ["Ridder", "Cowboy", "Bonde", "Pirat"] },
+            // --- TING OG BEGREPER (things) ---
+            { type: "things", category: "Hva er dette?", emojis: "🔥🚒", answer: "Brannbil", options: ["Politi", "Brannbil", "Ambulanse", "Racerbil"] },
+            { type: "things", category: "Hva er dette?", emojis: "🌧️🌈", answer: "Regnbue", options: ["Uvær", "Solskinn", "Regnbue", "Skyer"] },
+            { type: "things", category: "Hvilket vesen?", emojis: "🧛‍♂️⚰️", answer: "Vampyr", options: ["Zombie", "Varulv", "Vampyr", "Spøkelse"] },
+            { type: "things", category: "Hvem er dette?", emojis: "🎅🎁🦌", answer: "Julenissen", options: ["Påskeharen", "Tannfeen", "Julenissen", "Snømannen"] },
+            { type: "things", category: "Hvilken feiring?", emojis: "🎃🍬", answer: "Halloween", options: ["Jul", "Påske", "Halloween", "Bursdag"] },
+            { type: "things", category: "Hva er dette?", emojis: "👑🏰", answer: "Slott", options: ["Hytte", "Hus", "Slott", "Telt"] },
+            { type: "things", category: "Hva gjør vi?", emojis: "✈️🌴", answer: "Ferie", options: ["Jobb", "Skole", "Ferie", "Sykehus"] },
+            { type: "things", category: "Hva er dette?", emojis: "🎮🕹️", answer: "Videospill", options: ["Brettspill", "Videospill", "Fotball", "Lekser"] },
+            { type: "things", category: "Hvilken sport?", emojis: "⚽🥅", answer: "Fotball", options: ["Håndball", "Tennis", "Fotball", "Golf"] },
+            { type: "things", category: "Hva kalles det?", emojis: "📚🐛", answer: "Bokorm", options: ["Slange", "Bokorm", "Larve", "Bibliotekar"] },
+            { type: "things", category: "Hva symboliseres?", emojis: "🧠💡", answer: "Idé", options: ["Hodepine", "Lyspære", "Idé", "Strømbrudd"] },
+            { type: "things", category: "Hva gjør personen?", emojis: "😴💤", answer: "Søvn", options: ["Løping", "Tenking", "Søvn", "Dagdrøm"] },
+            { type: "things", category: "Hva gjør personen?", emojis: "🎤🎵", answer: "Sang", options: ["Tale", "Sang", "Skrik", "Hvisking"] },
+            { type: "things", category: "Hvilket sted?", emojis: "🚑🏥", answer: "Sykehus", options: ["Brannstasjon", "Skole", "Sykehus", "Butikk"] },
+            { type: "things", category: "Hvem er dette?", emojis: "🤠🐴", answer: "Cowboy", options: ["Ridder", "Cowboy", "Bonde", "Pirat"] },
+            { type: "things", category: "Hva er dette?", emojis: "🛁🦆", answer: "Badekar", options: ["Dusj", "Basseng", "Badekar", "Sjøen"] },
+            { type: "things", category: "Hvilket yrke?", emojis: "👩‍🏫🍎", answer: "Lærer", options: ["Lege", "Lærer", "Kokk", "Politi"] },
+            { type: "things", category: "Hva er dette?", emojis: "☔🌧️", answer: "Paraply", options: ["Regnjakke", "Paraply", "Støvler", "Hatt"] },
+            { type: "things", category: "Hva er dette?", emojis: "🚲🚴", answer: "Sykkel", options: ["Moped", "Sykkel", "Sparkesykkel", "Bil"] },
+            { type: "things", category: "Hva er dette?", emojis: "📸🖼️", answer: "Kamera", options: ["Mobil", "Kamera", "Maleri", "Speil"] },
+            { type: "things", category: "Hvilken anledning?", emojis: "💍👰🤵", answer: "Bryllup", options: ["Bursdag", "Bryllup", "Begravelse", "Dåp"] },
+            { type: "things", category: "Hva er dette?", emojis: "🔑🚪", answer: "Nøkkel", options: ["Lås", "Nøkkel", "Dør", "Ring"] },
+            { type: "things", category: "Hva er dette?", emojis: "🔋⚡", answer: "Batteri", options: ["Lyn", "Batteri", "Lader", "Stikkontakt"] },
+            { type: "things", category: "Hva er dette?", emojis: "⏰💤", answer: "Vekkerklokke", options: ["Klokke", "Vekkerklokke", "Mobil", "Armbåndsur"] },
+            { type: "things", category: "Hva er dette?", emojis: "🕶️☀️", answer: "Solbriller", options: ["Briller", "Solbriller", "Hatt", "Krem"] },
+            { type: "things", category: "Hva er dette?", emojis: "🧤❄️", answer: "Hansker", options: ["Votter", "Hansker", "Lue", "Skjerf"] },
+            { type: "things", category: "Hvilket yrke?", emojis: "👨‍🍳🍳", answer: "Kokk", options: ["Lærer", "Kokk", "Servitør", "Baker"] },
+            { type: "things", category: "Hvilket yrke?", emojis: "👨‍🚒🔥", answer: "Brannmann", options: ["Politi", "Brannmann", "Lege", "Pilot"] },
+            { type: "things", category: "Hvilket yrke?", emojis: "👮‍♂️🚓", answer: "Politi", options: ["Vakt", "Politi", "Soldat", "Detektiv"] },
+            { type: "things", category: "Hvilket yrke?", emojis: "👩‍🚀🚀", answer: "Astronaut", options: ["Pilot", "Astronaut", "Astronom", "Forsker"] },
+            { type: "things", category: "Hvilket yrke?", emojis: "👨‍🎨🎨", answer: "Kunstner", options: ["Maler", "Kunstner", "Designer", "Arkitekt"] },
+            { type: "things", category: "Hvilket yrke?", emojis: "👨‍🔧🔧", answer: "Mekaniker", options: ["Rørlegger", "Mekaniker", "Snekker", "Ingeniør"] },
 
-            // VIDEOSPILL
-            { category: "Hvilket spill?", emojis: "⛏️💎🧟", answer: "Minecraft", options: ["Roblox", "Minecraft", "Terraria", "Fortnite"] },
-            { category: "Hvilket spill?", emojis: "🍄👨🏻🔧", answer: "Super Mario", options: ["Sonic", "Super Mario", "Luigi", "Pac-Man"] },
-            { category: "Hvilket spill?", emojis: "⚡🐁🟡", answer: "Pikachu", options: ["Sonic", "Pikachu", "Yoshi", "Kirby"] },
-            { category: "Hvilket spill?", emojis: "🚗⚽🚀", answer: "Rocket League", options: ["FIFA", "Rocket League", "Mario Kart", "Gran Turismo"] },
-            { category: "Hvilket spill?", emojis: "🛡️🗡️🧝‍♀️", answer: "Zelda", options: ["Final Fantasy", "Zelda", "Witcher", "Skyrim"] },
-            { category: "Hvilket spill?", emojis: "🍌🦍👔", answer: "Donkey Kong", options: ["King Kong", "Donkey Kong", "Curious George", "Tarzan"] },
-            { category: "Hvilket spill?", emojis: "🔫🏗️🎮", answer: "Fortnite", options: ["PUBG", "Fortnite", "Call of Duty", "Apex Legends"] },
-            { category: "Hvilket spill?", emojis: "👻🔦😱", answer: "Luigi's Mansion", options: ["Ghostbusters", "Luigi's Mansion", "Resident Evil", "Silent Hill"] },
+            // --- VIDEOSPILL (gaming) ---
+            { type: "gaming", category: "Hvilket spill?", emojis: "⛏️💎🧟", answer: "Minecraft", options: ["Roblox", "Minecraft", "Terraria", "Fortnite"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🍄👨🏻🔧", answer: "Super Mario", options: ["Sonic", "Super Mario", "Luigi", "Pac-Man"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "⚡🐁🟡", answer: "Pikachu", options: ["Sonic", "Pikachu", "Yoshi", "Kirby"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🚗⚽🚀", answer: "Rocket League", options: ["FIFA", "Rocket League", "Mario Kart", "Gran Turismo"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🛡️🗡️🧝‍♀️", answer: "Zelda", options: ["Final Fantasy", "Zelda", "Witcher", "Skyrim"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🍌🦍👔", answer: "Donkey Kong", options: ["King Kong", "Donkey Kong", "Curious George", "Tarzan"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🔫🏗️🎮", answer: "Fortnite", options: ["PUBG", "Fortnite", "Call of Duty", "Apex Legends"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "👻🔦😱", answer: "Luigi's Mansion", options: ["Ghostbusters", "Luigi's Mansion", "Resident Evil", "Silent Hill"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🔵💨🦔", answer: "Sonic", options: ["Mario", "Sonic", "Crash Bandicoot", "Spyro"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🔪⛽🚀", answer: "Among Us", options: ["Fall Guys", "Among Us", "Fortnite", "Minecraft"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🟡👻🍒", answer: "Pac-Man", options: ["Sonic", "Pac-Man", "Mario", "Tetris"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🧱📉", answer: "Tetris", options: ["Minecraft", "Tetris", "Lego", "Roblox"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🍬🍭🔨", answer: "Candy Crush", options: ["Fruit Ninja", "Candy Crush", "Hay Day", "Angry Birds"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "😠🐦🐷", answer: "Angry Birds", options: ["Flappy Bird", "Angry Birds", "Tiny Wings", "Duck Hunt"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🐍🍎📱", answer: "Snake", options: ["Slither.io", "Snake", "Worm", "Python"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🐐🤪🏙️", answer: "Goat Simulator", options: ["Farming Simulator", "Goat Simulator", "Sims", "Zoo Tycoon"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🌌🔫👷", answer: "Halo", options: ["Destiny", "Halo", "Doom", "Gears of War"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🤠🐴🔫", answer: "Red Dead Redemption", options: ["GTA", "Red Dead Redemption", "Call of Juarez", "Gun"] },
+            { type: "gaming", category: "Hvilket spill?", emojis: "🚗💨🚔", answer: "GTA", options: ["Saints Row", "GTA", "Mafia", "Watch Dogs"] },
 
-            // MAT & DRIKKE
-            { category: "Hvilken rett?", emojis: "🌮🥑🇲🇽", answer: "Taco", options: ["Burrito", "Taco", "Nachos", "Kebab"] },
-            { category: "Hvilken rett?", emojis: "🍣🥢🐟", answer: "Sushi", options: ["Fiskeboller", "Sushi", "Wok", "Reker"] },
-            { category: "Hvilken rett?", emojis: "🥞🍁🍯", answer: "Pannekaker", options: ["Vaffel", "Pannekaker", "Brødskive", "Kake"] },
-            { category: "Hvilken rett?", emojis: "🌭🍞🌭", answer: "Pølse i brød", options: ["Hamburger", "Pølse i brød", "Kebab", "Pizza"] },
-            { category: "Hvilken rett?", emojis: "🍝🇮🇹", answer: "Spaghetti", options: ["Lasagne", "Spaghetti", "Pizza", "Mac & Cheese"] },
-            { category: "Hva er dette?", emojis: "🍩☕👮", answer: "Donut", options: ["Kjeks", "Donut", "Bolle", "Croissant"] },
-            { category: "Hvilken rett?", emojis: "🥦🥕🥒", answer: "Salat", options: ["Suppe", "Salat", "Gryterett", "Smoothie"] },
-            { category: "Hva er dette?", emojis: "🍦🍓🍫", answer: "Iskrem", options: ["Yoghurt", "Iskrem", "Pudding", "Milkshake"] },
+            // --- MAT & DRIKKE (food) ---
+            { type: "food", category: "Hvilken rett?", emojis: "🌮🥑🇲🇽", answer: "Taco", options: ["Burrito", "Taco", "Nachos", "Kebab"] },
+            { type: "food", category: "Hvilken rett?", emojis: "🍣🥢🐟", answer: "Sushi", options: ["Fiskeboller", "Sushi", "Wok", "Reker"] },
+            { type: "food", category: "Hvilken rett?", emojis: "🥞🍁🍯", answer: "Pannekaker", options: ["Vaffel", "Pannekaker", "Brødskive", "Kake"] },
+            { type: "food", category: "Hvilken rett?", emojis: "🌭🍞🌭", answer: "Pølse i brød", options: ["Hamburger", "Pølse i brød", "Kebab", "Pizza"] },
+            { type: "food", category: "Hvilken rett?", emojis: "🍝🇮🇹", answer: "Spaghetti", options: ["Lasagne", "Spaghetti", "Pizza", "Mac & Cheese"] },
+            { type: "food", category: "Hva er dette?", emojis: "🍩☕👮", answer: "Donut", options: ["Kjeks", "Donut", "Bolle", "Croissant"] },
+            { type: "food", category: "Hvilken rett?", emojis: "🥦🥕🥒", answer: "Salat", options: ["Suppe", "Salat", "Gryterett", "Smoothie"] },
+            { type: "food", category: "Hva er dette?", emojis: "🍦🍓🍫", answer: "Iskrem", options: ["Yoghurt", "Iskrem", "Pudding", "Milkshake"] },
+            { type: "food", category: "Hva er dette?", emojis: "🍿🎬", answer: "Popcorn", options: ["Potetgull", "Popcorn", "Godteri", "Sjokolade"] },
+            { type: "food", category: "Hvilken frukt?", emojis: "🍇🍷", answer: "Drue", options: ["Eple", "Drue", "Kirsebær", "Plomme"] },
+            { type: "food", category: "Hva er dette?", emojis: "🥓🍳", answer: "Egg og Bacon", options: ["Frokostblanding", "Egg og Bacon", "Omelett", "Pannekaker"] },
+            { type: "food", category: "Hvilket bakverk?", emojis: "🥐🇫🇷", answer: "Croissant", options: ["Baguette", "Croissant", "Bolle", "Rundstykke"] },
+            { type: "food", category: "Hva er dette?", emojis: "🥣🥕🥔", answer: "Suppe", options: ["Gryterett", "Suppe", "Grøt", "Salat"] },
+            { type: "food", category: "Hva er dette?", emojis: "🍫🍪🥛", answer: "Kjeks", options: ["Kake", "Sjokolade", "Kjeks", "Brød"] },
+            { type: "food", category: "Hvilken frukt?", emojis: "🍎👩‍🏫", answer: "Eple", options: ["Pære", "Eple", "Appelsin", "Banan"] },
+            { type: "food", category: "Hvilken frukt?", emojis: "🍌🐒", answer: "Banan", options: ["Mais", "Banan", "Sitron", "Ananas"] },
+            { type: "food", category: "Hvilken frukt?", emojis: "🍉☀️", answer: "Vannmelon", options: ["Melon", "Vannmelon", "Gresskar", "Agurk"] },
+            { type: "food", category: "Hvilken frukt?", emojis: "🍓🍰", answer: "Jordbær", options: ["Bringebær", "Jordbær", "Kirsebær", "Tomat"] },
+            { type: "food", category: "Hvilken frukt?", emojis: "🍋😖", answer: "Sitron", options: ["Appelsin", "Sitron", "Lime", "Pære"] },
+            { type: "food", category: "Hvilken frukt?", emojis: "🍍🍕", answer: "Ananas", options: ["Kokosnøtt", "Ananas", "Mango", "Papaya"] },
+            { type: "food", category: "Hvilken rett?", emojis: "🍔🍟", answer: "Hamburger", options: ["Pølse", "Hamburger", "Sandwich", "Kebab"] },
+            { type: "food", category: "Hvilken rett?", emojis: "🍕🇮🇹", answer: "Pizza", options: ["Pasta", "Pizza", "Lasagne", "Brød"] },
+            { type: "food", category: "Hva er dette?", emojis: "🧀🐭", answer: "Ost", options: ["Smør", "Ost", "Kake", "Brød"] },
+            { type: "food", category: "Hva er dette?", emojis: "🥚🐔", answer: "Egg", options: ["Kylling", "Egg", "Ball", "Potet"] },
 
-            // DYRERIKET
-            { category: "Hvilket dyr?", emojis: "🦒🦒🦒", answer: "Sjiraff", options: ["Zebra", "Sjiraff", "Elefant", "Kamel"] },
-            { category: "Hvilket dyr?", emojis: "🐧❄️⛸️", answer: "Pingvin", options: ["Isbjørn", "Pingvin", "Sel", "Måke"] },
-            { category: "Hvilket dyr?", emojis: "🐍🍎🤐", answer: "Slange", options: ["Orm", "Slange", "Øgle", "Krokodille"] },
-            { category: "Hvilket vesen?", emojis: "🦄🌈✨", answer: "Enhjørning", options: ["Hest", "Enhjørning", "Pegasus", "Esel"] },
-            { category: "Hvilket dyr?", emojis: "🦘🥊🇦🇺", answer: "Kenguru", options: ["Koala", "Kenguru", "Wombat", "Kanin"] },
-            { category: "Hvilket dyr?", emojis: "🐙🌊🦑", answer: "Blekksprut", options: ["Manet", "Blekksprut", "Krabbe", "Hai"] },
-            { category: "Hvilket dyr?", emojis: "🦇🌙🩸", answer: "Flaggermus", options: ["Ugle", "Flaggermus", "Måke", "Ravn"] },
-            { category: "Hvilket insekt?", emojis: "🐝🍯🌼", answer: "Bie", options: ["Veps", "Bie", "Humle", "Flue"] },
+            // --- DYRERIKET (animals) ---
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦒🦒🦒", answer: "Sjiraff", options: ["Zebra", "Sjiraff", "Elefant", "Kamel"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐧❄️⛸️", answer: "Pingvin", options: ["Isbjørn", "Pingvin", "Sel", "Måke"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐍🍎🤐", answer: "Slange", options: ["Orm", "Slange", "Øgle", "Krokodille"] },
+            { type: "animals", category: "Hvilket vesen?", emojis: "🦄🌈✨", answer: "Enhjørning", options: ["Hest", "Enhjørning", "Pegasus", "Esel"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦘🥊🇦🇺", answer: "Kenguru", options: ["Koala", "Kenguru", "Wombat", "Kanin"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐙🌊🦑", answer: "Blekksprut", options: ["Manet", "Blekksprut", "Krabbe", "Hai"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦇🌙🩸", answer: "Flaggermus", options: ["Ugle", "Flaggermus", "Måke", "Ravn"] },
+            { type: "animals", category: "Hvilket insekt?", emojis: "🐝🍯🌼", answer: "Bie", options: ["Veps", "Bie", "Humle", "Flue"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐘🥜", answer: "Elefant", options: ["Neshorn", "Elefant", "Flodhest", "Mammut"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐖🥓", answer: "Gris", options: ["Ku", "Gris", "Sau", "Hest"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐺🌕", answer: "Ulv", options: ["Hund", "Ulv", "Rev", "Jerv"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦊🍂", answer: "Rev", options: ["Hund", "Ulv", "Rev", "Katt"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦈🌊", answer: "Hai", options: ["Hval", "Delfin", "Hai", "Sel"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦅⛰️", answer: "Ørn", options: ["Hauk", "Ørn", "Måke", "Due"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐸🌊", answer: "Frosk", options: ["Padde", "Frosk", "Salamander", "Slange"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦁👑", answer: "Løve", options: ["Tiger", "Løve", "Leopard", "Gepard"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐯🧡🖤", answer: "Tiger", options: ["Løve", "Tiger", "Katt", "Zebra"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐻🍯", answer: "Bjørn", options: ["Ulv", "Bjørn", "Grevling", "Hund"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐼🎋", answer: "Panda", options: ["Bjørn", "Panda", "Koala", "Vaskebjørn"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐨🌿", answer: "Koala", options: ["Panda", "Koala", "Kenguru", "Sloth"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦓⚫⚪", answer: "Zebra", options: ["Hest", "Zebra", "Esel", "Okapi"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐎🤠", answer: "Hest", options: ["Ku", "Hest", "Esel", "Zebra"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐄🥛", answer: "Ku", options: ["Hest", "Ku", "Gris", "Sau"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐑🧶", answer: "Sau", options: ["Geit", "Sau", "Lama", "Alpakka"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐐🏔️", answer: "Geit", options: ["Sau", "Geit", "Ku", "Hest"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐓🥚", answer: "Høne", options: ["And", "Høne", "Kalkun", "Gås"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦆🌊", answer: "And", options: ["Gås", "And", "Svane", "Høne"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦃🍂", answer: "Kalkun", options: ["Høne", "Kalkun", "Påfugl", "Fasan"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐢🏁", answer: "Skilpadde", options: ["Snegle", "Skilpadde", "Frosk", "Krokodille"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦎🟢", answer: "Øgle", options: ["Slange", "Øgle", "Frosk", "Kameleon"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐊🦷", answer: "Krokodille", options: ["Alligator", "Krokodille", "Dino", "Øgle"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐳🌊", answer: "Hval", options: ["Hai", "Hval", "Delfin", "Sel"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🐬🎪", answer: "Delfin", options: ["Hval", "Delfin", "Hai", "Sel"] },
+            { type: "animals", category: "Hvilket dyr?", emojis: "🦀🏖️", answer: "Krabbe", options: ["Hummer", "Krabbe", "Reke", "Skorpion"] },
+            { type: "animals", category: "Hvilket insekt?", emojis: "🐜💪", answer: "Maur", options: ["Termitt", "Maur", "Bille", "Edderkopp"] },
+            { type: "animals", category: "Hvilket insekt?", emojis: "🕷️🕸️", answer: "Edderkopp", options: ["Maur", "Edderkopp", "Skorpion", "Flue"] },
+            { type: "animals", category: "Hvilket insekt?", emojis: "🦋🌸", answer: "Sommerfugl", options: ["Møll", "Sommerfugl", "Bie", "Flue"] },
 
-            // LAND & STEDER
-            { category: "Hvilket land?", emojis: "🇳🇴⛷️🏔️", answer: "Norge", options: ["Sverige", "Norge", "Danmark", "Finland"] },
-            { category: "Hvilket land?", emojis: "🇯🇵🌸🍣", answer: "Japan", options: ["Kina", "Japan", "Korea", "Thailand"] },
-            { category: "Hvilket land?", emojis: "🇮🇹🍕🏛️", answer: "Italia", options: ["Frankrike", "Italia", "Hellas", "Spania"] },
-            { category: "Hvilken by?", emojis: "🇬🇧☕💂", answer: "London", options: ["London", "Dublin", "New York", "Sydney"] },
-            { category: "Hvilket land?", emojis: "🇪🇬🐫🔺", answer: "Egypt", options: ["Marokko", "Egypt", "Dubai", "India"] },
-            { category: "Hvilket land?", emojis: "🇫🇷🥖🗼", answer: "Frankrike", options: ["Italia", "Tyskland", "Frankrike", "Belgia"] },
-            { category: "Hvilket land?", emojis: "🇺🇸🍔🦅", answer: "USA", options: ["Canada", "USA", "Mexico", "Australia"] },
-            { category: "Hvilket land?", emojis: "🇧🇷⚽💃", answer: "Brasil", options: ["Argentina", "Brasil", "Spania", "Portugal"] },
-            
-            // MUSIKK & ARTISTER
-            { category: "Hvilken artist?", emojis: "🕺👑🎤", answer: "Michael Jackson", options: ["Elvis", "Michael Jackson", "Prince", "Bruno Mars"] },
-            { category: "Hvilket band?", emojis: "🎸⚡🤘", answer: "AC/DC", options: ["Metallica", "AC/DC", "KISS", "Nirvana"] },
-            { category: "Hvilken artist?", emojis: "🎹🕶️🚀", answer: "Elton John", options: ["Billy Joel", "Elton John", "Freddie Mercury", "David Bowie"] },
-            { category: "Hvilken artist?", emojis: "👱‍♀️💄🎤", answer: "Taylor Swift", options: ["Katy Perry", "Taylor Swift", "Lady Gaga", "Beyoncé"] }
+            // --- LAND & STEDER (geo) ---
+            { type: "geo", category: "Hvilket land?", emojis: "🇳🇴⛷️🏔️", answer: "Norge", options: ["Sverige", "Norge", "Danmark", "Finland"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇯🇵🌸🍣", answer: "Japan", options: ["Kina", "Japan", "Korea", "Thailand"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇮🇹🍕🏛️", answer: "Italia", options: ["Frankrike", "Italia", "Hellas", "Spania"] },
+            { type: "geo", category: "Hvilken by?", emojis: "🇬🇧☕💂", answer: "London", options: ["London", "Dublin", "New York", "Sydney"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇪🇬🐫🔺", answer: "Egypt", options: ["Marokko", "Egypt", "Dubai", "India"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇫🇷🥖🗼", answer: "Frankrike", options: ["Italia", "Tyskland", "Frankrike", "Belgia"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇺🇸🍔🦅", answer: "USA", options: ["Canada", "USA", "Mexico", "Australia"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇧🇷⚽💃", answer: "Brasil", options: ["Argentina", "Brasil", "Spania", "Portugal"] },
+            { type: "geo", category: "Hvilken plass?", emojis: "🏝️🥥", answer: "Øde øy", options: ["Ørken", "Øde øy", "Jungel", "Fjell"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇩🇪🍺🥨", answer: "Tyskland", options: ["Belgia", "Tyskland", "Østerrike", "Sveits"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇪🇸💃🥘", answer: "Spania", options: ["Portugal", "Spania", "Italia", "Mexico"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇨🇳🐼🎋", answer: "Kina", options: ["Japan", "Kina", "Korea", "Vietnam"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇮🇳🍛🧘", answer: "India", options: ["Thailand", "India", "Sri Lanka", "Pakistan"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇸🇪🇸🇪🇸🇪", answer: "Sverige", options: ["Norge", "Sverige", "Danmark", "Finland"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇩🇰🇩🇰🇩🇰", answer: "Danmark", options: ["Norge", "Sverige", "Danmark", "Island"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇫🇮🇫🇮🇫🇮", answer: "Finland", options: ["Estland", "Finland", "Sverige", "Norge"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇮🇸🌋❄️", answer: "Island", options: ["Grønland", "Island", "Norge", "Irland"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇷🇺🐻❄️", answer: "Russland", options: ["Ukraina", "Russland", "Polen", "Kina"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇬🇷🏛️🌊", answer: "Hellas", options: ["Italia", "Hellas", "Kypros", "Tyrkia"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇹🇷🥙☕", answer: "Tyrkia", options: ["Hellas", "Tyrkia", "Egypt", "Iran"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇦🇺🦘🐨", answer: "Australia", options: ["New Zealand", "Australia", "Sør-Afrika", "USA"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇨🇦🍁🏒", answer: "Canada", options: ["USA", "Canada", "Norge", "Russland"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇲🇽🌮🌵", answer: "Mexico", options: ["Spania", "Mexico", "Brasil", "Peru"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇦🇷⚽🥩", answer: "Argentina", options: ["Brasil", "Argentina", "Chile", "Uruguay"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇻🇳🍜🛵", answer: "Vietnam", options: ["Thailand", "Vietnam", "Kina", "Japan"] },
+            { type: "geo", category: "Hvilket land?", emojis: "🇹🇭🐘🏝️", answer: "Thailand", options: ["Vietnam", "Thailand", "Indonesia", "India"] },
+            { type: "geo", category: "Hvilken by?", emojis: "🗽🍎🚕", answer: "New York", options: ["Los Angeles", "New York", "Chicago", "London"] },
+            { type: "geo", category: "Hvilken by?", emojis: "🗼🥐🍷", answer: "Paris", options: ["Roma", "Paris", "Berlin", "London"] },
+            { type: "geo", category: "Hvilken by?", emojis: "🕋🕌", answer: "Mekka", options: ["Dubai", "Mekka", "Istanbul", "Jerusalem"] },
+
+            // --- MUSIKK (music) ---
+            { type: "music", category: "Hvilken artist?", emojis: "🕺👑🎤", answer: "Michael Jackson", options: ["Elvis", "Michael Jackson", "Prince", "Bruno Mars"] },
+            { type: "music", category: "Hvilket band?", emojis: "🎸⚡🤘", answer: "AC/DC", options: ["Metallica", "AC/DC", "KISS", "Nirvana"] },
+            { type: "music", category: "Hvilken artist?", emojis: "🎹🕶️🚀", answer: "Elton John", options: ["Billy Joel", "Elton John", "Freddie Mercury", "David Bowie"] },
+            { type: "music", category: "Hvilken artist?", emojis: "👱‍♀️💄🎤", answer: "Taylor Swift", options: ["Katy Perry", "Taylor Swift", "Lady Gaga", "Beyoncé"] },
+            { type: "music", category: "Hvilket band?", emojis: "🇬🇧🍏🐢", answer: "The Beatles", options: ["Rolling Stones", "The Beatles", "Queen", "U2"] },
+            { type: "music", category: "Hvilket band?", emojis: "👑👨🏻🎤", answer: "Queen", options: ["Beatles", "Queen", "KISS", "Pink Floyd"] },
+            { type: "music", category: "Hvilket band?", emojis: "🇸🇪💃🕺", answer: "ABBA", options: ["Roxette", "ABBA", "A-ha", "Ace of Base"] },
+            { type: "music", category: "Hvilket band?", emojis: "👄🌶️", answer: "Spice Girls", options: ["Destiny's Child", "Spice Girls", "TLC", "Little Mix"] },
+            { type: "music", category: "Hvilken artist?", emojis: "🍬👦", answer: "Eminem", options: ["50 Cent", "Eminem", "Snoop Dogg", "Jay-Z"] },
+            { type: "music", category: "Hvilken artist?", emojis: "🐝👑", answer: "Beyoncé", options: ["Rihanna", "Beyoncé", "Whitney Houston", "Mariah Carey"] },
+            { type: "music", category: "Hvilken artist?", emojis: "☂️💎", answer: "Rihanna", options: ["Beyoncé", "Rihanna", "Katy Perry", "Sia"] },
+            { type: "music", category: "Hvilken artist?", emojis: "🥩👗", answer: "Lady Gaga", options: ["Madonna", "Lady Gaga", "Kesha", "Miley Cyrus"] },
+            { type: "music", category: "Hvilken artist?", emojis: "🇬🇧📞💔", answer: "Adele", options: ["Sia", "Adele", "Amy Winehouse", "Celine Dion"] },
+            { type: "music", category: "Hvilken artist?", emojis: "🍁👶🎶", answer: "Justin Bieber", options: ["Shawn Mendes", "Justin Bieber", "Harry Styles", "Ed Sheeran"] },
+            { type: "music", category: "Hvilken artist?", emojis: "➗🎸🧡", answer: "Ed Sheeran", options: ["Sam Smith", "Ed Sheeran", "Lewis Capaldi", "Coldplay"] },
+            { type: "music", category: "Hvilket band?", emojis: "🥶🎮", answer: "Coldplay", options: ["Imagine Dragons", "Coldplay", "OneRepublic", "Maroon 5"] },
+            { type: "music", category: "Hvilken artist?", emojis: "🟣🌧️🎸", answer: "Prince", options: ["Michael Jackson", "Prince", "David Bowie", "Jimi Hendrix"] },
+            { type: "music", category: "Hvilket band?", emojis: "🔫🌹", answer: "Guns N' Roses", options: ["Bon Jovi", "Guns N' Roses", "Aerosmith", "Nirvana"] },
+            { type: "music", category: "Hvilket band?", emojis: "👅🎸👹", answer: "KISS", options: ["AC/DC", "KISS", "Metallica", "Iron Maiden"] },
+            { type: "music", category: "Hvilken artist?", emojis: "🕯️💨👸", answer: "Elton John", options: ["Billy Joel", "Elton John", "Phil Collins", "George Michael"] }
         ];
 
         // --- STATE ---
@@ -381,6 +561,9 @@
         let timerInterval;
         let timeLeft;
         let selectedTimeLimit = 10; // Default
+
+        // Init: Show total questions
+        document.getElementById('total-questions').innerText = levels.length;
 
         // --- AUDIO ENGINE (Synth) ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -457,7 +640,7 @@
             selectedTimeLimit = val;
             
             // UI Update
-            document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('selected'));
+            document.querySelectorAll('.select-btn').forEach(btn => btn.classList.remove('selected'));
             if (val === 'inf') {
                 document.getElementById('btn-inf').classList.add('selected');
             } else {
@@ -468,7 +651,7 @@
 
         // --- CORE GAME LOGIC ---
 
-        function startGame() {
+        function startGame(categoryMode) {
             playSound('click');
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('end-screen').classList.add('hidden');
@@ -477,8 +660,19 @@
             currentLevelIndex = 0;
             score = 0;
             
-            // Randomize levels each game, take top 10
-            gameLevels = shuffleArray([...levels]).slice(0, 10);
+            let possibleLevels = [];
+            
+            // Filter by category
+            if (categoryMode === 'all') {
+                possibleLevels = [...levels];
+            } else {
+                possibleLevels = levels.filter(l => l.type === categoryMode);
+            }
+
+            // Shuffle and pick top 10 (or less if category is small)
+            gameLevels = shuffleArray([...possibleLevels]).slice(0, 10);
+            
+            // If category is too small, duplicate some? No, just play what we have.
             
             updateScoreUI();
             loadLevel();
