@@ -33,6 +33,12 @@
             backdrop-filter: blur(10px);
             border: 4px solid rgba(255, 255, 255, 0.5);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            animation: floatCard 6s ease-in-out infinite;
+        }
+
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         /* Emoji Animation */
@@ -49,6 +55,14 @@
         .option-btn {
             transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
             transform-style: preserve-3d;
+            /* Start hidden for entrance animation */
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideIn 0.4s forwards;
+        }
+
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .option-btn:active {
@@ -58,6 +72,19 @@
         .option-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Time Selection Buttons */
+        .time-btn {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .time-btn.selected {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            border-color: #818cf8;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.5);
         }
 
         /* Wrong Answer Shake */
@@ -72,12 +99,15 @@
             40%, 60% { transform: translate3d(8px, 0, 0); }
         }
 
-        /* Right Answer Pop */
+        /* Right Answer Pop - FIXED VISIBILITY */
         .pop-success {
-            animation: popSuccess 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: popSuccess 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
             background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%) !important;
             color: white !important;
             border-color: #166534 !important;
+            z-index: 10;
+            opacity: 1 !important; /* Force visible */
+            transform: translateY(0) !important; /* Reset position */
         }
 
         @keyframes popSuccess {
@@ -86,10 +116,13 @@
             100% { transform: scale(1); }
         }
 
+        /* Wrong Answer Pop - FIXED VISIBILITY */
         .pop-fail {
             background: linear-gradient(135deg, #f87171 0%, #ef4444 100%) !important;
             color: white !important;
             border-color: #991b1b !important;
+            opacity: 1 !important; /* Force visible */
+            transform: translateY(0) !important; /* Reset position */
         }
 
         /* Floating particles */
@@ -109,6 +142,27 @@
         .progress-bar-fill {
             transition: width 0.5s ease-out;
         }
+
+        /* Timer Animation */
+        @keyframes timerShrink {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        
+        .timer-active {
+            animation-timing-function: linear;
+            animation-fill-mode: forwards;
+        }
+
+        .timer-danger {
+            animation: pulseRed 0.5s infinite;
+        }
+
+        @keyframes pulseRed {
+            0%, 100% { background-color: #ef4444; box-shadow: 0 0 5px #ef4444; }
+            50% { background-color: #ff0000; box-shadow: 0 0 15px #ff0000; }
+        }
+
     </style>
 </head>
 <body class="animated-bg h-screen w-screen flex items-center justify-center relative">
@@ -124,10 +178,26 @@
             <h1 class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2 filter drop-shadow-sm">
                 Emoji Quiz
             </h1>
-            <p class="text-gray-600 font-semibold mb-6 text-lg">Gjett filmen eller tingen!</p>
+            <p class="text-gray-600 font-semibold mb-6 text-lg">Gjett filmen, tingen eller maten!</p>
             
-            <div class="text-8xl mb-8 emoji-bounce cursor-pointer hover:scale-110 transition-transform">
+            <div class="text-8xl mb-6 emoji-bounce cursor-pointer hover:scale-110 transition-transform">
                 🤔
+            </div>
+
+            <!-- Time Selection -->
+            <div class="mb-8">
+                <p class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-3">Velg Tidsfrist</p>
+                <div class="flex justify-center gap-3">
+                    <button onclick="selectTime(5)" id="btn-5s" class="time-btn bg-white/50 hover:bg-white text-gray-700 font-bold py-2 px-4 rounded-xl shadow-sm">
+                        ⚡ 5s
+                    </button>
+                    <button onclick="selectTime(10)" id="btn-10s" class="time-btn bg-white/50 hover:bg-white text-gray-700 font-bold py-2 px-4 rounded-xl shadow-sm selected">
+                        🕰️ 10s
+                    </button>
+                    <button onclick="selectTime('inf')" id="btn-inf" class="time-btn bg-white/50 hover:bg-white text-gray-700 font-bold py-2 px-4 rounded-xl shadow-sm">
+                        🧘 ∞
+                    </button>
+                </div>
             </div>
 
             <button onclick="startGame()" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-1 text-xl border-b-4 border-indigo-800 active:border-b-0 active:translate-y-1">
@@ -143,6 +213,10 @@
                     <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Nivå</span>
                     <span id="level-display" class="text-xl font-black text-indigo-600">1/10</span>
                 </div>
+                <div class="flex flex-col items-center">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Tid</span>
+                    <span id="timer-text" class="text-xl font-black text-orange-500">10s</span>
+                </div>
                 <div class="flex flex-col items-end">
                     <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Poeng</span>
                     <span id="score-display" class="text-xl font-black text-pink-600">0</span>
@@ -155,13 +229,17 @@
             </div>
 
             <!-- Question Card -->
-            <div class="glass-panel rounded-3xl p-6 mb-6 text-center shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-500"></div>
+            <div class="glass-panel rounded-3xl p-6 mb-6 text-center shadow-2xl relative overflow-hidden transform transition-all hover:scale-[1.02]">
+                <!-- Timer Bar -->
+                <div class="absolute top-0 left-0 w-full h-2 bg-gray-200">
+                    <div id="timer-bar" class="h-full bg-red-500 w-full"></div>
+                </div>
                 
-                <div id="emoji-container" class="text-7xl mb-4 py-4 filter drop-shadow-lg transform transition-all duration-300 hover:scale-110">
+                <div id="emoji-container" class="text-7xl mb-4 py-4 filter drop-shadow-lg transform transition-all duration-300 hover:scale-110 cursor-help" title="Hva er dette?">
                     🦁👑
                 </div>
-                <p class="text-gray-500 font-bold text-sm uppercase tracking-widest mb-1">Hvilken film?</p>
+                <!-- Dynamic Category Text -->
+                <p id="category-text" class="text-gray-500 font-bold text-sm uppercase tracking-widest mb-1">Hvilken film?</p>
             </div>
 
             <!-- Options Grid -->
@@ -195,111 +273,114 @@
     </main>
 
     <script>
-        // --- GAME DATA ---
+        // --- GAME DATA WITH CATEGORIES ---
         const levels = [
             // FILMER & SERIER
-            { emojis: "🦁👑", answer: "Løvenes Konge", options: ["Løvenes Konge", "Tigergutt", "Jungelboken", "Madagaskar"] },
-            { emojis: "⚡🧙‍♂️", answer: "Harry Potter", options: ["Ringenes Herre", "Harry Potter", "Percy Jackson", "Trollmannen fra Oz"] },
-            { emojis: "🚢🧊", answer: "Titanic", options: ["Båten", "Avatar", "Titanic", "Istid"] },
-            { emojis: "🕷️🕸️", answer: "Spider-Man", options: ["Batman", "Spider-Man", "Venom", "Ant-Man"] },
-            { emojis: "🦕🦖", answer: "Jurassic Park", options: ["Godzilla", "Jurassic Park", "Toy Story", "Istid"] },
-            { emojis: "👻🚫", answer: "Ghostbusters", options: ["Casper", "Ghostbusters", "Halloween", "Frustrerte Fruer"] },
-            { emojis: "👸❄️☃️", answer: "Frost", options: ["Snehvit", "Askepott", "Frost", "Narnia"] },
-            { emojis: "🍫🏭🎫", answer: "Charlie og Sjokoladefabrikken", options: ["Godteriland", "Charlie og Sjokoladefabrikken", "Hans og Grete", "Kakemonsteret"] },
-            { emojis: "💍🌋🦶", answer: "Ringenes Herre", options: ["Hobbiten", "Game of Thrones", "Ringenes Herre", "Dungeons & Dragons"] },
-            { emojis: "🤠🚀🧸", answer: "Toy Story", options: ["Small Soldiers", "Lego Filmen", "Toy Story", "Minions"] },
-            { emojis: "🤡🎈", answer: "IT", options: ["Sirkus", "IT", "Joker", "Opp"] },
-            { emojis: "🐼🥋", answer: "Kung Fu Panda", options: ["Karate Kid", "Mulan", "Kung Fu Panda", "Turning Red"] },
-            { emojis: "🔎🐟", answer: "Oppdrag Nemo", options: ["Den Lille Havfruen", "Oppdrag Nemo", "Haien", "Luca"] },
-            { emojis: "👽🚲🌕", answer: "E.T.", options: ["Star Wars", "E.T.", "Alien", "Space Jam"] },
-            { emojis: "🥊🐯", answer: "Rocky", options: ["Karate Kid", "Raging Bull", "Rocky", "Creed"] },
-            { emojis: "🏴‍☠️⚓", answer: "Pirates of the Caribbean", options: ["Peter Pan", "Pirates of the Caribbean", "Skatten på Sjørøverøya", "Hook"] },
-            { emojis: "🦇👨", answer: "Batman", options: ["Superman", "Batman", "Joker", "Daredevil"] },
-            { emojis: "🚔🍩", answer: "Politiskolen", options: ["Brooklyn 99", "Politiskolen", "Die Hard", "The Wire"] },
-            { emojis: "🐀👨‍🍳", answer: "Ratatouille", options: ["Stuart Little", "Ratatouille", "Flukten fra Hønsegården", "Musevisa"] },
-            { emojis: "🧟‍♂️🚆", answer: "Train to Busan", options: ["World War Z", "The Walking Dead", "Train to Busan", "Polarekspressen"] },
-            { emojis: "👴🏠🎈", answer: "Opp", options: ["Se opp", "Opp", "Hjemme Alene", "Luftslottet"] },
-            { emojis: "🚀🌌⚔️", answer: "Star Wars", options: ["Star Trek", "Guardians of the Galaxy", "Star Wars", "Dune"] },
-            { emojis: "🤖❤️🤖", answer: "Wall-E", options: ["Big Hero 6", "Wall-E", "Robots", "Jernkjempen"] },
-            { emojis: "👿👗👠", answer: "The Devil Wears Prada", options: ["Sex and the City", "Cruella", "The Devil Wears Prada", "Moteuka"] },
-            { emojis: "🐝🎬", answer: "Bee Movie", options: ["Antz", "Småkryp", "Bee Movie", "Honningbarna"] },
-            { emojis: "👧🌲🐺", answer: "Rødhette", options: ["Hans og Grete", "Rødhette", "Ulven kommer", "Skjønnheten og Udyret"] },
-            { emojis: "🧟🧟🧟", answer: "The Walking Dead", options: ["Zombieland", "The Last of Us", "The Walking Dead", "Thriller"] },
-            { emojis: "🧊🐿️🌰", answer: "Istid", options: ["Madagaskar", "Istid", "Over Hekken", "Bambi"] },
+            { category: "Hvilken film?", emojis: "🦁👑", answer: "Løvenes Konge", options: ["Løvenes Konge", "Tigergutt", "Jungelboken", "Madagaskar"] },
+            { category: "Hvilken film?", emojis: "⚡🧙‍♂️", answer: "Harry Potter", options: ["Ringenes Herre", "Harry Potter", "Percy Jackson", "Trollmannen fra Oz"] },
+            { category: "Hvilken film?", emojis: "🚢🧊", answer: "Titanic", options: ["Båten", "Avatar", "Titanic", "Istid"] },
+            { category: "Hvilken film?", emojis: "🕷️🕸️", answer: "Spider-Man", options: ["Batman", "Spider-Man", "Venom", "Ant-Man"] },
+            { category: "Hvilken film?", emojis: "🦕🦖", answer: "Jurassic Park", options: ["Godzilla", "Jurassic Park", "Toy Story", "Istid"] },
+            { category: "Hvilken film?", emojis: "👻🚫", answer: "Ghostbusters", options: ["Casper", "Ghostbusters", "Halloween", "Frustrerte Fruer"] },
+            { category: "Hvilken film?", emojis: "👸❄️☃️", answer: "Frost", options: ["Snehvit", "Askepott", "Frost", "Narnia"] },
+            { category: "Hvilken film?", emojis: "🍫🏭🎫", answer: "Charlie og Sjokoladefabrikken", options: ["Godteriland", "Charlie og Sjokoladefabrikken", "Hans og Grete", "Kakemonsteret"] },
+            { category: "Hvilken film?", emojis: "💍🌋🦶", answer: "Ringenes Herre", options: ["Hobbiten", "Game of Thrones", "Ringenes Herre", "Dungeons & Dragons"] },
+            { category: "Hvilken film?", emojis: "🤠🚀🧸", answer: "Toy Story", options: ["Small Soldiers", "Lego Filmen", "Toy Story", "Minions"] },
+            { category: "Hvilken film?", emojis: "🤡🎈", answer: "IT", options: ["Sirkus", "IT", "Joker", "Opp"] },
+            { category: "Hvilken film?", emojis: "🐼🥋", answer: "Kung Fu Panda", options: ["Karate Kid", "Mulan", "Kung Fu Panda", "Turning Red"] },
+            { category: "Hvilken film?", emojis: "🔎🐟", answer: "Oppdrag Nemo", options: ["Den Lille Havfruen", "Oppdrag Nemo", "Haien", "Luca"] },
+            { category: "Hvilken film?", emojis: "👽🚲🌕", answer: "E.T.", options: ["Star Wars", "E.T.", "Alien", "Space Jam"] },
+            { category: "Hvilken film?", emojis: "🥊🐯", answer: "Rocky", options: ["Karate Kid", "Raging Bull", "Rocky", "Creed"] },
+            { category: "Hvilken film?", emojis: "🏴‍☠️⚓", answer: "Pirates of the Caribbean", options: ["Peter Pan", "Pirates of the Caribbean", "Skatten på Sjørøverøya", "Hook"] },
+            { category: "Hvilken helt?", emojis: "🦇👨", answer: "Batman", options: ["Superman", "Batman", "Joker", "Daredevil"] },
+            { category: "Hvilken film?", emojis: "🚔🍩", answer: "Politiskolen", options: ["Brooklyn 99", "Politiskolen", "Die Hard", "The Wire"] },
+            { category: "Hvilken film?", emojis: "🐀👨‍🍳", answer: "Ratatouille", options: ["Stuart Little", "Ratatouille", "Flukten fra Hønsegården", "Musevisa"] },
+            { category: "Hvilken film?", emojis: "🧟‍♂️🚆", answer: "Train to Busan", options: ["World War Z", "The Walking Dead", "Train to Busan", "Polarekspressen"] },
+            { category: "Hvilken film?", emojis: "👴🏠🎈", answer: "Opp", options: ["Se opp", "Opp", "Hjemme Alene", "Luftslottet"] },
+            { category: "Hvilken film-saga?", emojis: "🚀🌌⚔️", answer: "Star Wars", options: ["Star Trek", "Guardians of the Galaxy", "Star Wars", "Dune"] },
+            { category: "Hvilken film?", emojis: "🤖❤️🤖", answer: "Wall-E", options: ["Big Hero 6", "Wall-E", "Robots", "Jernkjempen"] },
+            { category: "Hvilken film?", emojis: "👿👗👠", answer: "The Devil Wears Prada", options: ["Sex and the City", "Cruella", "The Devil Wears Prada", "Moteuka"] },
+            { category: "Hvilken film?", emojis: "🐝🎬", answer: "Bee Movie", options: ["Antz", "Småkryp", "Bee Movie", "Honningbarna"] },
+            { category: "Hvilket eventyr?", emojis: "👧🌲🐺", answer: "Rødhette", options: ["Hans og Grete", "Rødhette", "Ulven kommer", "Skjønnheten og Udyret"] },
+            { category: "Hvilken serie?", emojis: "🧟🧟🧟", answer: "The Walking Dead", options: ["Zombieland", "The Last of Us", "The Walking Dead", "Thriller"] },
+            { category: "Hvilken film?", emojis: "🧊🐿️🌰", answer: "Istid", options: ["Madagaskar", "Istid", "Over Hekken", "Bambi"] },
             
             // TING OG BEGREPER
-            { emojis: "🔥🚒", answer: "Brannbil", options: ["Politi", "Brannbil", "Ambulanse", "Racerbil"] },
-            { emojis: "🌧️🌈", answer: "Regnbue", options: ["Uvær", "Solskinn", "Regnbue", "Skyer"] },
-            { emojis: "🗽🍎", answer: "New York", options: ["London", "Paris", "New York", "Oslo"] },
-            { emojis: "🗼🥐", answer: "Paris", options: ["Roma", "Berlin", "Paris", "Madrid"] },
-            { emojis: "🧛‍♂️⚰️", answer: "Vampyr", options: ["Zombie", "Varulv", "Vampyr", "Spøkelse"] },
-            { emojis: "🎅🎁🦌", answer: "Julenissen", options: ["Påskeharen", "Tannfeen", "Julenissen", "Snømannen"] },
-            { emojis: "🎃🍬", answer: "Halloween", options: ["Jul", "Påske", "Halloween", "Bursdag"] },
-            { emojis: "👑🏰", answer: "Slott", options: ["Hytte", "Hus", "Slott", "Telt"] },
-            { emojis: "✈️🌴", answer: "Ferie", options: ["Jobb", "Skole", "Ferie", "Sykehus"] },
-            { emojis: "🎮🕹️", answer: "Videospill", options: ["Brettspill", "Videospill", "Fotball", "Lekser"] },
-            { emojis: "⚽🥅", answer: "Fotball", options: ["Håndball", "Tennis", "Fotball", "Golf"] },
-            { emojis: "🎻🎼", answer: "Klassisk Musikk", options: ["Rock", "Pop", "Jazz", "Klassisk Musikk"] },
-            { emojis: "🍟🍔🥤", answer: "Fast Food", options: ["Gourmet", "Fast Food", "Frokost", "Salat"] },
-            { emojis: "📚🐛", answer: "Bokorm", options: ["Slange", "Bokorm", "Larve", "Bibliotekar"] },
-            { emojis: "🧠💡", answer: "Idé", options: ["Hodepine", "Lyspære", "Idé", "Strømbrudd"] },
-            { emojis: "😴💤", answer: "Søvn", options: ["Løping", "Tenking", "Søvn", "Dagdrøm"] },
-            { emojis: "🎤🎵", answer: "Sang", options: ["Tale", "Sang", "Skrik", "Hvisking"] },
-            { emojis: "🚑🏥", answer: "Sykehus", options: ["Brannstasjon", "Skole", "Sykehus", "Butikk"] },
-            { emojis: "🤠🐴", answer: "Cowboy", options: ["Ridder", "Cowboy", "Bonde", "Pirat"] },
+            { category: "Hva er dette?", emojis: "🔥🚒", answer: "Brannbil", options: ["Politi", "Brannbil", "Ambulanse", "Racerbil"] },
+            { category: "Hva er dette?", emojis: "🌧️🌈", answer: "Regnbue", options: ["Uvær", "Solskinn", "Regnbue", "Skyer"] },
+            { category: "Hvor skal vi?", emojis: "🗽🍎", answer: "New York", options: ["London", "Paris", "New York", "Oslo"] },
+            { category: "Hvor skal vi?", emojis: "🗼🥐", answer: "Paris", options: ["Roma", "Berlin", "Paris", "Madrid"] },
+            { category: "Hvilket vesen?", emojis: "🧛‍♂️⚰️", answer: "Vampyr", options: ["Zombie", "Varulv", "Vampyr", "Spøkelse"] },
+            { category: "Hvem er dette?", emojis: "🎅🎁🦌", answer: "Julenissen", options: ["Påskeharen", "Tannfeen", "Julenissen", "Snømannen"] },
+            { category: "Hvilken feiring?", emojis: "🎃🍬", answer: "Halloween", options: ["Jul", "Påske", "Halloween", "Bursdag"] },
+            { category: "Hva er dette?", emojis: "👑🏰", answer: "Slott", options: ["Hytte", "Hus", "Slott", "Telt"] },
+            { category: "Hva gjør vi?", emojis: "✈️🌴", answer: "Ferie", options: ["Jobb", "Skole", "Ferie", "Sykehus"] },
+            { category: "Hva er dette?", emojis: "🎮🕹️", answer: "Videospill", options: ["Brettspill", "Videospill", "Fotball", "Lekser"] },
+            { category: "Hvilken sport?", emojis: "⚽🥅", answer: "Fotball", options: ["Håndball", "Tennis", "Fotball", "Golf"] },
+            { category: "Hvilken sjanger?", emojis: "🎻🎼", answer: "Klassisk Musikk", options: ["Rock", "Pop", "Jazz", "Klassisk Musikk"] },
+            { category: "Hvilken mat?", emojis: "🍟🍔🥤", answer: "Fast Food", options: ["Gourmet", "Fast Food", "Frokost", "Salat"] },
+            { category: "Hva kalles det?", emojis: "📚🐛", answer: "Bokorm", options: ["Slange", "Bokorm", "Larve", "Bibliotekar"] },
+            { category: "Hva symboliseres?", emojis: "🧠💡", answer: "Idé", options: ["Hodepine", "Lyspære", "Idé", "Strømbrudd"] },
+            { category: "Hva gjør personen?", emojis: "😴💤", answer: "Søvn", options: ["Løping", "Tenking", "Søvn", "Dagdrøm"] },
+            { category: "Hva gjør personen?", emojis: "🎤🎵", answer: "Sang", options: ["Tale", "Sang", "Skrik", "Hvisking"] },
+            { category: "Hvilket sted?", emojis: "🚑🏥", answer: "Sykehus", options: ["Brannstasjon", "Skole", "Sykehus", "Butikk"] },
+            { category: "Hvem er dette?", emojis: "🤠🐴", answer: "Cowboy", options: ["Ridder", "Cowboy", "Bonde", "Pirat"] },
 
             // VIDEOSPILL
-            { emojis: "⛏️💎🧟", answer: "Minecraft", options: ["Roblox", "Minecraft", "Terraria", "Fortnite"] },
-            { emojis: "🍄👨🏻🔧", answer: "Super Mario", options: ["Sonic", "Super Mario", "Luigi", "Pac-Man"] },
-            { emojis: "⚡🐁🟡", answer: "Pikachu", options: ["Sonic", "Pikachu", "Yoshi", "Kirby"] },
-            { emojis: "🚗⚽🚀", answer: "Rocket League", options: ["FIFA", "Rocket League", "Mario Kart", "Gran Turismo"] },
-            { emojis: "🛡️🗡️🧝‍♀️", answer: "Zelda", options: ["Final Fantasy", "Zelda", "Witcher", "Skyrim"] },
-            { emojis: "🍌🦍👔", answer: "Donkey Kong", options: ["King Kong", "Donkey Kong", "Curious George", "Tarzan"] },
-            { emojis: "🔫🏗️🎮", answer: "Fortnite", options: ["PUBG", "Fortnite", "Call of Duty", "Apex Legends"] },
-            { emojis: "👻🔦😱", answer: "Luigi's Mansion", options: ["Ghostbusters", "Luigi's Mansion", "Resident Evil", "Silent Hill"] },
+            { category: "Hvilket spill?", emojis: "⛏️💎🧟", answer: "Minecraft", options: ["Roblox", "Minecraft", "Terraria", "Fortnite"] },
+            { category: "Hvilket spill?", emojis: "🍄👨🏻🔧", answer: "Super Mario", options: ["Sonic", "Super Mario", "Luigi", "Pac-Man"] },
+            { category: "Hvilket spill?", emojis: "⚡🐁🟡", answer: "Pikachu", options: ["Sonic", "Pikachu", "Yoshi", "Kirby"] },
+            { category: "Hvilket spill?", emojis: "🚗⚽🚀", answer: "Rocket League", options: ["FIFA", "Rocket League", "Mario Kart", "Gran Turismo"] },
+            { category: "Hvilket spill?", emojis: "🛡️🗡️🧝‍♀️", answer: "Zelda", options: ["Final Fantasy", "Zelda", "Witcher", "Skyrim"] },
+            { category: "Hvilket spill?", emojis: "🍌🦍👔", answer: "Donkey Kong", options: ["King Kong", "Donkey Kong", "Curious George", "Tarzan"] },
+            { category: "Hvilket spill?", emojis: "🔫🏗️🎮", answer: "Fortnite", options: ["PUBG", "Fortnite", "Call of Duty", "Apex Legends"] },
+            { category: "Hvilket spill?", emojis: "👻🔦😱", answer: "Luigi's Mansion", options: ["Ghostbusters", "Luigi's Mansion", "Resident Evil", "Silent Hill"] },
 
             // MAT & DRIKKE
-            { emojis: "🌮🥑🇲🇽", answer: "Taco", options: ["Burrito", "Taco", "Nachos", "Kebab"] },
-            { emojis: "🍣🥢🐟", answer: "Sushi", options: ["Fiskeboller", "Sushi", "Wok", "Reker"] },
-            { emojis: "🥞🍁🍯", answer: "Pannekaker", options: ["Vaffel", "Pannekaker", "Brødskive", "Kake"] },
-            { emojis: "🌭🍞🌭", answer: "Pølse i brød", options: ["Hamburger", "Pølse i brød", "Kebab", "Pizza"] },
-            { emojis: "🍝🇮🇹", answer: "Spaghetti", options: ["Lasagne", "Spaghetti", "Pizza", "Mac & Cheese"] },
-            { emojis: "🍩☕👮", answer: "Donut", options: ["Kjeks", "Donut", "Bolle", "Croissant"] },
-            { emojis: "🥦🥕🥒", answer: "Salat", options: ["Suppe", "Salat", "Gryterett", "Smoothie"] },
-            { emojis: "🍦🍓🍫", answer: "Iskrem", options: ["Yoghurt", "Iskrem", "Pudding", "Milkshake"] },
+            { category: "Hvilken rett?", emojis: "🌮🥑🇲🇽", answer: "Taco", options: ["Burrito", "Taco", "Nachos", "Kebab"] },
+            { category: "Hvilken rett?", emojis: "🍣🥢🐟", answer: "Sushi", options: ["Fiskeboller", "Sushi", "Wok", "Reker"] },
+            { category: "Hvilken rett?", emojis: "🥞🍁🍯", answer: "Pannekaker", options: ["Vaffel", "Pannekaker", "Brødskive", "Kake"] },
+            { category: "Hvilken rett?", emojis: "🌭🍞🌭", answer: "Pølse i brød", options: ["Hamburger", "Pølse i brød", "Kebab", "Pizza"] },
+            { category: "Hvilken rett?", emojis: "🍝🇮🇹", answer: "Spaghetti", options: ["Lasagne", "Spaghetti", "Pizza", "Mac & Cheese"] },
+            { category: "Hva er dette?", emojis: "🍩☕👮", answer: "Donut", options: ["Kjeks", "Donut", "Bolle", "Croissant"] },
+            { category: "Hvilken rett?", emojis: "🥦🥕🥒", answer: "Salat", options: ["Suppe", "Salat", "Gryterett", "Smoothie"] },
+            { category: "Hva er dette?", emojis: "🍦🍓🍫", answer: "Iskrem", options: ["Yoghurt", "Iskrem", "Pudding", "Milkshake"] },
 
             // DYRERIKET
-            { emojis: "🦒🦒🦒", answer: "Sjiraff", options: ["Zebra", "Sjiraff", "Elefant", "Kamel"] },
-            { emojis: "🐧❄️⛸️", answer: "Pingvin", options: ["Isbjørn", "Pingvin", "Sel", "Måke"] },
-            { emojis: "🐍🍎🤐", answer: "Slange", options: ["Orm", "Slange", "Øgle", "Krokodille"] },
-            { emojis: "🦄🌈✨", answer: "Enhjørning", options: ["Hest", "Enhjørning", "Pegasus", "Esel"] },
-            { emojis: "🦘🥊🇦🇺", answer: "Kenguru", options: ["Koala", "Kenguru", "Wombat", "Kanin"] },
-            { emojis: "🐙🌊🦑", answer: "Blekksprut", options: ["Manet", "Blekksprut", "Krabbe", "Hai"] },
-            { emojis: "🦇🌙🩸", answer: "Flaggermus", options: ["Ugle", "Flaggermus", "Måke", "Ravn"] },
-            { emojis: "🐝🍯🌼", answer: "Bie", options: ["Veps", "Bie", "Humle", "Flue"] },
+            { category: "Hvilket dyr?", emojis: "🦒🦒🦒", answer: "Sjiraff", options: ["Zebra", "Sjiraff", "Elefant", "Kamel"] },
+            { category: "Hvilket dyr?", emojis: "🐧❄️⛸️", answer: "Pingvin", options: ["Isbjørn", "Pingvin", "Sel", "Måke"] },
+            { category: "Hvilket dyr?", emojis: "🐍🍎🤐", answer: "Slange", options: ["Orm", "Slange", "Øgle", "Krokodille"] },
+            { category: "Hvilket vesen?", emojis: "🦄🌈✨", answer: "Enhjørning", options: ["Hest", "Enhjørning", "Pegasus", "Esel"] },
+            { category: "Hvilket dyr?", emojis: "🦘🥊🇦🇺", answer: "Kenguru", options: ["Koala", "Kenguru", "Wombat", "Kanin"] },
+            { category: "Hvilket dyr?", emojis: "🐙🌊🦑", answer: "Blekksprut", options: ["Manet", "Blekksprut", "Krabbe", "Hai"] },
+            { category: "Hvilket dyr?", emojis: "🦇🌙🩸", answer: "Flaggermus", options: ["Ugle", "Flaggermus", "Måke", "Ravn"] },
+            { category: "Hvilket insekt?", emojis: "🐝🍯🌼", answer: "Bie", options: ["Veps", "Bie", "Humle", "Flue"] },
 
             // LAND & STEDER
-            { emojis: "🇳🇴⛷️🏔️", answer: "Norge", options: ["Sverige", "Norge", "Danmark", "Finland"] },
-            { emojis: "🇯🇵🌸🍣", answer: "Japan", options: ["Kina", "Japan", "Korea", "Thailand"] },
-            { emojis: "🇮🇹🍕🏛️", answer: "Italia", options: ["Frankrike", "Italia", "Hellas", "Spania"] },
-            { emojis: "🇬🇧☕💂", answer: "London", options: ["London", "Dublin", "New York", "Sydney"] },
-            { emojis: "🇪🇬🐫🔺", answer: "Egypt", options: ["Marokko", "Egypt", "Dubai", "India"] },
-            { emojis: "🇫🇷🥖🗼", answer: "Frankrike", options: ["Italia", "Tyskland", "Frankrike", "Belgia"] },
-            { emojis: "🇺🇸🍔🦅", answer: "USA", options: ["Canada", "USA", "Mexico", "Australia"] },
-            { emojis: "🇧🇷⚽💃", answer: "Brasil", options: ["Argentina", "Brasil", "Spania", "Portugal"] },
+            { category: "Hvilket land?", emojis: "🇳🇴⛷️🏔️", answer: "Norge", options: ["Sverige", "Norge", "Danmark", "Finland"] },
+            { category: "Hvilket land?", emojis: "🇯🇵🌸🍣", answer: "Japan", options: ["Kina", "Japan", "Korea", "Thailand"] },
+            { category: "Hvilket land?", emojis: "🇮🇹🍕🏛️", answer: "Italia", options: ["Frankrike", "Italia", "Hellas", "Spania"] },
+            { category: "Hvilken by?", emojis: "🇬🇧☕💂", answer: "London", options: ["London", "Dublin", "New York", "Sydney"] },
+            { category: "Hvilket land?", emojis: "🇪🇬🐫🔺", answer: "Egypt", options: ["Marokko", "Egypt", "Dubai", "India"] },
+            { category: "Hvilket land?", emojis: "🇫🇷🥖🗼", answer: "Frankrike", options: ["Italia", "Tyskland", "Frankrike", "Belgia"] },
+            { category: "Hvilket land?", emojis: "🇺🇸🍔🦅", answer: "USA", options: ["Canada", "USA", "Mexico", "Australia"] },
+            { category: "Hvilket land?", emojis: "🇧🇷⚽💃", answer: "Brasil", options: ["Argentina", "Brasil", "Spania", "Portugal"] },
             
             // MUSIKK & ARTISTER
-            { emojis: "🕺👑🎤", answer: "Michael Jackson", options: ["Elvis", "Michael Jackson", "Prince", "Bruno Mars"] },
-            { emojis: "🎸⚡🤘", answer: "AC/DC", options: ["Metallica", "AC/DC", "KISS", "Nirvana"] },
-            { emojis: "🎹🕶️🚀", answer: "Elton John", options: ["Billy Joel", "Elton John", "Freddie Mercury", "David Bowie"] },
-            { emojis: "👱‍♀️💄🎤", answer: "Taylor Swift", options: ["Katy Perry", "Taylor Swift", "Lady Gaga", "Beyoncé"] }
+            { category: "Hvilken artist?", emojis: "🕺👑🎤", answer: "Michael Jackson", options: ["Elvis", "Michael Jackson", "Prince", "Bruno Mars"] },
+            { category: "Hvilket band?", emojis: "🎸⚡🤘", answer: "AC/DC", options: ["Metallica", "AC/DC", "KISS", "Nirvana"] },
+            { category: "Hvilken artist?", emojis: "🎹🕶️🚀", answer: "Elton John", options: ["Billy Joel", "Elton John", "Freddie Mercury", "David Bowie"] },
+            { category: "Hvilken artist?", emojis: "👱‍♀️💄🎤", answer: "Taylor Swift", options: ["Katy Perry", "Taylor Swift", "Lady Gaga", "Beyoncé"] }
         ];
 
         // --- STATE ---
         let currentLevelIndex = 0;
         let score = 0;
         let isAnswering = false;
-        let gameLevels = []; // Shuffled copy of levels
+        let gameLevels = []; 
+        let timerInterval;
+        let timeLeft;
+        let selectedTimeLimit = 10; // Default
 
         // --- AUDIO ENGINE (Synth) ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -314,7 +395,6 @@
             gainNode.connect(audioCtx.destination);
             
             if (type === 'correct') {
-                // Happy high pitched sound
                 oscillator.type = 'sine';
                 oscillator.frequency.setValueAtTime(500, audioCtx.currentTime);
                 oscillator.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
@@ -323,7 +403,6 @@
                 oscillator.start();
                 oscillator.stop(audioCtx.currentTime + 0.5);
             } else if (type === 'wrong') {
-                // Low buzz
                 oscillator.type = 'sawtooth';
                 oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
                 oscillator.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
@@ -332,13 +411,19 @@
                 oscillator.start();
                 oscillator.stop(audioCtx.currentTime + 0.3);
             } else if (type === 'click') {
-                // Click sound
                 oscillator.type = 'triangle';
                 oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
                 gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
                 oscillator.start();
                 oscillator.stop(audioCtx.currentTime + 0.05);
+            } else if (type === 'timeout') {
+                oscillator.type = 'square';
+                oscillator.frequency.setValueAtTime(100, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.5);
             }
         }
 
@@ -353,17 +438,32 @@
 
         function createFloatingEmojis() {
             const container = document.getElementById('background-elements');
-            const emojis = ['🍕', '🚀', '🎈', '🎉', '🦄', '🌵', '🍩', '🎨'];
+            const emojis = ['🍕', '🚀', '🎈', '🎉', '🦄', '🌵', '🍩', '🎨', '🔥', '👻'];
+            container.innerHTML = ''; // Clear existing
             
-            for(let i = 0; i < 15; i++) {
+            for(let i = 0; i < 20; i++) {
                 const el = document.createElement('div');
                 el.innerText = emojis[Math.floor(Math.random() * emojis.length)];
                 el.classList.add('floater');
                 el.style.left = Math.random() * 100 + 'vw';
-                el.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                el.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                el.style.animationDelay = (Math.random() * 10) + 's';
                 el.style.fontSize = (Math.random() * 2 + 1) + 'rem';
                 container.appendChild(el);
             }
+        }
+
+        function selectTime(val) {
+            selectedTimeLimit = val;
+            
+            // UI Update
+            document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('selected'));
+            if (val === 'inf') {
+                document.getElementById('btn-inf').classList.add('selected');
+            } else {
+                document.getElementById('btn-' + val + 's').classList.add('selected');
+            }
+            playSound('click');
         }
 
         // --- CORE GAME LOGIC ---
@@ -391,11 +491,15 @@
             // UI Updates
             document.getElementById('level-display').innerText = `${currentLevelIndex + 1}/${gameLevels.length}`;
             document.getElementById('emoji-container').innerText = levelData.emojis;
+            document.getElementById('category-text').innerText = levelData.category;
             document.getElementById('feedback-msg').style.opacity = '0';
             
             // Progress Bar
             const percent = (currentLevelIndex / gameLevels.length) * 100;
             document.getElementById('progress-bar').style.width = `${percent}%`;
+
+            // Reset and Start Timer
+            startTimer();
 
             // Setup Options
             const optionsContainer = document.getElementById('options-grid');
@@ -403,39 +507,131 @@
             
             const shuffledOptions = shuffleArray([...levelData.options]);
 
-            shuffledOptions.forEach(opt => {
+            shuffledOptions.forEach((opt, index) => {
                 const btn = document.createElement('button');
                 btn.innerText = opt;
                 btn.className = "option-btn bg-white/70 backdrop-blur text-gray-800 font-bold py-4 px-4 rounded-xl shadow-md border-b-4 border-gray-300 active:border-b-0 active:translate-y-1 text-lg hover:bg-white";
+                // Stagger animation
+                btn.style.animationDelay = (index * 0.1) + 's';
+                
                 btn.onclick = () => handleAnswer(btn, opt, levelData.answer);
                 optionsContainer.appendChild(btn);
             });
         }
 
+        function startTimer() {
+            clearInterval(timerInterval);
+            const timerBar = document.getElementById('timer-bar');
+            const timerText = document.getElementById('timer-text');
+            
+            // Reset Styles
+            timerBar.classList.remove('timer-active', 'timerShrink', 'timer-danger');
+            timerBar.style.width = '100%';
+            timerBar.style.backgroundColor = '#ef4444'; // Reset color
+
+            if (selectedTimeLimit === 'inf') {
+                timeLeft = Infinity;
+                timerText.innerText = "∞";
+                timerBar.style.width = '100%'; 
+                timerBar.style.backgroundColor = '#4ade80'; // Green for infinite
+                return;
+            }
+
+            timeLeft = selectedTimeLimit;
+            updateTimerUI();
+            
+            void timerBar.offsetWidth; // Trigger reflow
+            timerBar.style.animationDuration = `${selectedTimeLimit}s`;
+            timerBar.classList.add('timer-active', 'timerShrink');
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerUI();
+                
+                // Add Pulse warning at 3 seconds
+                if (timeLeft <= 3 && timeLeft > 0) {
+                     timerBar.classList.add('timer-danger');
+                     playSound('click'); // Ticking sound
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            if (timeLeft === Infinity) return;
+            document.getElementById('timer-text').innerText = `${timeLeft}s`;
+        }
+
+        function handleTimeOut() {
+            if (isAnswering) return;
+            isAnswering = true;
+            playSound('timeout');
+            showFeedback("Tiden er ute! ⏰");
+            
+            const levelData = gameLevels[currentLevelIndex];
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(b => {
+                b.disabled = true;
+                if (b.innerText === levelData.answer) {
+                    b.style.animationDelay = '0s'; // Clear delay
+                    b.classList.add('pop-success');
+                } else {
+                     b.classList.add('opacity-50');
+                }
+            });
+
+            setTimeout(() => {
+                nextLevel();
+            }, 2000);
+        }
+
         function handleAnswer(btn, selected, correct) {
             if (isAnswering) return;
             isAnswering = true;
+            clearInterval(timerInterval); 
+            document.getElementById('timer-bar').classList.remove('timer-active', 'timer-danger'); 
+            
+            // IMPORTANT: Clear the animation delay on the clicked button 
+            // so the color change happens instantly
+            btn.style.animationDelay = '0s';
 
             if (selected === correct) {
                 // CORRECT
                 playSound('correct');
-                score += 100;
+                
+                // Bonus score for speed (0 if infinite)
+                let bonus = 0;
+                if (selectedTimeLimit !== 'inf') {
+                    bonus = timeLeft * 10;
+                    if(selectedTimeLimit === 5) bonus *= 2; // Double bonus for hard mode
+                }
+                
+                score += (100 + bonus);
+                
                 btn.classList.remove('bg-white/70', 'text-gray-800', 'border-gray-300');
                 btn.classList.add('pop-success');
                 
-                // Confetti blast from the button position
+                // Confetti
                 const rect = btn.getBoundingClientRect();
                 const x = (rect.left + rect.width / 2) / window.innerWidth;
                 const y = (rect.top + rect.height / 2) / window.innerHeight;
                 
                 confetti({
-                    particleCount: 50,
-                    spread: 60,
+                    particleCount: 60,
+                    spread: 70,
                     origin: { x: x, y: y },
-                    colors: ['#4ade80', '#ffffff']
+                    colors: ['#4ade80', '#ffffff', '#fbbf24']
                 });
 
-                showFeedback("Riktig! 🌟");
+                if (bonus > 0) {
+                    showFeedback(`Riktig! +${bonus} bonus! 🌟`);
+                } else {
+                    showFeedback("Riktig! 🌟");
+                }
 
                 setTimeout(() => {
                     nextLevel();
@@ -447,17 +643,17 @@
                 btn.classList.remove('bg-white/70', 'text-gray-800', 'border-gray-300');
                 btn.classList.add('pop-fail');
                 
-                // Shake the whole card
-                const card = btn.parentElement.parentElement; // Crude traversal but works for this structure
+                const card = btn.parentElement.parentElement;
                 card.classList.add('shake');
                 setTimeout(() => card.classList.remove('shake'), 500);
 
                 showFeedback("Feil svar 😢");
 
-                // Highlight the correct one
                 const buttons = document.querySelectorAll('.option-btn');
                 buttons.forEach(b => {
                     if (b.innerText === correct) {
+                        // Clear delay here too
+                        b.style.animationDelay = '0s';
                         setTimeout(() => {
                             b.classList.add('pop-success');
                         }, 200);
@@ -487,7 +683,6 @@
         }
 
         function updateScoreUI() {
-            // Animate score number
             const scoreEl = document.getElementById('score-display');
             scoreEl.innerText = score;
             scoreEl.classList.add('scale-125');
@@ -495,23 +690,23 @@
         }
 
         function gameOver() {
-            playSound('correct'); // reusing correct sound for end
+            playSound('correct');
             document.getElementById('game-screen').classList.add('hidden');
             document.getElementById('end-screen').classList.remove('hidden');
             
             document.getElementById('final-score').innerText = score;
 
-            // Update text based on score
             const title = document.getElementById('end-title');
             const feedback = document.getElementById('feedback-text');
             
-            if (score === 1000) {
+            // Adjusted thresholds
+            if (score > 1200) {
                 title.innerText = "LEGENDARISK! 🏆";
-                feedback.innerText = "Du klarte ALT riktig! Wow!";
+                feedback.innerText = "Lynrask og smart! Wow!";
                 confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
-            } else if (score > 700) {
+            } else if (score > 800) {
                 title.innerText = "Fantastisk! 🎉";
-                feedback.innerText = "Du er en ekte filmekspert.";
+                feedback.innerText = "Du er en ekte ekspert.";
                 confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             } else {
                 title.innerText = "Bra jobba! 👍";
@@ -519,7 +714,6 @@
             }
         }
 
-        // Initialize background visuals on load
         createFloatingEmojis();
 
     </script>
