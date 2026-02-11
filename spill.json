@@ -15,15 +15,15 @@
         "ikon": "fa-solid fa-toilet-paper",
         "farge": "bg-gradient-to-br from-purple-900 to-black"
     },
-        {
+    {
         "id": 3,
         "tittel": "Neon Mayhem",
-        "beskrivelse": "Flerspiller neon-slåssespill",
+        "beskrivelse": "Neon fight-spill i street fighter-stil med lokale dueller, bot-kamp og flashy kombos.",
         "url": "stickman/",
-        "ikon": "fa-solid fa-khanda",
+        "ikon": "fa-solid fa-hand-fist",
         "farge": "bg-gradient-to-br from-purple-900 to-black"
     },
-            {
+    {
         "id": 4,
         "tittel": "Emoji Quiz",
         "beskrivelse": "Gjett filmen eller tingen!",
@@ -31,7 +31,7 @@
         "ikon": "fa-solid fa-face-grin-beam",
         "farge": "bg-gradient-to-br from-purple-900 to-black"
     },
-                {
+    {
         "id": 5,
         "tittel": "Space Fighter",
         "beskrivelse": "Early Access",

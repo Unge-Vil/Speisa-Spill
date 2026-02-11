@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON GLADIATORS: OVERLOAD</title>
+    <title>NEON MAYHEM: STREET GRID</title>
     <style>
         * {
             box-sizing: border-box;
@@ -226,6 +226,17 @@
             background: rgba(0,0,0,0.5);
             padding: 10px;
         }
+
+        .combo-text { font-size: 1rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0; transform: translateY(-6px); transition: opacity 0.15s ease, transform 0.15s ease; }
+        .combo-text.active { opacity: 1; transform: translateY(0); }
+
+        #announcer-text {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: min(13vw, 7rem); font-weight: 900; letter-spacing: 8px; text-transform: uppercase; font-style: italic;
+            color: #fff; text-shadow: 0 0 25px #ff00ff, 0 0 45px #00ffff;
+            pointer-events: none; opacity: 0; z-index: 60;
+        }
         
         .ult-ready {
             animation: blink 0.2s infinite alternate;
@@ -242,6 +253,7 @@
         <!-- P1 UI -->
         <div id="p1-status" class="status-container">
             <div class="char-name" style="color:#ff0055">TITAN</div>
+            <div id="p1-combo" class="combo-text" style="color:#ff7fab">0 HITS</div>
             <div class="bar-frame"><div id="p1-health" class="health-fill"></div></div>
             <div class="energy-frame"><div id="p1-energy" class="energy-fill"></div></div>
         </div>
@@ -251,18 +263,21 @@
         <!-- P2 UI -->
         <div id="p2-status" class="status-container">
             <div class="char-name" style="color:#00eaff">RONIN</div>
+            <div id="p2-combo" class="combo-text" style="color:#75f4ff">0 HITS</div>
             <div class="bar-frame" style="flex-direction: row-reverse; display:flex"><div id="p2-health" class="health-fill"></div></div>
             <div class="energy-frame" style="flex-direction: row-reverse; display:flex"><div id="p2-energy" class="energy-fill"></div></div>
         </div>
         
         <div id="result-display">K.O.</div>
+        <div id="announcer-text"></div>
         <button id="restart-btn" class="btn" onclick="location.reload()">REMATCH</button>
 
         <div class="controls-hint" id="controls-hint"></div>
     </div>
 
     <div id="menu-layer">
-        <div class="menu-title">NEON<br>OVERLOAD</div>
+        <div class="menu-title">NEON<br>MAYHEM</div>
+        <p style="color:#9effff; margin-bottom:20px; font-weight:700; letter-spacing:2px;">Street fighter-stil, neon-kaos og brutale combos</p>
         <button class="btn btn-red" onclick="startLocalGame()">1 vs 1 (LOKALT)</button>
         <button class="btn btn-blue" onclick="startBotGame()">SPILL MOT BOT</button>
     </div>
@@ -732,6 +747,11 @@
     let isBotMode = false;
     let shakeIntensity = 0;
     let hitStopTimer = 0;
+    let skylinePulse = 0;
+    const comboState = {
+        p1: { hits: 0, timeout: null },
+        p2: { hits: 0, timeout: null }
+    };
     
     const GRAVITY = 0.8;
     const JUMP_FORCE = -18;
@@ -741,6 +761,76 @@
         a: { pressed: false }, d: { pressed: false },
         ArrowLeft: { pressed: false }, ArrowRight: { pressed: false }
     };
+
+    function drawNeonSkyline() {
+        skylinePulse += 0.02;
+        const h = canvas.height;
+        const w = canvas.width;
+
+        const sky = ctx.createLinearGradient(0, 0, 0, h);
+        sky.addColorStop(0, '#070015');
+        sky.addColorStop(0.6, '#120027');
+        sky.addColorStop(1, '#02020a');
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.globalAlpha = 0.45;
+        for (let i = 0; i < 16; i++) {
+            const bw = w * 0.03 + (i % 3) * 18;
+            const bx = i * (w / 16);
+            const bh = h * (0.2 + ((i * 17) % 11) / 20);
+            const by = h - bh - 50;
+            const c = i % 2 ? '#ff00aa' : '#00ddff';
+            ctx.fillStyle = c;
+            ctx.fillRect(bx, by, bw, bh);
+            ctx.fillStyle = 'rgba(255,255,255,0.22)';
+            for (let wy = by + 10; wy < by + bh - 10; wy += 16) {
+                if ((wy / 16 + i) % 2 === 0) ctx.fillRect(bx + 6, wy, bw - 12, 4);
+            }
+        }
+        ctx.restore();
+
+        ctx.save();
+        const pulseAlpha = 0.12 + Math.sin(skylinePulse) * 0.05;
+        ctx.globalAlpha = pulseAlpha;
+        ctx.strokeStyle = '#00ffff';
+        ctx.lineWidth = 2;
+        for (let y = h - 70; y > h * 0.45; y -= 25) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function showAnnouncer(message, ms = 900) {
+        const el = document.getElementById('announcer-text');
+        el.innerText = message;
+        el.style.transition = 'none';
+        el.style.opacity = '1';
+        setTimeout(() => {
+            el.style.transition = 'opacity 0.3s ease';
+            el.style.opacity = '0';
+        }, ms);
+    }
+
+    function registerCombo(attackerKey) {
+        const state = comboState[attackerKey];
+        const comboEl = document.getElementById(`${attackerKey}-combo`);
+        state.hits += 1;
+        comboEl.innerText = `${state.hits} HITS`;
+        comboEl.classList.toggle('active', state.hits > 1);
+        if (state.hits === 2) showAnnouncer('COMBO!');
+        if (state.hits >= 4) showAnnouncer('NEON RUSH!');
+        clearTimeout(state.timeout);
+        state.timeout = setTimeout(() => {
+            state.hits = 0;
+            comboEl.classList.remove('active');
+            comboEl.innerText = '0 HITS';
+        }, 900);
+    }
 
     function init() {
         resizeCanvas();
@@ -778,6 +868,7 @@
         document.getElementById('controls-hint').innerHTML = isBotMode ? 
             "WASD (Beveg) | E (Slå) | SHIFT (Dash) | Q (ULTIMATE)" : 
             "P1: WASD-E-Q-Shift | P2: Piler-0-1-Ctrl";
+        showAnnouncer("ROUND 1", 1000);
         
         const w = canvas.width;
         
@@ -801,6 +892,12 @@
         timer = 60; gameOver = false;
         document.getElementById('result-display').style.display = 'none';
         document.getElementById('restart-btn').style.display = 'none';
+        comboState.p1.hits = 0;
+        comboState.p2.hits = 0;
+        document.getElementById('p1-combo').classList.remove('active');
+        document.getElementById('p2-combo').classList.remove('active');
+        document.getElementById('p1-combo').innerText = '0 HITS';
+        document.getElementById('p2-combo').innerText = '0 HITS';
         
         updateUI();
         clearInterval(timerId);
@@ -828,6 +925,7 @@
         else if (player2.health > player1.health) msg = "RONIN WINS";
         
         document.getElementById('result-display').innerText = msg;
+        showAnnouncer('K.O.', 1200);
     }
 
     function updateUI() {
@@ -891,7 +989,8 @@
             return;
         }
 
-        ctx.fillStyle = 'rgba(0, 0, 5, 0.25)'; 
+        drawNeonSkyline();
+        ctx.fillStyle = 'rgba(2, 2, 12, 0.22)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.save();
@@ -953,6 +1052,7 @@
             
             def.takeHit(atk.damage);
             atk.energy = Math.min(atk.energy + 10, 100);
+            registerCombo(atk === player1 ? 'p1' : 'p2');
             updateUI();
             
             playSound('hit');
