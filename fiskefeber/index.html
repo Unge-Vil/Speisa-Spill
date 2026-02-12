@@ -1,0 +1,3265 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fiskefeber - Stormtur</title>
+    <style>
+        :root {
+            --panel-bg: rgba(6, 18, 35, 0.82);
+            --panel-border: rgba(110, 199, 255, 0.35);
+            --text: #eef8ff;
+            --good: #59d680;
+            --warn: #ffd36c;
+            --danger: #ff7474;
+            --accent: #5bc8ff;
+            --accent-2: #8df4ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        html, body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            color: var(--text);
+            background: #041224;
+        }
+
+        body.colorblind-mode {
+            --good: #34a3ff;
+            --warn: #ffd55f;
+            --danger: #ffb14a;
+            --accent: #5ea7ff;
+            --accent-2: #ffe66c;
+        }
+
+        body.reduce-motion * {
+            animation: none !important;
+            transition: none !important;
+        }
+
+        body.large-ui .hud-title {
+            font-size: 13px;
+        }
+
+        body.large-ui .hud-value {
+            font-size: 29px;
+        }
+
+        body.large-ui .hud-mini .label {
+            font-size: 11px;
+        }
+
+        body.large-ui .hud-mini .value {
+            font-size: 19px;
+        }
+
+        body.large-ui .hud-btn {
+            font-size: 15px;
+            padding: 10px 12px;
+        }
+
+        body.large-ui #messageToast {
+            font-size: 18px;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            background: radial-gradient(circle at 20% 10%, rgba(48, 118, 172, 0.45), rgba(3, 18, 39, 0.92) 55%);
+        }
+
+        #uiLayer {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            z-index: 20;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .hud-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 10px 12px;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 8px 22px rgba(2, 10, 24, 0.36);
+            min-width: 190px;
+        }
+
+        .hud-title {
+            font-size: 11px;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+            opacity: 0.82;
+        }
+
+        .hud-value {
+            font-size: 24px;
+            font-weight: 800;
+            line-height: 1;
+            margin-top: 4px;
+            text-shadow: 0 0 12px rgba(91, 200, 255, 0.36);
+        }
+
+        .hud-mini-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            min-width: 295px;
+        }
+
+        .hud-mini {
+            background: rgba(6, 15, 30, 0.75);
+            border: 1px solid rgba(150, 223, 255, 0.26);
+            border-radius: 10px;
+            padding: 8px 9px;
+        }
+
+        .hud-mini .label {
+            font-size: 10px;
+            opacity: 0.74;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .hud-mini .value {
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 3px;
+        }
+
+        .bar-wrap {
+            width: 100%;
+            height: 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(4, 12, 20, 0.9);
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .bar-fill {
+            height: 100%;
+            width: 100%;
+            transition: width 0.18s ease;
+        }
+
+        #hullFill {
+            background: linear-gradient(90deg, #1fd6a3, #34ffaf);
+        }
+
+        #lineFill {
+            background: linear-gradient(90deg, #4ca9ff, #8ae7ff);
+        }
+
+        .hud-actions {
+            pointer-events: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .hud-btn {
+            border: 1px solid rgba(191, 235, 255, 0.5);
+            background: rgba(6, 20, 38, 0.88);
+            color: #d9f7ff;
+            border-radius: 10px;
+            padding: 8px 10px;
+            cursor: pointer;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            transition: transform 0.12s ease, background 0.12s ease;
+        }
+
+        .hud-btn:hover {
+            background: rgba(17, 50, 87, 0.9);
+            transform: translateY(-1px);
+        }
+
+        #messageToast {
+            position: absolute;
+            top: 116px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 25;
+            font-weight: 700;
+            font-size: 16px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(4, 20, 44, 0.84);
+            border: 1px solid rgba(166, 225, 255, 0.34);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+        }
+
+        #messageToast.show {
+            opacity: 1;
+        }
+
+        #alertBanner {
+            position: absolute;
+            top: 152px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 26;
+            padding: 8px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 800;
+            border: 1px solid rgba(255, 231, 182, 0.55);
+            background: rgba(42, 22, 8, 0.86);
+            color: #ffe8b5;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        #alertBanner.show {
+            opacity: 1;
+        }
+
+        #comboLine {
+            margin-top: 3px;
+            font-weight: 700;
+            color: #bcefff;
+        }
+
+        #tutorialPanel {
+            position: absolute;
+            top: 158px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 32;
+            background: rgba(4, 19, 36, 0.9);
+            border: 1px solid rgba(163, 228, 255, 0.44);
+            border-radius: 12px;
+            min-width: min(560px, calc(100vw - 28px));
+            padding: 11px 13px;
+            display: none;
+            box-shadow: 0 12px 28px rgba(1, 8, 16, 0.45);
+            pointer-events: none;
+        }
+
+        #tutorialPanel.show {
+            display: block;
+        }
+
+        #tutorialTitle {
+            font-size: 13px;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: #97e6ff;
+            font-weight: 800;
+        }
+
+        #tutorialText {
+            margin-top: 4px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #e9f9ff;
+        }
+
+        #tutorialProgress {
+            margin-top: 5px;
+            font-size: 12px;
+            opacity: 0.82;
+        }
+
+        #a11yPanel {
+            position: absolute;
+            top: 70px;
+            right: 12px;
+            z-index: 34;
+            background: rgba(6, 18, 35, 0.94);
+            border: 1px solid rgba(148, 226, 255, 0.44);
+            border-radius: 12px;
+            min-width: 230px;
+            padding: 12px;
+            display: none;
+            pointer-events: auto;
+            box-shadow: 0 12px 24px rgba(2, 8, 16, 0.44);
+        }
+
+        #a11yPanel.show {
+            display: block;
+        }
+
+        .a11y-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.86;
+            margin-bottom: 8px;
+        }
+
+        .a11y-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            margin-top: 7px;
+        }
+
+        .a11y-option input {
+            accent-color: #6fd9ff;
+        }
+
+        .a11y-footer {
+            margin-top: 10px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        #pauseTag {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 30;
+            background: rgba(2, 12, 22, 0.85);
+            border: 1px solid rgba(179, 229, 255, 0.52);
+            padding: 18px 22px;
+            border-radius: 14px;
+            font-size: 30px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            display: none;
+        }
+
+        .overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 40;
+            background: radial-gradient(circle at center, rgba(10, 39, 75, 0.83), rgba(2, 8, 16, 0.94));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px;
+        }
+
+        .overlay.hidden {
+            display: none;
+        }
+
+        .panel {
+            width: min(700px, 100%);
+            background: rgba(4, 17, 31, 0.92);
+            border: 1px solid rgba(142, 224, 255, 0.35);
+            border-radius: 16px;
+            padding: 22px;
+            text-align: center;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.36);
+            max-height: calc(100vh - 28px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            animation: panel-enter 220ms ease-out;
+        }
+
+        .panel h1,
+        .panel h2 {
+            margin: 0 0 10px 0;
+            letter-spacing: 1px;
+        }
+
+        .panel p {
+            margin: 6px 0;
+            opacity: 0.92;
+            line-height: 1.45;
+        }
+
+        .panel .small {
+            font-size: 13px;
+            opacity: 0.78;
+        }
+
+        .panel strong {
+            color: var(--accent-2);
+        }
+
+        .guide-box {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border: 1px solid rgba(142, 224, 255, 0.3);
+            border-radius: 12px;
+            background: rgba(8, 30, 54, 0.46);
+            text-align: left;
+        }
+
+        .guide-title {
+            margin: 0 0 5px 0;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--accent-2);
+        }
+
+        .guide-point {
+            margin: 4px 0;
+            font-size: 13px;
+            opacity: 0.9;
+            line-height: 1.35;
+        }
+
+        .stats-grid {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            text-align: left;
+        }
+
+        .stats-item {
+            border: 1px solid rgba(160, 224, 255, 0.28);
+            border-radius: 10px;
+            background: rgba(8, 30, 54, 0.42);
+            padding: 9px 10px;
+        }
+
+        .stats-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.76;
+        }
+
+        .stats-value {
+            margin-top: 3px;
+            font-size: 19px;
+            font-weight: 800;
+            color: #d9f6ff;
+        }
+
+        .stats-note {
+            margin-top: 10px;
+            font-size: 13px;
+            text-align: left;
+            opacity: 0.84;
+        }
+
+        .panel-btn-row {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .main-btn {
+            border: 1px solid rgba(165, 233, 255, 0.6);
+            background: linear-gradient(180deg, #3ca8dd, #1878b0);
+            color: #eaffff;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            min-width: 180px;
+        }
+
+        .main-btn:hover {
+            filter: brightness(1.08);
+        }
+
+        #upgradeChoices {
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .upgrade-btn {
+            border: 1px solid rgba(173, 234, 255, 0.45);
+            border-radius: 12px;
+            padding: 12px;
+            cursor: pointer;
+            text-align: left;
+            background: linear-gradient(180deg, rgba(20, 56, 92, 0.88), rgba(12, 28, 46, 0.94));
+            color: var(--text);
+        }
+
+        .upgrade-btn:hover {
+            transform: translateY(-1px);
+            border-color: rgba(202, 244, 255, 0.78);
+        }
+
+        .upgrade-btn .name {
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .upgrade-btn .desc {
+            font-size: 13px;
+            margin-top: 4px;
+            opacity: 0.84;
+        }
+
+        #reelPanel {
+            pointer-events: none;
+            position: absolute;
+            left: 50%;
+            bottom: 110px;
+            transform: translateX(-50%);
+            z-index: 22;
+            min-width: min(530px, calc(100vw - 28px));
+            background: rgba(3, 15, 30, 0.84);
+            border: 1px solid rgba(145, 220, 255, 0.4);
+            border-radius: 14px;
+            padding: 10px;
+            display: none;
+        }
+
+        #reelPanel.show {
+            display: block;
+        }
+
+        .reel-title {
+            font-size: 14px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            opacity: 0.88;
+            margin-bottom: 8px;
+        }
+
+        #tensionTrack {
+            height: 16px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #5d1f2e, #6d5242, #5d1f2e);
+            border: 1px solid rgba(255, 217, 166, 0.38);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #safeZone {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 40%;
+            width: 24%;
+            background: rgba(74, 210, 111, 0.45);
+        }
+
+        #tensionNeedle {
+            position: absolute;
+            top: -3px;
+            bottom: -3px;
+            width: 3px;
+            left: 40%;
+            background: #ebfeff;
+            box-shadow: 0 0 8px rgba(237, 255, 255, 0.84);
+        }
+
+        #reelProgressTrack {
+            margin-top: 9px;
+            height: 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(178, 232, 255, 0.35);
+            background: rgba(6, 25, 44, 0.95);
+            overflow: hidden;
+        }
+
+        #reelProgressFill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #4bc6ff, #7dffe6);
+        }
+
+        .reel-meta {
+            margin-top: 7px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            opacity: 0.85;
+        }
+
+        #touchControls {
+            position: absolute;
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            z-index: 28;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            pointer-events: none;
+        }
+
+        #touchControls.show {
+            display: flex;
+        }
+
+        .touch-btn {
+            pointer-events: auto;
+            border: 1px solid rgba(169, 233, 255, 0.6);
+            background: rgba(5, 25, 48, 0.9);
+            color: #e5fbff;
+            border-radius: 14px;
+            font-weight: 900;
+            font-size: 22px;
+            min-height: 62px;
+            cursor: pointer;
+        }
+
+        #leftBtn, #rightBtn {
+            width: 82px;
+        }
+
+        #actionBtn {
+            flex: 1;
+            font-size: 17px;
+            letter-spacing: 1px;
+        }
+
+        #touchControls .touch-btn:active {
+            transform: scale(0.98);
+        }
+
+        #stageProgressFill {
+            background: linear-gradient(90deg, #62d7ff, #7dffe6);
+            box-shadow: 0 0 10px rgba(132, 240, 255, 0.42);
+        }
+
+        #progressLabel {
+            margin-top: 3px;
+        }
+
+        #threatLabel {
+            margin-top: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #bdefff;
+        }
+
+        @keyframes panel-enter {
+            0% {
+                opacity: 0;
+                transform: translateY(12px) scale(0.985);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .hud-row {
+                flex-direction: column;
+            }
+
+            .hud-panel,
+            .hud-mini-grid {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .hud-actions {
+                align-self: stretch;
+            }
+        }
+
+        @media (max-width: 560px) {
+            #uiLayer {
+                top: 8px;
+                left: 8px;
+                right: 8px;
+                gap: 8px;
+            }
+
+            .hud-panel {
+                padding: 8px 9px;
+            }
+
+            .hud-value {
+                font-size: 20px;
+            }
+
+            .hud-mini .value {
+                font-size: 14px;
+            }
+
+            #reelPanel {
+                bottom: 88px;
+            }
+
+            .panel {
+                padding: 16px;
+            }
+
+            #tutorialPanel {
+                top: 144px;
+            }
+
+            #alertBanner {
+                top: 176px;
+                font-size: 12px;
+            }
+
+            #upgradeChoices {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 360px) {
+            #uiLayer {
+                transform: scale(0.9);
+                transform-origin: top left;
+                width: calc(111.11%);
+            }
+
+            #touchControls {
+                left: 8px;
+                right: 8px;
+                bottom: 8px;
+                gap: 8px;
+            }
+
+            .touch-btn {
+                min-height: 54px;
+            }
+
+            #leftBtn,
+            #rightBtn {
+                width: 72px;
+            }
+
+            #actionBtn {
+                font-size: 15px;
+            }
+
+            #a11yPanel {
+                right: 8px;
+                top: 64px;
+                min-width: 210px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="uiLayer">
+        <div class="hud-row">
+            <div class="hud-panel">
+                <div class="hud-title">Total Poeng</div>
+                <div class="hud-value" id="scoreValue">0</div>
+                <div class="small">Highscore: <span id="hudHighscore">0</span></div>
+                <div class="small" id="comboLine">Combo: <span id="comboValue">x1.0 (0)</span></div>
+            </div>
+
+            <div class="hud-mini-grid">
+                <div class="hud-mini">
+                    <div class="label">Bane</div>
+                    <div class="value" id="stageValue">1 - Morgenvik</div>
+                </div>
+                <div class="hud-mini">
+                    <div class="label">Mål</div>
+                    <div class="value" id="goalValue">0 / 500</div>
+                </div>
+                <div class="hud-mini">
+                    <div class="label">Tid</div>
+                    <div class="value" id="timeValue">90.0s</div>
+                </div>
+                <div class="hud-mini">
+                    <div class="label">Vind</div>
+                    <div class="value" id="windValue">0%</div>
+                </div>
+            </div>
+
+            <div class="hud-actions">
+                <button class="hud-btn" id="pauseBtn">PAUSE</button>
+                <button class="hud-btn" id="muteBtn">LYD: PÅ</button>
+                <button class="hud-btn" id="a11yBtn">A11Y</button>
+            </div>
+        </div>
+
+        <div class="hud-row">
+            <div class="hud-panel" style="flex:1;">
+                <div class="hud-title">Skrog (<span id="hullLabel">100</span>)</div>
+                <div class="bar-wrap"><div class="bar-fill" id="hullFill"></div></div>
+            </div>
+            <div class="hud-panel" style="flex:1;">
+                <div class="hud-title">Line (<span id="lineLabel">100</span>)</div>
+                <div class="bar-wrap"><div class="bar-fill" id="lineFill"></div></div>
+            </div>
+        </div>
+
+        <div class="hud-row">
+            <div class="hud-panel" style="flex:1;">
+                <div class="hud-title">Banefremdrift</div>
+                <div class="small" id="progressLabel">0% av banemål</div>
+                <div class="bar-wrap"><div class="bar-fill" id="stageProgressFill"></div></div>
+                <div id="threatLabel">Status: Stabil</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageToast"></div>
+    <div id="alertBanner"></div>
+    <div id="pauseTag">PAUSE</div>
+    <div id="tutorialPanel">
+        <div id="tutorialTitle">Intro</div>
+        <div id="tutorialText"></div>
+        <div id="tutorialProgress"></div>
+    </div>
+    <div id="a11yPanel">
+        <div class="a11y-title">Tilgjengelighet</div>
+        <label class="a11y-option">
+            <input type="checkbox" id="reduceMotionToggle">
+            <span>Redusert bevegelse</span>
+        </label>
+        <label class="a11y-option">
+            <input type="checkbox" id="colorblindToggle">
+            <span>Fargeblindvennlige farger</span>
+        </label>
+        <label class="a11y-option">
+            <input type="checkbox" id="largeUiToggle">
+            <span>Stor UI</span>
+        </label>
+        <div class="a11y-footer">
+            <button class="hud-btn" id="closeA11yBtn">LUKK</button>
+        </div>
+    </div>
+
+    <div id="reelPanel">
+        <div class="reel-title" id="reelTitle">Napp!</div>
+        <div id="tensionTrack">
+            <div id="safeZone"></div>
+            <div id="tensionNeedle"></div>
+        </div>
+        <div id="reelProgressTrack">
+            <div id="reelProgressFill"></div>
+        </div>
+        <div class="reel-meta">
+            <span id="reelHint">Hold SPACE / KAST-SVEIV</span>
+            <span id="reelTimer">Tid: 6.0s</span>
+        </div>
+    </div>
+
+    <div id="touchControls">
+        <button class="touch-btn" id="leftBtn">◀</button>
+        <button class="touch-btn" id="actionBtn">KAST / SVEIV</button>
+        <button class="touch-btn" id="rightBtn">▶</button>
+    </div>
+
+    <div class="overlay" id="startScreen">
+        <div class="panel">
+            <h1>Fiskefeber - Stormtur</h1>
+            <p>Styr båten, få napp og sveiv inn fangsten. Uvær, steiner, drivgods og garn gjør turen krevende.</p>
+            <p><strong>Kontroller PC:</strong> A/D eller piler + SPACE, P for pause.</p>
+            <p><strong>Kontroller mobil:</strong> venstre/høyre + KAST/SVEIV-knapp.</p>
+            <div class="guide-box">
+                <p class="guide-title">Mål med spillet</p>
+                <p class="guide-point">Fullfør 4 baner ved å nå poengmålet før tiden går ut.</p>
+                <p class="guide-point">Du taper hvis tiden går ut, eller hvis skrog eller line treffer 0.</p>
+            </div>
+            <div class="guide-box">
+                <p class="guide-title">Slik spiller du</p>
+                <p class="guide-point">1. Flytt båten sideveis for å manøvrere mellom hindringer.</p>
+                <p class="guide-point">2. Kast når fiskeskyggen er innenfor kastesirkelen.</p>
+                <p class="guide-point">3. Ved napp: hold SPACE/KAST-SVEIV og hold nåla i grønn sone.</p>
+                <p class="guide-point">4. Unngå stein, drivgods, garn, bølgefronter og vindkast.</p>
+            </div>
+            <div class="guide-box">
+                <p class="guide-title">Banemål</p>
+                <p class="guide-point">Bane 1 Morgenvik: 500 poeng på 90 sekunder.</p>
+                <p class="guide-point">Bane 2 Vindfjorden: 900 poeng på 100 sekunder.</p>
+                <p class="guide-point">Bane 3 Tåkebukta: 1400 poeng på 110 sekunder.</p>
+                <p class="guide-point">Bane 4 Stormrevet: 2000 poeng på 120 sekunder.</p>
+            </div>
+            <p>Highscore: <strong id="menuHighscore">0</strong></p>
+            <div class="panel-btn-row">
+                <button class="main-btn" id="startBtn">START FISKETUR</button>
+                <button class="main-btn" id="skipTutorialBtn">START UTEN INTRO</button>
+                <button class="main-btn" id="statsBtn">STATISTIKK</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="stageScreen">
+        <div class="panel">
+            <h2 id="stageClearTitle">Bane fullført!</h2>
+            <p id="stageClearText"></p>
+            <p class="small">Velg en oppgradering for neste etappe:</p>
+            <div id="upgradeChoices"></div>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="gameOverScreen">
+        <div class="panel">
+            <h2>Game Over</h2>
+            <p id="gameOverReason">Tiden rant ut.</p>
+            <p>Score: <strong id="gameOverScore">0</strong></p>
+            <p>Highscore: <strong id="gameOverHighscore">0</strong></p>
+            <div class="panel-btn-row">
+                <button class="main-btn" id="retryBtn">PRØV IGJEN</button>
+                <button class="main-btn" id="menuBtnA">TIL MENY</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="victoryScreen">
+        <div class="panel">
+            <h2>Seier! Stormrevet er erobret</h2>
+            <p>Du fullførte alle 4 baner og holdt både skrog og line i live.</p>
+            <p>Final score: <strong id="victoryScore">0</strong></p>
+            <p>Highscore: <strong id="victoryHighscore">0</strong></p>
+            <div class="panel-btn-row">
+                <button class="main-btn" id="victoryRetryBtn">SPILL PÅ NYTT</button>
+                <button class="main-btn" id="menuBtnB">TIL MENY</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay hidden" id="statsScreen">
+        <div class="panel">
+            <h2>Statistikk</h2>
+            <p class="small">Din historikk for Fiskefeber - Stormtur.</p>
+            <div class="stats-grid">
+                <div class="stats-item">
+                    <div class="stats-label">Spill startet</div>
+                    <div class="stats-value" id="statsRunsValue">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">Seire</div>
+                    <div class="stats-value" id="statsVictoriesValue">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">Game Over</div>
+                    <div class="stats-value" id="statsGameOversValue">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">Fullførte baner</div>
+                    <div class="stats-value" id="statsStagesValue">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">Totale poeng</div>
+                    <div class="stats-value" id="statsTotalScoreValue">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">Beste score</div>
+                    <div class="stats-value" id="statsBestScoreValue">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">Fisk fanget</div>
+                    <div class="stats-value" id="statsFishValue">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">Beste combo</div>
+                    <div class="stats-value" id="statsBestComboValue">0</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">Spilletid</div>
+                    <div class="stats-value" id="statsPlayTimeValue">0m</div>
+                </div>
+                <div class="stats-item">
+                    <div class="stats-label">Seiersrate</div>
+                    <div class="stats-value" id="statsWinRateValue">0%</div>
+                </div>
+            </div>
+            <p class="stats-note" id="statsFishBreakdown">Fangster: Abbor 0, Ørret 0, Laks 0, Gjedde 0, Golden Fish 0</p>
+            <div class="panel-btn-row">
+                <button class="main-btn" id="clearStatsBtn">TØM STATISTIKK</button>
+                <button class="main-btn" id="closeStatsBtn">TIL MENY</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(() => {
+    const STORAGE_KEYS = {
+        HIGH_SCORE: 'fiskefeber_highscore_v1',
+        MUTED: 'fiskefeber_muted_v1',
+        ACCESSIBILITY: 'fiskefeber_accessibility_v1',
+        TUTORIAL_DONE: 'fiskefeber_tutorial_done_v1',
+        STATS: 'fiskefeber_stats_v1'
+    };
+
+    const STATES = {
+        MENU: 'MENU',
+        PLAYING: 'PLAYING',
+        REEL_MINIGAME: 'REEL_MINIGAME',
+        STAGE_CLEAR: 'STAGE_CLEAR',
+        GAME_OVER: 'GAME_OVER',
+        VICTORY: 'VICTORY'
+    };
+
+    const STAGES = [
+        {
+            id: 1,
+            name: 'Morgenvik',
+            duration: 90,
+            goal: 500,
+            fishInterval: 2.35,
+            obstacleInterval: 1.55,
+            gustInterval: 999,
+            obstacleSpeed: 1.0,
+            fog: 0.0,
+            rain: 0.15
+        },
+        {
+            id: 2,
+            name: 'Vindfjorden',
+            duration: 100,
+            goal: 900,
+            fishInterval: 2.2,
+            obstacleInterval: 1.35,
+            gustInterval: 6.8,
+            obstacleSpeed: 1.15,
+            fog: 0.08,
+            rain: 0.25
+        },
+        {
+            id: 3,
+            name: 'Tåkebukta',
+            duration: 110,
+            goal: 1400,
+            fishInterval: 2.05,
+            obstacleInterval: 1.12,
+            gustInterval: 5.7,
+            obstacleSpeed: 1.26,
+            fog: 0.24,
+            rain: 0.35
+        },
+        {
+            id: 4,
+            name: 'Stormrevet',
+            duration: 120,
+            goal: 2000,
+            fishInterval: 1.85,
+            obstacleInterval: 0.95,
+            gustInterval: 4.5,
+            obstacleSpeed: 1.44,
+            fog: 0.12,
+            rain: 0.65
+        }
+    ];
+
+    const FISH_TYPES = [
+        { id: 'abbor', name: 'Abbor', points: 60, pull: 0.65, difficulty: 1.0, color: '#9fe47d' },
+        { id: 'orret', name: 'Ørret', points: 120, pull: 0.95, difficulty: 1.25, color: '#8ad4ff' },
+        { id: 'laks', name: 'Laks', points: 220, pull: 1.2, difficulty: 1.55, color: '#ff9c7f' },
+        { id: 'gjedde', name: 'Gjedde', points: 300, pull: 1.45, difficulty: 1.85, color: '#b0ff8a' },
+        { id: 'golden', name: 'Golden Fish', points: 500, pull: 1.7, difficulty: 2.2, color: '#ffe173' }
+    ];
+
+    const UPGRADES = [
+        {
+            id: 'line',
+            name: 'Forsterket line',
+            description: '+20 maks line',
+            apply: (player) => {
+                player.maxLine += 20;
+                player.line = Math.min(player.maxLine, player.line + 20);
+            }
+        },
+        {
+            id: 'hull',
+            name: 'Bedre skrog',
+            description: '+20 maks skrog',
+            apply: (player) => {
+                player.maxHull += 20;
+                player.hull = Math.min(player.maxHull, player.hull + 20);
+            }
+        },
+        {
+            id: 'precision',
+            name: 'Presisjonssnelle',
+            description: 'Bredere grønn sone ved sveiving',
+            apply: (player) => {
+                player.reelAssist += 8;
+            }
+        },
+        {
+            id: 'speed',
+            name: 'Lett båt',
+            description: '+10% toppfart',
+            apply: (player) => {
+                player.speedMultiplier *= 1.1;
+            }
+        }
+    ];
+
+    const OBSTACLE_TEMPLATES = {
+        rock: {
+            kind: 'rock',
+            width: 56,
+            height: 42,
+            hullDamage: 12,
+            lineDamage: 4,
+            slow: 0,
+            timePenalty: 0.8
+        },
+        driftwood: {
+            kind: 'driftwood',
+            width: 66,
+            height: 30,
+            hullDamage: 4,
+            lineDamage: 2,
+            slow: 1.8,
+            timePenalty: 0.55
+        },
+        net: {
+            kind: 'net',
+            width: 72,
+            height: 32,
+            hullDamage: 3,
+            lineDamage: 16,
+            slow: 0,
+            timePenalty: 1.1
+        },
+        wavefront: {
+            kind: 'wavefront',
+            width: 240,
+            height: 26,
+            hullDamage: 2,
+            lineDamage: 0,
+            slow: 0,
+            timePenalty: 0.25
+        }
+    };
+
+    function createDefaultStats() {
+        return {
+            runsStarted: 0,
+            victories: 0,
+            gameOvers: 0,
+            stageClears: 0,
+            totalScore: 0,
+            bestScore: 0,
+            totalFishCaught: 0,
+            bestCombo: 0,
+            totalPlayTime: 0,
+            catchesByType: {
+                abbor: 0,
+                orret: 0,
+                laks: 0,
+                gjedde: 0,
+                golden: 0
+            }
+        };
+    }
+
+    const storage = {
+        get(key, fallback) {
+            try {
+                const value = localStorage.getItem(key);
+                return value === null ? fallback : value;
+            } catch (error) {
+                return fallback;
+            }
+        },
+        set(key, value) {
+            try {
+                localStorage.setItem(key, value);
+            } catch (error) {
+                // Fallback: ignorer lagringsfeil og fortsett spill.
+            }
+        }
+    };
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const scoreValue = document.getElementById('scoreValue');
+    const comboValue = document.getElementById('comboValue');
+    const hudHighscore = document.getElementById('hudHighscore');
+    const stageValue = document.getElementById('stageValue');
+    const goalValue = document.getElementById('goalValue');
+    const timeValue = document.getElementById('timeValue');
+    const windValue = document.getElementById('windValue');
+    const hullLabel = document.getElementById('hullLabel');
+    const lineLabel = document.getElementById('lineLabel');
+    const hullFill = document.getElementById('hullFill');
+    const lineFill = document.getElementById('lineFill');
+    const stageProgressFill = document.getElementById('stageProgressFill');
+    const progressLabel = document.getElementById('progressLabel');
+    const threatLabel = document.getElementById('threatLabel');
+
+    const pauseBtn = document.getElementById('pauseBtn');
+    const muteBtn = document.getElementById('muteBtn');
+    const a11yBtn = document.getElementById('a11yBtn');
+    const messageToast = document.getElementById('messageToast');
+    const alertBanner = document.getElementById('alertBanner');
+    const pauseTag = document.getElementById('pauseTag');
+    const tutorialPanel = document.getElementById('tutorialPanel');
+    const tutorialTitle = document.getElementById('tutorialTitle');
+    const tutorialText = document.getElementById('tutorialText');
+    const tutorialProgress = document.getElementById('tutorialProgress');
+    const a11yPanel = document.getElementById('a11yPanel');
+    const reduceMotionToggle = document.getElementById('reduceMotionToggle');
+    const colorblindToggle = document.getElementById('colorblindToggle');
+    const largeUiToggle = document.getElementById('largeUiToggle');
+    const closeA11yBtn = document.getElementById('closeA11yBtn');
+
+    const reelPanel = document.getElementById('reelPanel');
+    const reelTitle = document.getElementById('reelTitle');
+    const safeZone = document.getElementById('safeZone');
+    const tensionNeedle = document.getElementById('tensionNeedle');
+    const reelProgressFill = document.getElementById('reelProgressFill');
+    const reelTimer = document.getElementById('reelTimer');
+
+    const touchControls = document.getElementById('touchControls');
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+    const actionBtn = document.getElementById('actionBtn');
+
+    const startScreen = document.getElementById('startScreen');
+    const stageScreen = document.getElementById('stageScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const victoryScreen = document.getElementById('victoryScreen');
+    const statsScreen = document.getElementById('statsScreen');
+
+    const startBtn = document.getElementById('startBtn');
+    const skipTutorialBtn = document.getElementById('skipTutorialBtn');
+    const statsBtn = document.getElementById('statsBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const victoryRetryBtn = document.getElementById('victoryRetryBtn');
+    const menuBtnA = document.getElementById('menuBtnA');
+    const menuBtnB = document.getElementById('menuBtnB');
+    const closeStatsBtn = document.getElementById('closeStatsBtn');
+    const clearStatsBtn = document.getElementById('clearStatsBtn');
+
+    const menuHighscore = document.getElementById('menuHighscore');
+    const stageClearTitle = document.getElementById('stageClearTitle');
+    const stageClearText = document.getElementById('stageClearText');
+    const upgradeChoices = document.getElementById('upgradeChoices');
+
+    const gameOverReason = document.getElementById('gameOverReason');
+    const gameOverScore = document.getElementById('gameOverScore');
+    const gameOverHighscore = document.getElementById('gameOverHighscore');
+    const victoryScore = document.getElementById('victoryScore');
+    const victoryHighscore = document.getElementById('victoryHighscore');
+    const statsRunsValue = document.getElementById('statsRunsValue');
+    const statsVictoriesValue = document.getElementById('statsVictoriesValue');
+    const statsGameOversValue = document.getElementById('statsGameOversValue');
+    const statsStagesValue = document.getElementById('statsStagesValue');
+    const statsTotalScoreValue = document.getElementById('statsTotalScoreValue');
+    const statsBestScoreValue = document.getElementById('statsBestScoreValue');
+    const statsFishValue = document.getElementById('statsFishValue');
+    const statsBestComboValue = document.getElementById('statsBestComboValue');
+    const statsPlayTimeValue = document.getElementById('statsPlayTimeValue');
+    const statsWinRateValue = document.getElementById('statsWinRateValue');
+    const statsFishBreakdown = document.getElementById('statsFishBreakdown');
+
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    let gameState = STATES.MENU;
+    let paused = false;
+    let score = 0;
+    let stageScore = 0;
+    let stageIndex = 0;
+    let stageTimeLeft = STAGES[0].duration;
+    let highScore = parseInt(storage.get(STORAGE_KEYS.HIGH_SCORE, '0'), 10) || 0;
+    let muted = storage.get(STORAGE_KEYS.MUTED, '0') === '1';
+    const accessibilityDefaults = { reduceMotion: false, colorblind: false, largeUi: false };
+    let accessibility = loadAccessibilitySettings();
+    let tutorialDone = storage.get(STORAGE_KEYS.TUTORIAL_DONE, '0') === '1';
+    let stats = loadStats();
+    let currentRunPlayTime = 0;
+
+    let fish = [];
+    let obstacles = [];
+    let particles = [];
+    let weatherEffects = [];
+    let floatingTexts = [];
+
+    let fishSpawnTimer = 0;
+    let obstacleSpawnTimer = 0;
+    let gustSpawnTimer = 0;
+    let wakeTimer = 0;
+    let castCooldown = 0;
+    let castPulse = 0;
+    let ambientWind = 0;
+    let worldTime = 0;
+    const castRadius = 140;
+    const castAssistRadius = 172;
+    let shakeTime = 0;
+    let shakePower = 0;
+
+    let toastTimer = 0;
+    let alertTimer = 0;
+    const warningState = {
+        lowHull: false,
+        lowLine: false,
+        lowTime: false
+    };
+    let frameHandle;
+    let lastTime = 0;
+
+    let reelGame = null;
+    let stagedUpgrades = [];
+    let comboCount = 0;
+    let comboTimer = 0;
+    let comboMultiplier = 1;
+    let tutorialActive = false;
+    let tutorialStep = 0;
+    const tutorialStepState = {
+        movedLeft: false,
+        movedRight: false,
+        pausePressed: false
+    };
+
+    const input = {
+        left: false,
+        right: false,
+        actionHeld: false,
+        touchLeft: false,
+        touchRight: false,
+        touchActionHeld: false
+    };
+
+    const audio = {
+        ctx: null
+    };
+
+    const player = {
+        x: width / 2 - 46,
+        y: height * 0.78,
+        width: 92,
+        height: 34,
+        baseSpeed: 315,
+        speedMultiplier: 1,
+        maxHull: 100,
+        hull: 100,
+        maxLine: 100,
+        line: 100,
+        slowTimer: 0,
+        damageCooldown: 0,
+        reelAssist: 0
+    };
+
+    function init() {
+        resizeCanvas();
+        setupEvents();
+        menuHighscore.textContent = highScore;
+        hudHighscore.textContent = highScore;
+        muteBtn.textContent = muted ? 'LYD: AV' : 'LYD: PÅ';
+        applyAccessibilitySettings();
+        skipTutorialBtn.style.display = tutorialDone ? 'none' : 'inline-block';
+        setupTouchVisibility();
+        updateHud();
+        renderStatsScreen();
+        showOnlyScreen(startScreen);
+        frameHandle = requestAnimationFrame(loop);
+    }
+
+    function setupEvents() {
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            setupTouchVisibility();
+        });
+
+        document.addEventListener('keydown', (event) => {
+            const code = event.code;
+            if (code === 'ArrowLeft' || code === 'KeyA' || code === 'ArrowRight' || code === 'KeyD' || code === 'Space' || code === 'KeyP') {
+                event.preventDefault();
+            }
+
+            if (code === 'ArrowLeft' || code === 'KeyA') input.left = true;
+            if (code === 'ArrowRight' || code === 'KeyD') input.right = true;
+
+            if (code === 'Space') {
+                if (!input.actionHeld) {
+                    handleActionPress();
+                }
+                input.actionHeld = true;
+            }
+
+            if (code === 'KeyP') {
+                togglePause();
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            const code = event.code;
+            if (code === 'ArrowLeft' || code === 'KeyA') input.left = false;
+            if (code === 'ArrowRight' || code === 'KeyD') input.right = false;
+            if (code === 'Space') input.actionHeld = false;
+        });
+
+        pauseBtn.addEventListener('click', () => togglePause());
+        muteBtn.addEventListener('click', () => toggleMute());
+        a11yBtn.addEventListener('click', () => {
+            a11yPanel.classList.toggle('show');
+        });
+        closeA11yBtn.addEventListener('click', () => {
+            a11yPanel.classList.remove('show');
+        });
+
+        reduceMotionToggle.addEventListener('change', () => updateAccessibilitySetting('reduceMotion', reduceMotionToggle.checked));
+        colorblindToggle.addEventListener('change', () => updateAccessibilitySetting('colorblind', colorblindToggle.checked));
+        largeUiToggle.addEventListener('change', () => updateAccessibilitySetting('largeUi', largeUiToggle.checked));
+
+        startBtn.addEventListener('click', () => startGame(false));
+        skipTutorialBtn.addEventListener('click', () => startGame(true));
+        statsBtn.addEventListener('click', () => openStatsScreen());
+        retryBtn.addEventListener('click', () => startGame(true));
+        victoryRetryBtn.addEventListener('click', () => startGame(true));
+
+        menuBtnA.addEventListener('click', () => goToMenu());
+        menuBtnB.addEventListener('click', () => goToMenu());
+        closeStatsBtn.addEventListener('click', () => showOnlyScreen(startScreen));
+        clearStatsBtn.addEventListener('click', () => clearStats());
+
+        setupTouchButton(leftBtn, () => { input.touchLeft = true; }, () => { input.touchLeft = false; });
+        setupTouchButton(rightBtn, () => { input.touchRight = true; }, () => { input.touchRight = false; });
+        setupTouchButton(actionBtn, () => {
+            if (!input.touchActionHeld) {
+                handleActionPress();
+            }
+            input.touchActionHeld = true;
+        }, () => {
+            input.touchActionHeld = false;
+        });
+    }
+
+    function setupTouchButton(button, onDown, onUp) {
+        const stop = (event) => event.preventDefault();
+        button.addEventListener('contextmenu', stop);
+        button.addEventListener('pointerdown', (event) => {
+            stop(event);
+            onDown();
+        });
+        button.addEventListener('pointerup', (event) => {
+            stop(event);
+            onUp();
+        });
+        button.addEventListener('pointercancel', onUp);
+        button.addEventListener('pointerleave', onUp);
+    }
+
+    function setupTouchVisibility() {
+        const isTouch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+        touchControls.classList.toggle('show', isTouch);
+    }
+
+    function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        player.y = height * 0.78;
+        player.x = clamp(player.x, 16, width - player.width - 16);
+    }
+
+    function resetRunState() {
+        score = 0;
+        stageScore = 0;
+        stageIndex = 0;
+        currentRunPlayTime = 0;
+        player.maxHull = 100;
+        player.hull = 100;
+        player.maxLine = 100;
+        player.line = 100;
+        player.speedMultiplier = 1;
+        player.reelAssist = 0;
+        player.slowTimer = 0;
+        player.damageCooldown = 0;
+        player.x = width / 2 - player.width / 2;
+        reelGame = null;
+        castCooldown = 0;
+        castPulse = 0;
+        worldTime = 0;
+        fish = [];
+        obstacles = [];
+        particles = [];
+        weatherEffects = [];
+        floatingTexts = [];
+        wakeTimer = 0;
+        shakeTime = 0;
+        shakePower = 0;
+        alertTimer = 0;
+        alertBanner.classList.remove('show');
+        warningState.lowHull = false;
+        warningState.lowLine = false;
+        warningState.lowTime = false;
+        resetCombo(false);
+        tutorialStepState.movedLeft = false;
+        tutorialStepState.movedRight = false;
+        tutorialStepState.pausePressed = false;
+    }
+
+    function startGame(skipTutorial = false) {
+        hideAllScreens();
+        paused = false;
+        pauseTag.style.display = 'none';
+        pauseBtn.textContent = 'PAUSE';
+        a11yPanel.classList.remove('show');
+
+        resetRunState();
+        stats.runsStarted += 1;
+        saveStats();
+        if (skipTutorial && !tutorialDone) {
+            tutorialDone = true;
+            storage.set(STORAGE_KEYS.TUTORIAL_DONE, '1');
+            skipTutorialBtn.style.display = 'none';
+        }
+        if (!skipTutorial && !tutorialDone) {
+            startTutorial();
+            return;
+        }
+
+        tutorialActive = false;
+        tutorialPanel.classList.remove('show');
+        startStage(0, true);
+        showToast('Bane 1: Morgenvik', '#bfefff', 1.6);
+    }
+
+    function startStage(index, fromStart = false) {
+        stageIndex = index;
+        const stage = STAGES[stageIndex];
+        stageTimeLeft = stage.duration;
+        stageScore = 0;
+        resetCombo(false);
+
+        fish = [];
+        obstacles = [];
+        weatherEffects = [];
+        particles = [];
+        fishSpawnTimer = Math.random() * stage.fishInterval;
+        obstacleSpawnTimer = Math.random() * stage.obstacleInterval;
+        gustSpawnTimer = Math.random() * stage.gustInterval;
+        castCooldown = 0;
+        reelGame = null;
+        ambientWind = 0;
+        gameState = STATES.PLAYING;
+
+        if (!fromStart) {
+            player.hull = Math.min(player.maxHull, player.hull + 18);
+            player.line = Math.min(player.maxLine, player.line + 18);
+        }
+
+        player.x = width / 2 - player.width / 2;
+        updateHud();
+    }
+
+    function togglePause() {
+        if (gameState !== STATES.PLAYING && gameState !== STATES.REEL_MINIGAME) return;
+        paused = !paused;
+        pauseTag.style.display = paused ? 'block' : 'none';
+        pauseBtn.textContent = paused ? 'FORTSETT' : 'PAUSE';
+        if (tutorialActive && tutorialStep === 2 && paused) {
+            tutorialStepState.pausePressed = true;
+            showToast('Bra! Trykk pause igjen for å fortsette.', '#d2f8ff', 1.1);
+        }
+    }
+
+    function toggleMute() {
+        muted = !muted;
+        storage.set(STORAGE_KEYS.MUTED, muted ? '1' : '0');
+        muteBtn.textContent = muted ? 'LYD: AV' : 'LYD: PÅ';
+    }
+
+    function openStatsScreen() {
+        renderStatsScreen();
+        showOnlyScreen(statsScreen);
+    }
+
+    function clearStats() {
+        stats = createDefaultStats();
+        saveStats();
+        renderStatsScreen();
+        showToast('Statistikk nullstilt.', '#d7f5ff', 1.1);
+    }
+
+    function goToMenu() {
+        gameState = STATES.MENU;
+        paused = false;
+        pauseTag.style.display = 'none';
+        reelPanel.classList.remove('show');
+        alertBanner.classList.remove('show');
+        tutorialPanel.classList.remove('show');
+        a11yPanel.classList.remove('show');
+        tutorialActive = false;
+        fish = [];
+        obstacles = [];
+        particles = [];
+        weatherEffects = [];
+        floatingTexts = [];
+        ambientWind = 0;
+        menuHighscore.textContent = highScore;
+        skipTutorialBtn.style.display = tutorialDone ? 'none' : 'inline-block';
+        showOnlyScreen(startScreen);
+    }
+
+    function handleActionPress() {
+        if (paused) return;
+        if (gameState === STATES.PLAYING) {
+            tryCast();
+        }
+    }
+
+    function tryCast() {
+        if (castCooldown > 0) return;
+        castCooldown = 0.68;
+        castPulse = 0.26;
+        playCastSfx();
+
+        const castPoint = getCastPoint();
+        const nearest = getNearestFish(castPoint.x, castPoint.y);
+        let target = nearest && nearest.distance <= castRadius ? nearest.fish : null;
+
+        if (!target && nearest && nearest.distance <= castAssistRadius) {
+            target = nearest.fish;
+            showToast('Auto-aim hjalp kastet', '#d6f3ff', 0.7);
+        }
+
+        if (!target) {
+            stageTimeLeft = Math.max(0, stageTimeLeft - 2);
+            player.line = clamp(player.line - 5, 0, player.maxLine);
+            castCooldown = 1.05;
+            resetCombo(true);
+            showToast('Bomkast! -2s og line-slitasje', '#ffd08f', 1.2);
+            spawnFloatingText(player.x + player.width * 0.52, player.y - 34, '-2s', '#ffd38e', 16);
+            playMissSfx();
+            if (player.line <= 0) {
+                endGame('Du slet ut lina med bomkast.');
+            }
+            return;
+        }
+
+        fish = fish.filter((entry) => entry.id !== target.id);
+        startReelMinigame(target);
+    }
+
+    function startReelMinigame(targetFish) {
+        const stage = STAGES[stageIndex];
+        const zoneBase = 28 + player.reelAssist;
+        const widthPenalty = targetFish.type.difficulty * 5;
+
+        reelGame = {
+            fishType: targetFish.type,
+            tension: 44,
+            progress: 0,
+            elapsed: 0,
+            duration: Math.max(4.2, 7.1 - targetFish.type.difficulty),
+            zoneCenter: 50,
+            zoneWidth: clamp(zoneBase - widthPenalty, 14, 48),
+            zoneVelocity: (20 + targetFish.type.pull * 8) * (1 + stageIndex * 0.04),
+            direction: Math.random() < 0.5 ? -1 : 1,
+            phase: Math.random() * Math.PI * 2
+        };
+
+        if (tutorialActive) {
+            reelGame.duration = 9.5;
+            reelGame.zoneWidth = 46;
+            reelGame.zoneVelocity = 11;
+            reelGame.tension = 50;
+        }
+
+        gameState = STATES.REEL_MINIGAME;
+        reelTitle.textContent = `NAPP! ${targetFish.type.name} (${targetFish.type.points}p)`;
+        reelPanel.classList.add('show');
+        playHookSfx();
+    }
+
+    function updateReel(dt) {
+        if (!reelGame) return;
+        const actionHeld = input.actionHeld || input.touchActionHeld;
+        reelGame.elapsed += dt;
+        reelGame.phase += dt * (2.1 + reelGame.fishType.pull * 0.8);
+
+        reelGame.zoneCenter += reelGame.direction * reelGame.zoneVelocity * dt;
+        if (reelGame.zoneCenter > 84) {
+            reelGame.zoneCenter = 84;
+            reelGame.direction = -1;
+        }
+        if (reelGame.zoneCenter < 16) {
+            reelGame.zoneCenter = 16;
+            reelGame.direction = 1;
+        }
+
+        const fishKick = Math.sin(reelGame.phase) * (14 + reelGame.fishType.pull * 7) +
+            Math.sin(reelGame.phase * 2.13) * 5;
+        reelGame.tension += fishKick * dt;
+
+        if (actionHeld) {
+            reelGame.tension += (34 + reelGame.fishType.pull * 12) * dt;
+        } else {
+            reelGame.tension -= (22 - reelGame.fishType.pull * 3) * dt;
+        }
+
+        reelGame.tension = clamp(reelGame.tension, 0, 100);
+        const zoneStart = reelGame.zoneCenter - reelGame.zoneWidth / 2;
+        const zoneEnd = reelGame.zoneCenter + reelGame.zoneWidth / 2;
+        const inSafeZone = reelGame.tension >= zoneStart && reelGame.tension <= zoneEnd;
+
+        if (inSafeZone) {
+            reelGame.progress += (26 - reelGame.fishType.pull * 4) * dt;
+            player.line = Math.min(player.maxLine, player.line + 4 * dt);
+        } else {
+            reelGame.progress -= (14 + reelGame.fishType.pull * 6) * dt;
+            player.line = Math.max(0, player.line - (8 + reelGame.fishType.pull * 9) * dt);
+        }
+
+        reelGame.progress = clamp(reelGame.progress, 0, 100);
+        const reelTimeLeft = Math.max(0, reelGame.duration - reelGame.elapsed);
+        reelTimer.textContent = `Tid: ${reelTimeLeft.toFixed(1)}s`;
+
+        safeZone.style.left = `${zoneStart}%`;
+        safeZone.style.width = `${reelGame.zoneWidth}%`;
+        tensionNeedle.style.left = `${reelGame.tension}%`;
+        reelProgressFill.style.width = `${reelGame.progress}%`;
+
+        if (reelGame.progress >= 100) {
+            onCatchSuccess();
+            return;
+        }
+
+        if (reelGame.tension <= 1 || reelGame.tension >= 99 || reelTimeLeft <= 0) {
+            onCatchFail();
+            return;
+        }
+    }
+
+    function onCatchSuccess() {
+        const fishType = reelGame.fishType;
+        const gainedPoints = applyComboOnCatch(fishType.points);
+        score += gainedPoints;
+        stageScore += gainedPoints;
+        stats.totalFishCaught += 1;
+        stats.catchesByType[fishType.id] = (stats.catchesByType[fishType.id] || 0) + 1;
+        stats.bestCombo = Math.max(stats.bestCombo, comboCount);
+        saveStats();
+        player.line = Math.min(player.maxLine, player.line + 8);
+        castCooldown = 0.4;
+        reelPanel.classList.remove('show');
+        gameState = STATES.PLAYING;
+        spawnParticles(player.x + player.width / 2, player.y - 30, fishType.color, 10, 120);
+        const comboBonus = gainedPoints - fishType.points;
+        triggerShake(comboBonus > 0 ? 3 : 2, 0.12);
+        const catchText = comboBonus > 0
+            ? `Fangst! ${fishType.name} +${gainedPoints}p (combo +${comboBonus})`
+            : `Fangst! ${fishType.name} +${gainedPoints}p`;
+        spawnFloatingText(player.x + player.width * 0.5, player.y - 42, `+${gainedPoints}`, comboBonus > 0 ? '#a8ffd1' : '#9ce8ff', comboBonus > 0 ? 20 : 18);
+        showToast(catchText, comboBonus > 0 ? '#a8ffd1' : '#92ffca', 1.25);
+        playCatchSfx();
+        reelGame = null;
+
+        if (tutorialActive && tutorialStep === 1) {
+            advanceTutorialStep();
+            return;
+        }
+
+        const stage = STAGES[stageIndex];
+        if (stageScore >= stage.goal) {
+            handleStageGoalReached();
+        }
+    }
+
+    function onCatchFail() {
+        const fishType = reelGame.fishType;
+        resetCombo(true);
+        player.line = Math.max(0, player.line - (14 + fishType.difficulty * 8));
+        player.hull = Math.max(0, player.hull - (6 + fishType.difficulty * 4));
+        stageTimeLeft = Math.max(0, stageTimeLeft - 4);
+        castCooldown = 0.95;
+        reelPanel.classList.remove('show');
+        gameState = STATES.PLAYING;
+        triggerShake(8, 0.25);
+        spawnParticles(player.x + player.width / 2, player.y - 20, '#ffd0a3', 8, 90);
+        spawnFloatingText(player.x + player.width * 0.5, player.y - 36, '-4s', '#ffc79f', 17);
+        showToast('Fisken slapp unna! -line, -tid', '#ffc49f', 1.35);
+        playFailCatchSfx();
+        reelGame = null;
+
+        if (player.hull <= 0) {
+            endGame('Skroget tok for mye juling under kampen.');
+            return;
+        }
+
+        if (player.line <= 0) {
+            endGame('Lina røyk i kamp med fisken.');
+        }
+    }
+
+    function handleStageGoalReached() {
+        if (stageIndex === STAGES.length - 1) {
+            triggerVictory();
+            return;
+        }
+        triggerStageClear();
+    }
+
+    function triggerStageClear() {
+        gameState = STATES.STAGE_CLEAR;
+        paused = false;
+        pauseTag.style.display = 'none';
+        reelPanel.classList.remove('show');
+        alertBanner.classList.remove('show');
+        stats.stageClears += 1;
+        saveStats();
+        stageClearTitle.textContent = `Bane ${STAGES[stageIndex].id} fullført`;
+        stageClearText.textContent = `Bane-score: ${Math.floor(stageScore)}. Total: ${Math.floor(score)}. Du går videre til ${STAGES[stageIndex + 1].name}.`;
+        showAlert('Bane fullført! Velg oppgradering.', '#d9ffe9', 1.6, 'rgba(10, 45, 25, 0.88)');
+        rollUpgradeChoices();
+        showOnlyScreen(stageScreen);
+        playStageClearSfx();
+    }
+
+    function rollUpgradeChoices() {
+        const pool = shuffle([...UPGRADES]);
+        stagedUpgrades = [pool[0], pool[1]];
+        upgradeChoices.innerHTML = '';
+
+        stagedUpgrades.forEach((upgrade) => {
+            const button = document.createElement('button');
+            button.className = 'upgrade-btn';
+            button.innerHTML = `<div class="name">${upgrade.name}</div><div class="desc">${upgrade.description}</div>`;
+            button.addEventListener('click', () => {
+                upgrade.apply(player);
+                showToast(`Oppgradering: ${upgrade.name}`, '#b2f7ff', 1.4);
+                hideAllScreens();
+                startStage(stageIndex + 1);
+            });
+            upgradeChoices.appendChild(button);
+        });
+    }
+
+    function triggerVictory() {
+        gameState = STATES.VICTORY;
+        reelPanel.classList.remove('show');
+        alertBanner.classList.remove('show');
+        stats.stageClears += 1;
+        finalizeRunStats(true);
+        triggerShake(4, 0.2);
+        persistHighScore();
+        victoryScore.textContent = Math.floor(score);
+        victoryHighscore.textContent = highScore;
+        showOnlyScreen(victoryScreen);
+        playVictorySfx();
+    }
+
+    function endGame(reason) {
+        if (gameState === STATES.GAME_OVER || gameState === STATES.VICTORY) return;
+        gameState = STATES.GAME_OVER;
+        reelPanel.classList.remove('show');
+        alertBanner.classList.remove('show');
+        triggerShake(10, 0.35);
+        finalizeRunStats(false);
+        persistHighScore();
+        gameOverReason.textContent = reason;
+        gameOverScore.textContent = Math.floor(score);
+        gameOverHighscore.textContent = highScore;
+        showOnlyScreen(gameOverScreen);
+        playGameOverSfx();
+    }
+
+    function finalizeRunStats(victory) {
+        const scoreInt = Math.floor(score);
+        stats.victories += victory ? 1 : 0;
+        stats.gameOvers += victory ? 0 : 1;
+        stats.totalScore += scoreInt;
+        stats.bestScore = Math.max(stats.bestScore, scoreInt);
+        stats.totalPlayTime += currentRunPlayTime;
+        saveStats();
+    }
+
+    function persistHighScore() {
+        if (score > highScore) {
+            highScore = Math.floor(score);
+            storage.set(STORAGE_KEYS.HIGH_SCORE, String(highScore));
+        }
+        menuHighscore.textContent = highScore;
+        hudHighscore.textContent = highScore;
+    }
+
+    function loop(timestamp) {
+        if (!lastTime) lastTime = timestamp;
+        let dt = (timestamp - lastTime) / 1000;
+        lastTime = timestamp;
+        if (dt > 0.05) dt = 0.05;
+
+        if (!paused) {
+            update(dt);
+        }
+        render(dt);
+
+        frameHandle = requestAnimationFrame(loop);
+    }
+
+    function update(dt) {
+        worldTime += dt;
+        const stage = STAGES[stageIndex] || STAGES[0];
+
+        if (toastTimer > 0) {
+            toastTimer -= dt;
+            if (toastTimer <= 0) {
+                messageToast.classList.remove('show');
+            }
+        }
+        if (alertTimer > 0) {
+            alertTimer -= dt;
+            if (alertTimer <= 0) {
+                alertBanner.classList.remove('show');
+            }
+        }
+        if (shakeTime > 0) {
+            shakeTime = Math.max(0, shakeTime - dt);
+            if (shakeTime <= 0) {
+                shakePower = 0;
+            }
+        }
+
+        if (castCooldown > 0) castCooldown -= dt;
+        if (castPulse > 0) castPulse -= dt;
+        if (player.slowTimer > 0) player.slowTimer -= dt;
+        if (player.damageCooldown > 0) player.damageCooldown -= dt;
+        if (comboCount > 0 && (gameState === STATES.PLAYING || gameState === STATES.REEL_MINIGAME)) {
+            comboTimer = Math.max(0, comboTimer - dt);
+            if (comboTimer <= 0) {
+                resetCombo(false);
+            }
+        }
+
+        if (tutorialActive) {
+            updateTutorial(dt);
+            updateFloatingTexts(dt);
+            updateHud();
+            return;
+        }
+
+        if (gameState === STATES.PLAYING || gameState === STATES.REEL_MINIGAME) {
+            currentRunPlayTime += dt;
+            stageTimeLeft -= dt;
+            if (stageTimeLeft <= 0) {
+                stageTimeLeft = 0;
+                if (stageScore >= stage.goal) {
+                    handleStageGoalReached();
+                } else {
+                    endGame(`Tiden gikk ut i ${stage.name}.`);
+                }
+                updateHud();
+                return;
+            }
+
+            updateWeatherEffects(stage, dt);
+            updatePlayer(dt);
+
+            fishSpawnTimer += dt;
+            obstacleSpawnTimer += dt;
+            gustSpawnTimer += dt;
+
+            if (fishSpawnTimer >= stage.fishInterval) {
+                fishSpawnTimer = 0;
+                spawnFish(stage);
+            }
+
+            if (obstacleSpawnTimer >= stage.obstacleInterval) {
+                obstacleSpawnTimer = 0;
+                spawnObstacle(stage);
+            }
+
+            if (stage.gustInterval < 999 && gustSpawnTimer >= stage.gustInterval) {
+                gustSpawnTimer = 0;
+                spawnWindGust(stage);
+            }
+
+            updateFish(dt);
+            updateObstacles(stage, dt);
+            updateParticles(dt);
+            updateFloatingTexts(dt);
+
+            if (gameState === STATES.REEL_MINIGAME) {
+                updateReel(dt);
+            }
+
+            if (player.hull <= 0) {
+                endGame('Skroget ga etter i uværet.');
+            } else if (player.line <= 0) {
+                endGame('Lina røyk helt av.');
+            }
+
+            if (gameState === STATES.PLAYING && stageScore >= stage.goal) {
+                handleStageGoalReached();
+            }
+
+            checkCriticalWarnings(stage);
+        } else {
+            ambientWind *= 0.95;
+            updateParticles(dt);
+            updateFloatingTexts(dt);
+        }
+
+        updateHud();
+    }
+
+    function startTutorial() {
+        tutorialActive = true;
+        tutorialStep = 0;
+        gameState = STATES.PLAYING;
+        stageIndex = 0;
+        stageScore = 0;
+        stageTimeLeft = STAGES[0].duration;
+        tutorialStepState.movedLeft = false;
+        tutorialStepState.movedRight = false;
+        tutorialStepState.pausePressed = false;
+        fish = [];
+        obstacles = [];
+        weatherEffects = [];
+        particles = [];
+        tutorialPanel.classList.add('show');
+        refreshTutorialPanel();
+        showToast('Kort intro: 3 raske steg', '#ccf2ff', 1.4);
+    }
+
+    function updateTutorial(dt) {
+        const stage = STAGES[0];
+        updateWeatherEffects(stage, dt);
+        updatePlayer(dt);
+        updateFish(dt);
+        updateParticles(dt);
+
+        if (gameState === STATES.REEL_MINIGAME) {
+            updateReel(dt);
+        }
+
+        if (tutorialStep === 0) {
+            if (input.left || input.touchLeft) tutorialStepState.movedLeft = true;
+            if (input.right || input.touchRight) tutorialStepState.movedRight = true;
+            refreshTutorialPanel();
+            if (tutorialStepState.movedLeft && tutorialStepState.movedRight) {
+                advanceTutorialStep();
+            }
+        } else if (tutorialStep === 1) {
+            if (gameState === STATES.PLAYING && fish.length === 0) {
+                spawnTutorialFish();
+            }
+        } else if (tutorialStep === 2) {
+            if (tutorialStepState.pausePressed && !paused) {
+                advanceTutorialStep();
+            }
+        }
+    }
+
+    function advanceTutorialStep() {
+        tutorialStep += 1;
+        if (tutorialStep >= 3) {
+            finishTutorial();
+            return;
+        }
+
+        if (tutorialStep === 1) {
+            spawnTutorialFish();
+            showToast('Bra! Fang fisken med kast + sveiv.', '#c6ffe0', 1.2);
+        } else if (tutorialStep === 2) {
+            showToast('Siste steg: test pause.', '#d3f2ff', 1.1);
+        }
+        refreshTutorialPanel();
+    }
+
+    function refreshTutorialPanel() {
+        if (!tutorialActive) {
+            tutorialPanel.classList.remove('show');
+            return;
+        }
+
+        tutorialTitle.textContent = `INTRO ${tutorialStep + 1}/3`;
+        if (tutorialStep === 0) {
+            tutorialText.textContent = 'Flytt båten både til venstre og høyre.';
+            tutorialProgress.textContent = `Venstre: ${tutorialStepState.movedLeft ? 'OK' : '...'} | Høyre: ${tutorialStepState.movedRight ? 'OK' : '...'}`;
+        } else if (tutorialStep === 1) {
+            tutorialText.textContent = 'Kast snora og fang tutorial-fisken.';
+            tutorialProgress.textContent = 'Tips: bruk KAST/SVEIV innenfor kastesirkelen.';
+        } else if (tutorialStep === 2) {
+            tutorialText.textContent = 'Trykk PAUSE (P eller knapp) og fortsett.';
+            tutorialProgress.textContent = tutorialStepState.pausePressed ? 'Pause registrert. Fortsett spillet.' : 'Venter på pause...';
+        }
+    }
+
+    function spawnTutorialFish() {
+        const castPoint = getCastPoint();
+        fish = [];
+        fish.push({
+            id: `tutorial_${Date.now()}`,
+            type: FISH_TYPES[0],
+            x: castPoint.x + (Math.random() * 44 - 22),
+            y: castPoint.y - (45 + Math.random() * 24),
+            radius: 21,
+            vx: 0,
+            vy: 0,
+            age: 0,
+            ttl: 999,
+            phase: Math.random() * Math.PI * 2
+        });
+    }
+
+    function finishTutorial() {
+        tutorialActive = false;
+        tutorialPanel.classList.remove('show');
+        tutorialDone = true;
+        storage.set(STORAGE_KEYS.TUTORIAL_DONE, '1');
+        skipTutorialBtn.style.display = 'none';
+
+        resetRunState();
+        startStage(0, true);
+        showToast('Intro ferdig! Nå starter fisketuren.', '#b4ffe0', 1.5);
+    }
+
+    function applyComboOnCatch(basePoints) {
+        comboCount += 1;
+        comboTimer = 5.2;
+        comboMultiplier = Math.min(2.5, 1 + Math.floor(comboCount / 2) * 0.2);
+        return Math.round(basePoints * comboMultiplier);
+    }
+
+    function resetCombo(showBreakMessage) {
+        if (showBreakMessage && comboCount >= 2) {
+            showToast(`Combo brutt (x${comboMultiplier.toFixed(1)})`, '#ffd7bf', 0.95);
+        }
+        comboCount = 0;
+        comboTimer = 0;
+        comboMultiplier = 1;
+    }
+
+    function updatePlayer(dt) {
+        const dir = (input.left || input.touchLeft ? -1 : 0) + (input.right || input.touchRight ? 1 : 0);
+        const slowFactor = player.slowTimer > 0 ? 0.56 : 1;
+        const speed = player.baseSpeed * player.speedMultiplier * slowFactor;
+
+        player.x += (dir * speed + ambientWind * 60) * dt;
+        player.x = clamp(player.x, 8, width - player.width - 8);
+
+        if (gameState === STATES.PLAYING || gameState === STATES.REEL_MINIGAME) {
+            wakeTimer += dt * (1 + Math.abs(dir) * 0.6 + Math.abs(ambientWind) * 0.05);
+            const wakeInterval = accessibility.reduceMotion ? 0.16 : 0.07;
+            if (wakeTimer >= wakeInterval) {
+                wakeTimer = 0;
+                const wakeColor = accessibility.colorblind ? 'rgba(255, 238, 166, 0.75)' : 'rgba(189, 236, 255, 0.74)';
+                spawnParticles(player.x + player.width * 0.5, player.y + player.height + 2, wakeColor, accessibility.reduceMotion ? 1 : 3, 36);
+            }
+        }
+    }
+
+    function updateWeatherEffects(stage, dt) {
+        ambientWind = 0;
+        for (let i = weatherEffects.length - 1; i >= 0; i--) {
+            const effect = weatherEffects[i];
+            effect.age += dt;
+            if (effect.kind === 'gust') {
+                const progress = clamp(effect.age / effect.duration, 0, 1);
+                const envelope = Math.sin(progress * Math.PI);
+                ambientWind += effect.strength * envelope;
+            }
+            if (effect.age >= effect.duration) {
+                weatherEffects.splice(i, 1);
+            }
+        }
+
+        const baseStageWind = stage.id <= 1 ? 0 : (stage.id - 1) * 0.8;
+        ambientWind += Math.sin(worldTime * 0.55 + stage.id) * baseStageWind;
+        if (accessibility.reduceMotion) {
+            ambientWind *= 0.72;
+        }
+    }
+
+    function spawnWindGust(stage) {
+        const strength = (Math.random() < 0.5 ? -1 : 1) * (1.2 + Math.random() * (1.5 + stage.id * 0.45));
+        weatherEffects.push({
+            kind: 'gust',
+            strength,
+            age: 0,
+            duration: 2.4 + Math.random() * 1.6
+        });
+        showToast(strength > 0 ? 'Vindkast mot høyre!' : 'Vindkast mot venstre!', '#c9e9ff', 0.95);
+    }
+
+    function spawnFish(stage) {
+        const type = pickFishType(stage.id);
+        const fishEntity = {
+            id: `${Date.now()}_${Math.random()}`,
+            type,
+            x: 70 + Math.random() * (width - 140),
+            y: 100 + Math.random() * (height * 0.42),
+            radius: 20 + type.pull * 8,
+            vx: (Math.random() * 2 - 1) * (20 + stage.id * 10),
+            vy: 10 + Math.random() * 16,
+            age: 0,
+            ttl: 10 + Math.random() * 5,
+            phase: Math.random() * Math.PI * 2
+        };
+        fish.push(fishEntity);
+    }
+
+    function pickFishType(stageId) {
+        const goldenChance = 0.015 + stageId * 0.005;
+        if (Math.random() < goldenChance) return FISH_TYPES[4];
+
+        const pools = {
+            1: [
+                { type: FISH_TYPES[0], weight: 0.65 },
+                { type: FISH_TYPES[1], weight: 0.35 }
+            ],
+            2: [
+                { type: FISH_TYPES[0], weight: 0.4 },
+                { type: FISH_TYPES[1], weight: 0.42 },
+                { type: FISH_TYPES[2], weight: 0.18 }
+            ],
+            3: [
+                { type: FISH_TYPES[0], weight: 0.26 },
+                { type: FISH_TYPES[1], weight: 0.36 },
+                { type: FISH_TYPES[2], weight: 0.24 },
+                { type: FISH_TYPES[3], weight: 0.14 }
+            ],
+            4: [
+                { type: FISH_TYPES[1], weight: 0.32 },
+                { type: FISH_TYPES[2], weight: 0.36 },
+                { type: FISH_TYPES[3], weight: 0.32 }
+            ]
+        };
+
+        const pool = pools[stageId] || pools[1];
+        const roll = Math.random();
+        let sum = 0;
+        for (const item of pool) {
+            sum += item.weight;
+            if (roll <= sum) return item.type;
+        }
+        return pool[pool.length - 1].type;
+    }
+
+    function spawnObstacle(stage) {
+        const kind = pickObstacleKind(stage.id);
+        const template = OBSTACLE_TEMPLATES[kind];
+        const sizeScale = 1 + (Math.random() * 0.15 - 0.075);
+        const widthScaled = template.width * sizeScale;
+        const heightScaled = template.height * sizeScale;
+        const speed = (84 + Math.random() * 70) * stage.obstacleSpeed;
+        const safeBand = 120;
+        const playerCenter = player.x + player.width / 2;
+
+        let candidateX = 0;
+        for (let i = 0; i < 8; i++) {
+            candidateX = 18 + Math.random() * (width - widthScaled - 36);
+            if (Math.abs((candidateX + widthScaled / 2) - playerCenter) > safeBand || kind === 'wavefront') break;
+        }
+
+        const waveWidth = width * (0.62 + Math.random() * 0.2);
+        const waveStartX = 10 + Math.random() * Math.max(20, width - waveWidth - 20);
+
+        const obstacle = {
+            kind,
+            x: kind === 'wavefront' ? waveStartX : candidateX,
+            y: -heightScaled - 8,
+            width: kind === 'wavefront' ? waveWidth : widthScaled,
+            height: kind === 'wavefront' ? heightScaled : heightScaled,
+            vx: (Math.random() * 2 - 1) * (10 + stage.id * 8),
+            vy: speed,
+            age: 0,
+            push: (Math.random() < 0.5 ? -1 : 1) * (28 + stage.id * 8),
+            baseX: kind === 'wavefront' ? waveStartX : candidateX,
+            telegraphTime: 0.5 + Math.random() * 0.3
+        };
+
+        obstacles.push(obstacle);
+    }
+
+    function pickObstacleKind(stageId) {
+        const pools = {
+            1: [
+                { kind: 'rock', weight: 0.55 },
+                { kind: 'driftwood', weight: 0.45 }
+            ],
+            2: [
+                { kind: 'rock', weight: 0.4 },
+                { kind: 'driftwood', weight: 0.3 },
+                { kind: 'net', weight: 0.18 },
+                { kind: 'wavefront', weight: 0.12 }
+            ],
+            3: [
+                { kind: 'rock', weight: 0.32 },
+                { kind: 'driftwood', weight: 0.24 },
+                { kind: 'net', weight: 0.27 },
+                { kind: 'wavefront', weight: 0.17 }
+            ],
+            4: [
+                { kind: 'rock', weight: 0.26 },
+                { kind: 'driftwood', weight: 0.18 },
+                { kind: 'net', weight: 0.32 },
+                { kind: 'wavefront', weight: 0.24 }
+            ]
+        };
+
+        const pool = pools[stageId] || pools[1];
+        const roll = Math.random();
+        let sum = 0;
+        for (const item of pool) {
+            sum += item.weight;
+            if (roll <= sum) return item.kind;
+        }
+        return pool[pool.length - 1].kind;
+    }
+
+    function updateFish(dt) {
+        for (let i = fish.length - 1; i >= 0; i--) {
+            const entity = fish[i];
+            entity.age += dt;
+            entity.phase += dt * (1.4 + entity.type.pull * 0.4);
+            entity.x += (entity.vx + ambientWind * 25) * dt;
+            entity.y += (entity.vy + Math.sin(entity.phase) * 6) * dt;
+
+            if (entity.x < 30) {
+                entity.x = 30;
+                entity.vx *= -0.8;
+            } else if (entity.x > width - 30) {
+                entity.x = width - 30;
+                entity.vx *= -0.8;
+            }
+
+            if (entity.y > height * 0.86) {
+                entity.y = 96 + Math.random() * (height * 0.36);
+            }
+
+            if (entity.age >= entity.ttl) {
+                fish.splice(i, 1);
+            }
+        }
+    }
+
+    function updateObstacles(stage, dt) {
+        const playerBox = {
+            x: player.x + 8,
+            y: player.y + 6,
+            width: player.width - 16,
+            height: player.height - 10
+        };
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            const obstacle = obstacles[i];
+            obstacle.age += dt;
+            obstacle.telegraphTime = Math.max(0, obstacle.telegraphTime - dt);
+            if (obstacle.telegraphTime > 0) {
+                if (obstacle.kind === 'wavefront') {
+                    obstacle.x = obstacle.baseX + Math.sin(worldTime * 1.4 + i) * 22;
+                    obstacle.x = clamp(obstacle.x, -20, width - obstacle.width + 20);
+                }
+                continue;
+            }
+
+            obstacle.y += obstacle.vy * dt;
+            obstacle.x += (obstacle.vx + ambientWind * 20) * dt;
+
+            if (obstacle.kind === 'wavefront') {
+                obstacle.x = obstacle.baseX + Math.sin(worldTime * 1.4 + i) * 22;
+                obstacle.x = clamp(obstacle.x, -20, width - obstacle.width + 20);
+            }
+
+            if (obstacle.kind !== 'wavefront') {
+                obstacle.x = clamp(obstacle.x, -20, width - obstacle.width + 20);
+            }
+
+            const hit = rectsOverlap(playerBox, obstacle);
+            if (hit && player.damageCooldown <= 0) {
+                applyObstacleHit(obstacle, stage);
+                if (obstacle.kind !== 'wavefront') {
+                    obstacles.splice(i, 1);
+                }
+                continue;
+            }
+
+            if (obstacle.y > height + 60) {
+                obstacles.splice(i, 1);
+            }
+        }
+    }
+
+    function applyObstacleHit(obstacle, stage) {
+        resetCombo(true);
+        const template = OBSTACLE_TEMPLATES[obstacle.kind];
+        let lineDamage = template.lineDamage;
+        if (obstacle.kind === 'net' && (gameState === STATES.REEL_MINIGAME || castCooldown > 0.2)) {
+            lineDamage += 10;
+        }
+
+        player.hull = Math.max(0, player.hull - template.hullDamage);
+        player.line = Math.max(0, player.line - lineDamage);
+        stageTimeLeft = Math.max(0, stageTimeLeft - template.timePenalty);
+
+        if (template.slow > 0) {
+            player.slowTimer = Math.max(player.slowTimer, template.slow);
+        }
+
+        if (obstacle.kind === 'wavefront') {
+            player.x += obstacle.push * 0.42;
+        } else if (obstacle.kind === 'rock') {
+            player.x += (player.x + player.width / 2 < obstacle.x + obstacle.width / 2 ? -26 : 26);
+        } else if (obstacle.kind === 'driftwood') {
+            player.x += (Math.random() < 0.5 ? -1 : 1) * 12;
+        }
+
+        player.x = clamp(player.x, 8, width - player.width - 8);
+        player.damageCooldown = obstacle.kind === 'wavefront' ? 0.22 : 0.42;
+        triggerShake(obstacle.kind === 'rock' ? 10 : 6, obstacle.kind === 'rock' ? 0.28 : 0.18);
+
+        const hitColor = obstacle.kind === 'net' ? '#9ee3ff' : (obstacle.kind === 'rock' ? '#c7cad9' : '#f1d6a1');
+        spawnParticles(player.x + player.width / 2, player.y + player.height / 2, hitColor, 9, 100);
+        spawnFloatingText(player.x + player.width * 0.5, player.y - 20, `-${template.timePenalty.toFixed(1)}s`, '#ffd4a4', 15);
+
+        if (obstacle.kind === 'rock') {
+            showToast('Stein traff båten!', '#ffd2d2', 0.9);
+        } else if (obstacle.kind === 'driftwood') {
+            showToast('Drivgods bremser deg!', '#ffebc9', 0.9);
+        } else if (obstacle.kind === 'net') {
+            showToast('Gammelt garn river i lina!', '#d9ecff', 1.0);
+        } else {
+            showToast('Bølgefront presser båten!', '#caf2ff', 0.7);
+        }
+        playHitSfx();
+    }
+
+    function updateParticles(dt) {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.life -= dt;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vy += p.gravity * dt;
+            if (p.life <= 0) {
+                particles.splice(i, 1);
+            }
+        }
+    }
+
+    function updateFloatingTexts(dt) {
+        for (let i = floatingTexts.length - 1; i >= 0; i--) {
+            const text = floatingTexts[i];
+            text.life -= dt;
+            text.x += text.vx * dt;
+            text.y += text.vy * dt;
+            text.vy -= 12 * dt;
+            if (text.life <= 0) {
+                floatingTexts.splice(i, 1);
+            }
+        }
+    }
+
+    function spawnParticles(x, y, color, count, speed) {
+        const particleCount = accessibility.reduceMotion ? Math.max(1, Math.ceil(count * 0.4)) : count;
+        const velocityBase = accessibility.reduceMotion ? speed * 0.65 : speed;
+        for (let i = 0; i < particleCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = velocityBase * (0.3 + Math.random() * 0.7);
+            particles.push({
+                x,
+                y,
+                color,
+                vx: Math.cos(angle) * velocity,
+                vy: Math.sin(angle) * velocity,
+                gravity: 120,
+                life: 0.4 + Math.random() * 0.45,
+                size: 2 + Math.random() * 2
+            });
+        }
+    }
+
+    function spawnFloatingText(x, y, text, color = '#eaffff', size = 17) {
+        floatingTexts.push({
+            x,
+            y,
+            text,
+            color,
+            size,
+            life: accessibility.reduceMotion ? 0.55 : 0.95,
+            vx: (Math.random() * 2 - 1) * 10,
+            vy: -42 - Math.random() * 16
+        });
+    }
+
+    function triggerShake(power = 8, duration = 0.2) {
+        if (accessibility.reduceMotion) return;
+        shakePower = Math.max(shakePower, power);
+        shakeTime = Math.max(shakeTime, duration);
+    }
+
+    function checkCriticalWarnings(stage) {
+        const lowHull = player.hull / player.maxHull <= 0.22;
+        const lowLine = player.line / player.maxLine <= 0.22;
+        const lowTime = stageTimeLeft <= Math.min(18, stage.duration * 0.2);
+
+        if (lowHull && !warningState.lowHull) {
+            showAlert('Skroget er kritisk!', '#ffd6d6', 1.2, 'rgba(66, 15, 15, 0.88)');
+        }
+        if (lowLine && !warningState.lowLine) {
+            showAlert('Lina er nær brudd!', '#ffe2bf', 1.2, 'rgba(61, 32, 8, 0.88)');
+        }
+        if (lowTime && !warningState.lowTime && !tutorialActive) {
+            showAlert('Lite tid igjen - press på!', '#fff0ba', 1.05, 'rgba(58, 44, 8, 0.88)');
+        }
+
+        warningState.lowHull = lowHull;
+        warningState.lowLine = lowLine;
+        warningState.lowTime = lowTime;
+    }
+
+    function render() {
+        const stage = STAGES[stageIndex] || STAGES[0];
+        ctx.save();
+        if (shakeTime > 0) {
+            const strength = shakePower * (shakeTime * 3.2);
+            ctx.translate((Math.random() * 2 - 1) * strength, (Math.random() * 2 - 1) * strength * 0.75);
+        }
+        drawWater(stage);
+        drawRain(stage);
+        drawCastZone();
+        drawFish();
+        drawObstacles();
+        drawBoat();
+        drawParticles();
+        drawFloatingTexts();
+        drawFog(stage);
+        drawDangerVignette(stage);
+        drawWindText(stage);
+        ctx.restore();
+
+        if (gameState === STATES.REEL_MINIGAME) {
+            reelPanel.classList.add('show');
+        } else {
+            reelPanel.classList.remove('show');
+        }
+    }
+
+    function drawWater(stage) {
+        const motion = accessibility.reduceMotion ? 0.45 : 1;
+        const g = ctx.createLinearGradient(0, 0, 0, height);
+        if (stage.id === 1) {
+            g.addColorStop(0, '#256ea5');
+            g.addColorStop(0.52, '#104a77');
+            g.addColorStop(1, '#072947');
+        } else if (stage.id === 2) {
+            g.addColorStop(0, '#2a5b8f');
+            g.addColorStop(0.5, '#11365b');
+            g.addColorStop(1, '#09263f');
+        } else if (stage.id === 3) {
+            g.addColorStop(0, '#37526e');
+            g.addColorStop(0.5, '#1c3550');
+            g.addColorStop(1, '#10263a');
+        } else {
+            g.addColorStop(0, '#344d69');
+            g.addColorStop(0.5, '#13283f');
+            g.addColorStop(1, '#0c1b2d');
+        }
+
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, width, height);
+
+        ctx.save();
+        ctx.globalAlpha = 0.22 + stage.id * 0.03;
+        const laneCount = Math.max(8, Math.floor(22 * motion));
+        for (let i = 0; i < laneCount; i++) {
+            const y = (i / laneCount) * height;
+            const wave = Math.sin(worldTime * (1.1 + stage.id * 0.3) * motion + i * 0.6) * (7 + stage.id * 2) * motion;
+            ctx.strokeStyle = 'rgba(184, 231, 255, 0.25)';
+            ctx.lineWidth = 1.3;
+            ctx.beginPath();
+            ctx.moveTo(-20, y + wave);
+            for (let x = 0; x <= width + 20; x += 42) {
+                const offset = Math.sin((x * 0.015) + worldTime * 1.8 * motion + i) * 5 * motion;
+                ctx.lineTo(x, y + wave + offset);
+            }
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function drawRain(stage) {
+        const rainCount = Math.floor((10 + stage.rain * 44) * (accessibility.reduceMotion ? 0.3 : 1));
+        if (rainCount <= 0) return;
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(202, 233, 255, 0.28)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < rainCount; i++) {
+            const x = (i * 53 + worldTime * (160 + stage.id * 40)) % (width + 90) - 45;
+            const y = ((i * 81 + worldTime * (250 + stage.id * 50)) % (height + 140)) - 70;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - 8, y + 18);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function drawCastZone() {
+        if (gameState !== STATES.PLAYING && gameState !== STATES.REEL_MINIGAME) return;
+        const castPoint = getCastPoint();
+        const castX = castPoint.x;
+        const castY = castPoint.y;
+        const radius = castRadius;
+        const nearest = getNearestFish(castX, castY);
+        ctx.save();
+        ctx.strokeStyle = 'rgba(175, 231, 255, 0.2)';
+        ctx.setLineDash([6, 8]);
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(castX, castY, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        if (castPulse > 0) {
+            ctx.globalAlpha = castPulse / 0.26;
+            ctx.strokeStyle = 'rgba(219, 247, 255, 0.75)';
+            ctx.lineWidth = 2.4;
+            ctx.beginPath();
+            ctx.arc(castX, castY, radius * (1 - castPulse), 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        ctx.setLineDash([]);
+        if (nearest) {
+            const inRange = nearest.distance <= castRadius;
+            const inAssist = nearest.distance <= castAssistRadius;
+            const hintColor = accessibility.colorblind
+                ? (inRange ? 'rgba(112,176,255,0.96)' : (inAssist ? 'rgba(255,205,115,0.94)' : 'rgba(255,244,190,0.8)'))
+                : (inRange ? 'rgba(135,255,191,0.95)' : (inAssist ? 'rgba(153,225,255,0.92)' : 'rgba(255,234,177,0.75)'));
+            ctx.strokeStyle = hintColor;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(castX, castY);
+            ctx.lineTo(nearest.fish.x, nearest.fish.y);
+            ctx.stroke();
+
+            ctx.fillStyle = hintColor;
+            ctx.beginPath();
+            ctx.arc(nearest.fish.x, nearest.fish.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = hintColor;
+            ctx.font = 'bold 12px Trebuchet MS';
+            const hintText = inRange ? 'INNENFOR KAST' : (inAssist ? 'NÆR NOK (AUTO-AIM)' : 'FOR LANGT');
+            const textX = clamp(castX - 56, 8, Math.max(8, width - 160));
+            ctx.fillText(hintText, textX, castY - radius - 8);
+        }
+        ctx.restore();
+    }
+
+    function drawFish() {
+        for (const entity of fish) {
+            ctx.save();
+            const scaleMotion = accessibility.reduceMotion ? 0.02 : 0.06;
+            const scale = 1 + Math.sin(entity.phase) * scaleMotion;
+            ctx.translate(entity.x, entity.y);
+            ctx.scale(scale, 1);
+            ctx.globalAlpha = entity.type.id === 'golden' ? 0.9 : 0.56;
+            ctx.fillStyle = entity.type.id === 'golden' ? 'rgba(255, 231, 126, 0.75)' : 'rgba(8, 24, 42, 0.55)';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, entity.radius, entity.radius * 0.55, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.globalAlpha = entity.type.id === 'golden' ? 0.7 : 0.44;
+            ctx.fillStyle = entity.type.color;
+            ctx.beginPath();
+            ctx.moveTo(-entity.radius * 0.92, 0);
+            ctx.lineTo(-entity.radius * 1.28, -8);
+            ctx.lineTo(-entity.radius * 1.28, 8);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    function drawObstacles() {
+        for (const obstacle of obstacles) {
+            if (obstacle.telegraphTime > 0) {
+                drawObstacleWarning(obstacle);
+                continue;
+            }
+            if (obstacle.kind === 'rock') {
+                drawRock(obstacle);
+            } else if (obstacle.kind === 'driftwood') {
+                drawDriftwood(obstacle);
+            } else if (obstacle.kind === 'net') {
+                drawNet(obstacle);
+            } else if (obstacle.kind === 'wavefront') {
+                drawWavefront(obstacle);
+            }
+        }
+    }
+
+    function drawRock(o) {
+        ctx.save();
+        ctx.translate(o.x, o.y);
+        ctx.fillStyle = '#6a7587';
+        ctx.beginPath();
+        ctx.moveTo(2, o.height * 0.78);
+        ctx.lineTo(o.width * 0.2, o.height * 0.2);
+        ctx.lineTo(o.width * 0.56, 1);
+        ctx.lineTo(o.width - 2, o.height * 0.44);
+        ctx.lineTo(o.width * 0.82, o.height - 2);
+        ctx.lineTo(o.width * 0.26, o.height - 1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(o.width * 0.28, o.height * 0.22, o.width * 0.25, o.height * 0.12);
+        ctx.restore();
+    }
+
+    function drawDriftwood(o) {
+        ctx.save();
+        ctx.translate(o.x, o.y);
+        ctx.fillStyle = '#8c6744';
+        ctx.fillRect(0, o.height * 0.18, o.width, o.height * 0.66);
+        ctx.fillStyle = '#6f4f33';
+        ctx.fillRect(o.width * 0.16, o.height * 0.2, 3, o.height * 0.6);
+        ctx.fillRect(o.width * 0.52, o.height * 0.24, 3, o.height * 0.56);
+        ctx.fillRect(o.width * 0.78, o.height * 0.2, 3, o.height * 0.6);
+        ctx.restore();
+    }
+
+    function drawNet(o) {
+        ctx.save();
+        ctx.translate(o.x, o.y);
+        ctx.fillStyle = 'rgba(82, 170, 219, 0.28)';
+        ctx.fillRect(0, 0, o.width, o.height);
+        ctx.strokeStyle = 'rgba(137, 215, 255, 0.7)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= o.width; x += 9) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, o.height);
+            ctx.stroke();
+        }
+        for (let y = 0; y <= o.height; y += 8) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(o.width, y);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function drawWavefront(o) {
+        ctx.save();
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = 'rgba(167, 230, 255, 0.45)';
+        ctx.fillRect(o.x, o.y, o.width, o.height);
+        ctx.globalAlpha = 0.75;
+        ctx.strokeStyle = 'rgba(227, 252, 255, 0.95)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(o.x, o.y + 2);
+        for (let x = o.x; x <= o.x + o.width; x += 26) {
+            const y = o.y + 2 + Math.sin((x * 0.03) + worldTime * 7) * 4;
+            ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawObstacleWarning(obstacle) {
+        const pulse = accessibility.reduceMotion ? 0.65 : (0.5 + Math.sin(worldTime * 14 + obstacle.x * 0.01) * 0.5);
+        const alpha = 0.25 + pulse * 0.35;
+        const topBandHeight = 14;
+        const x = clamp(obstacle.x, 0, Math.max(0, width - 8));
+        const w = Math.max(8, Math.min(obstacle.width, width - x));
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = obstacle.kind === 'wavefront' ? '#ffd282' : '#ff8a8a';
+        ctx.fillRect(x, 0, w, topBandHeight);
+
+        ctx.globalAlpha = Math.min(1, alpha + 0.18);
+        ctx.strokeStyle = 'rgba(255, 246, 214, 0.95)';
+        ctx.lineWidth = 1.3;
+        ctx.strokeRect(x, 1, w, topBandHeight - 2);
+
+        const centerX = x + w / 2;
+        ctx.fillStyle = 'rgba(255, 247, 230, 0.95)';
+        ctx.beginPath();
+        ctx.moveTo(centerX - 6, topBandHeight + 1);
+        ctx.lineTo(centerX + 6, topBandHeight + 1);
+        ctx.lineTo(centerX, topBandHeight + 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawBoat() {
+        const x = player.x;
+        const y = player.y;
+        const w = player.width;
+        const h = player.height;
+
+        ctx.save();
+        ctx.translate(x + w / 2, y + h / 2);
+        const tiltMotion = accessibility.reduceMotion ? 0.35 : 1;
+        ctx.rotate((ambientWind * 0.004 + Math.sin(worldTime * 2.8) * 0.02) * tiltMotion);
+        ctx.translate(-(x + w / 2), -(y + h / 2));
+
+        ctx.fillStyle = '#523d30';
+        ctx.beginPath();
+        ctx.moveTo(x + 6, y + h * 0.72);
+        ctx.lineTo(x + w * 0.22, y + h * 0.2);
+        ctx.lineTo(x + w * 0.78, y + h * 0.2);
+        ctx.lineTo(x + w - 6, y + h * 0.72);
+        ctx.lineTo(x + w * 0.85, y + h - 2);
+        ctx.lineTo(x + w * 0.15, y + h - 2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#8dd8ff';
+        ctx.fillRect(x + w * 0.47, y - 12, 4, h * 0.6);
+        ctx.fillStyle = '#c8f6ff';
+        ctx.beginPath();
+        ctx.moveTo(x + w * 0.5, y - 11);
+        ctx.lineTo(x + w * 0.72, y + h * 0.1);
+        ctx.lineTo(x + w * 0.5, y + h * 0.18);
+        ctx.closePath();
+        ctx.fill();
+
+        if (castPulse > 0 || gameState === STATES.REEL_MINIGAME) {
+            ctx.strokeStyle = 'rgba(238, 253, 255, 0.85)';
+            ctx.lineWidth = 1.5;
+            const hookX = x + w * 0.55;
+            const hookY = y + h * 0.08;
+            const lineEndY = gameState === STATES.REEL_MINIGAME ? y - 46 : y - 24;
+            ctx.beginPath();
+            ctx.moveTo(hookX, hookY);
+            ctx.quadraticCurveTo(hookX + 20, y - 18, hookX + 6, lineEndY);
+            ctx.stroke();
+        }
+
+        if (player.slowTimer > 0) {
+            ctx.fillStyle = 'rgba(255, 226, 149, 0.62)';
+            ctx.fillRect(x + w * 0.2, y + h + 2, w * 0.6, 5);
+        }
+        ctx.restore();
+    }
+
+    function drawParticles() {
+        for (const p of particles) {
+            ctx.globalAlpha = clamp(p.life * 1.8, 0, 1);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    function drawFloatingTexts() {
+        for (const text of floatingTexts) {
+            ctx.save();
+            ctx.globalAlpha = clamp(text.life * 1.15, 0, 1);
+            ctx.fillStyle = text.color;
+            ctx.font = `bold ${text.size}px Trebuchet MS`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text.text, text.x, text.y);
+            ctx.restore();
+        }
+    }
+
+    function drawFog(stage) {
+        if (stage.fog <= 0) return;
+        const fogStrength = accessibility.reduceMotion ? stage.fog * 0.7 : stage.fog;
+        ctx.save();
+        ctx.fillStyle = `rgba(210, 235, 246, ${fogStrength})`;
+        ctx.fillRect(0, 0, width, height);
+        ctx.globalAlpha = 0.35;
+        for (let i = 0; i < 4; i++) {
+            const drift = accessibility.reduceMotion ? 0 : worldTime * (10 + i * 3);
+            const cx = (drift + i * 200) % (width + 260) - 130;
+            const cy = height * (0.12 + i * 0.19);
+            const gradient = ctx.createRadialGradient(cx, cy, 10, cx, cy, 160);
+            gradient.addColorStop(0, 'rgba(235, 247, 255, 0.28)');
+            gradient.addColorStop(1, 'rgba(235, 247, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 160, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function drawDangerVignette(stage) {
+        if (tutorialActive) return;
+        const hullRisk = clamp((0.33 - player.hull / player.maxHull) / 0.33, 0, 1);
+        const lineRisk = clamp((0.33 - player.line / player.maxLine) / 0.33, 0, 1);
+        const timeRisk = clamp((15 - stageTimeLeft) / 15, 0, 1);
+        const risk = Math.max(hullRisk, lineRisk, timeRisk);
+        if (risk <= 0) return;
+
+        const pulse = 0.58 + Math.sin(worldTime * 9.2) * 0.42;
+        const alpha = clamp(0.06 + risk * 0.26 * pulse, 0, 0.45);
+        const tint = accessibility.colorblind ? '237, 184, 74' : '255, 94, 94';
+        const edge = ctx.createRadialGradient(width / 2, height / 2, Math.min(width, height) * 0.25, width / 2, height / 2, Math.max(width, height) * 0.72);
+        edge.addColorStop(0, `rgba(${tint}, 0)`);
+        edge.addColorStop(1, `rgba(${tint}, ${alpha})`);
+        ctx.save();
+        ctx.fillStyle = edge;
+        ctx.fillRect(0, 0, width, height);
+        ctx.restore();
+    }
+
+    function drawWindText(stage) {
+        if (stage.id < 2) return;
+        const windPercent = Math.round(Math.min(100, Math.abs(ambientWind) * 19));
+        if (windPercent < 12) return;
+        ctx.save();
+        ctx.font = 'bold 14px Trebuchet MS';
+        ctx.fillStyle = 'rgba(225, 247, 255, 0.65)';
+        const text = ambientWind > 0 ? `Vind -> ${windPercent}%` : `Vind <- ${windPercent}%`;
+        const metrics = ctx.measureText(text);
+        ctx.fillText(text, width - metrics.width - 20, height - 92);
+        ctx.restore();
+    }
+
+    function updateHud() {
+        const stage = STAGES[stageIndex] || STAGES[0];
+        const goalProgress = tutorialActive ? 0 : clamp(stageScore / stage.goal, 0, 1);
+        scoreValue.textContent = Math.floor(score);
+        hudHighscore.textContent = highScore;
+        stageValue.textContent = tutorialActive ? 'INTRO - opplæring' : `${stage.id} - ${stage.name}`;
+        goalValue.textContent = tutorialActive ? 'Steg-basert intro' : `${Math.floor(stageScore)} / ${stage.goal}`;
+        timeValue.textContent = tutorialActive ? '--' : `${Math.max(0, stageTimeLeft).toFixed(1)}s`;
+        windValue.textContent = `${Math.round(Math.min(100, Math.abs(ambientWind) * 18))}%`;
+        comboValue.textContent = comboCount > 0
+            ? `x${comboMultiplier.toFixed(1)} (${comboCount}) ${comboTimer.toFixed(1)}s`
+            : 'x1.0 (0)';
+        comboValue.style.color = comboCount >= 4 ? '#fff2a6' : '#bcefff';
+
+        hullLabel.textContent = `${Math.ceil(player.hull)} / ${player.maxHull}`;
+        lineLabel.textContent = `${Math.ceil(player.line)} / ${player.maxLine}`;
+        stageProgressFill.style.width = `${goalProgress * 100}%`;
+        progressLabel.textContent = tutorialActive ? 'Fullfør introsteg' : `${Math.round(goalProgress * 100)}% av banemål`;
+
+        hullFill.style.width = `${(player.hull / player.maxHull) * 100}%`;
+        lineFill.style.width = `${(player.line / player.maxLine) * 100}%`;
+
+        const lowHull = player.hull / player.maxHull < 0.3;
+        const lowLine = player.line / player.maxLine < 0.3;
+        const lowTime = !tutorialActive && stageTimeLeft <= Math.min(20, stage.duration * 0.25);
+        if (lowHull || lowLine || lowTime) {
+            threatLabel.textContent = 'Status: Kritisk';
+            threatLabel.style.color = accessibility.colorblind ? '#ffd566' : '#ffb2b2';
+        } else if (goalProgress >= 0.85) {
+            threatLabel.textContent = 'Status: Nær mål';
+            threatLabel.style.color = '#c6ffe0';
+        } else {
+            threatLabel.textContent = 'Status: Stabil';
+            threatLabel.style.color = '#bdefff';
+        }
+
+        if (goalProgress >= 0.99 && !tutorialActive) {
+            stageProgressFill.style.background = 'linear-gradient(90deg, #8affc0, #cefff2)';
+        } else {
+            stageProgressFill.style.background = accessibility.colorblind
+                ? 'linear-gradient(90deg, #7bc7ff, #ffe38e)'
+                : 'linear-gradient(90deg, #62d7ff, #7dffe6)';
+        }
+        if (accessibility.colorblind) {
+            hullFill.style.background = lowHull ? 'linear-gradient(90deg, #ff9f4d, #ffd089)' : 'linear-gradient(90deg, #4589ff, #6ac6ff)';
+            lineFill.style.background = lowLine ? 'linear-gradient(90deg, #ffd45f, #ffe89f)' : 'linear-gradient(90deg, #56b07e, #87e7a8)';
+        } else {
+            hullFill.style.background = lowHull ? 'linear-gradient(90deg, #ff6d6d, #ff9d9d)' : 'linear-gradient(90deg, #1fd6a3, #34ffaf)';
+            lineFill.style.background = lowLine ? 'linear-gradient(90deg, #ffad6e, #ffd488)' : 'linear-gradient(90deg, #4ca9ff, #8ae7ff)';
+        }
+    }
+
+    function showToast(text, color = '#d7f5ff', duration = 1.1) {
+        messageToast.textContent = text;
+        messageToast.style.color = color;
+        messageToast.classList.add('show');
+        toastTimer = duration;
+    }
+
+    function showAlert(text, color = '#ffe8b5', duration = 1.2, background = 'rgba(42, 22, 8, 0.86)') {
+        alertBanner.textContent = text;
+        alertBanner.style.color = color;
+        alertBanner.style.background = background;
+        alertBanner.classList.add('show');
+        alertTimer = duration;
+    }
+
+    function loadStats() {
+        try {
+            const raw = storage.get(STORAGE_KEYS.STATS, '');
+            if (!raw) {
+                const defaults = createDefaultStats();
+                defaults.bestScore = highScore;
+                return defaults;
+            }
+            const parsed = JSON.parse(raw);
+            const source = parsed && typeof parsed === 'object' ? parsed : {};
+            const defaults = createDefaultStats();
+            const catchesRaw = source.catchesByType && typeof source.catchesByType === 'object' ? source.catchesByType : {};
+            return {
+                runsStarted: Number(source.runsStarted) || 0,
+                victories: Number(source.victories) || 0,
+                gameOvers: Number(source.gameOvers) || 0,
+                stageClears: Number(source.stageClears) || 0,
+                totalScore: Number(source.totalScore) || 0,
+                bestScore: Number(source.bestScore) || 0,
+                totalFishCaught: Number(source.totalFishCaught) || 0,
+                bestCombo: Number(source.bestCombo) || 0,
+                totalPlayTime: Number(source.totalPlayTime) || 0,
+                catchesByType: {
+                    abbor: Number(catchesRaw.abbor) || defaults.catchesByType.abbor,
+                    orret: Number(catchesRaw.orret) || defaults.catchesByType.orret,
+                    laks: Number(catchesRaw.laks) || defaults.catchesByType.laks,
+                    gjedde: Number(catchesRaw.gjedde) || defaults.catchesByType.gjedde,
+                    golden: Number(catchesRaw.golden) || defaults.catchesByType.golden
+                }
+            };
+        } catch (error) {
+            return createDefaultStats();
+        }
+    }
+
+    function saveStats() {
+        storage.set(STORAGE_KEYS.STATS, JSON.stringify(stats));
+    }
+
+    function formatPlayTime(totalSeconds) {
+        const seconds = Math.max(0, Math.floor(totalSeconds));
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        if (hours > 0) return `${hours}t ${minutes}m ${secs}s`;
+        if (minutes > 0) return `${minutes}m ${secs}s`;
+        return `${secs}s`;
+    }
+
+    function renderStatsScreen() {
+        const resolvedRuns = stats.victories + stats.gameOvers;
+        const winRate = resolvedRuns > 0 ? (stats.victories / resolvedRuns) * 100 : 0;
+        const numberFormat = (value) => Number(value || 0).toLocaleString('nb-NO');
+
+        statsRunsValue.textContent = numberFormat(stats.runsStarted);
+        statsVictoriesValue.textContent = numberFormat(stats.victories);
+        statsGameOversValue.textContent = numberFormat(stats.gameOvers);
+        statsStagesValue.textContent = numberFormat(stats.stageClears);
+        statsTotalScoreValue.textContent = numberFormat(stats.totalScore);
+        statsBestScoreValue.textContent = numberFormat(stats.bestScore);
+        statsFishValue.textContent = numberFormat(stats.totalFishCaught);
+        statsBestComboValue.textContent = `x${numberFormat(stats.bestCombo)}`;
+        statsPlayTimeValue.textContent = formatPlayTime(stats.totalPlayTime);
+        statsWinRateValue.textContent = `${winRate.toFixed(1)}%`;
+        statsFishBreakdown.textContent = `Fangster: Abbor ${numberFormat(stats.catchesByType.abbor)}, Ørret ${numberFormat(stats.catchesByType.orret)}, Laks ${numberFormat(stats.catchesByType.laks)}, Gjedde ${numberFormat(stats.catchesByType.gjedde)}, Golden Fish ${numberFormat(stats.catchesByType.golden)}`;
+    }
+
+    function loadAccessibilitySettings() {
+        try {
+            const raw = storage.get(STORAGE_KEYS.ACCESSIBILITY, '');
+            if (!raw) return { ...accessibilityDefaults };
+            const parsed = JSON.parse(raw);
+            return { ...accessibilityDefaults, ...parsed };
+        } catch (error) {
+            return { ...accessibilityDefaults };
+        }
+    }
+
+    function updateAccessibilitySetting(key, value) {
+        accessibility[key] = Boolean(value);
+        storage.set(STORAGE_KEYS.ACCESSIBILITY, JSON.stringify(accessibility));
+        applyAccessibilitySettings();
+    }
+
+    function applyAccessibilitySettings() {
+        document.body.classList.toggle('reduce-motion', accessibility.reduceMotion);
+        document.body.classList.toggle('colorblind-mode', accessibility.colorblind);
+        document.body.classList.toggle('large-ui', accessibility.largeUi);
+        reduceMotionToggle.checked = accessibility.reduceMotion;
+        colorblindToggle.checked = accessibility.colorblind;
+        largeUiToggle.checked = accessibility.largeUi;
+        if (accessibility.reduceMotion) {
+            shakeTime = 0;
+            shakePower = 0;
+        }
+    }
+
+    function getCastPoint() {
+        return {
+            x: player.x + player.width / 2,
+            y: player.y - 76
+        };
+    }
+
+    function getNearestFish(castX, castY) {
+        let nearest = null;
+        let bestDistance = Number.POSITIVE_INFINITY;
+
+        for (const fishEntity of fish) {
+            const dx = fishEntity.x - castX;
+            const dy = fishEntity.y - castY;
+            const dist = Math.hypot(dx, dy);
+            if (dist < bestDistance) {
+                bestDistance = dist;
+                nearest = fishEntity;
+            }
+        }
+
+        if (!nearest) return null;
+        return { fish: nearest, distance: bestDistance };
+    }
+
+    function hideAllScreens() {
+        startScreen.classList.add('hidden');
+        stageScreen.classList.add('hidden');
+        gameOverScreen.classList.add('hidden');
+        victoryScreen.classList.add('hidden');
+        statsScreen.classList.add('hidden');
+    }
+
+    function showOnlyScreen(screen) {
+        hideAllScreens();
+        screen.classList.remove('hidden');
+    }
+
+    function rectsOverlap(a, b) {
+        return !(
+            b.x > a.x + a.width ||
+            b.x + b.width < a.x ||
+            b.y > a.y + a.height ||
+            b.y + b.height < a.y
+        );
+    }
+
+    function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    function shuffle(list) {
+        for (let i = list.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [list[i], list[j]] = [list[j], list[i]];
+        }
+        return list;
+    }
+
+    function ensureAudioContext() {
+        if (muted) return null;
+        if (!audio.ctx) {
+            audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audio.ctx.state === 'suspended') {
+            audio.ctx.resume().catch(() => {});
+        }
+        return audio.ctx;
+    }
+
+    function playTone(freq, type, duration, volume, slide = 0) {
+        const ctxAudio = ensureAudioContext();
+        if (!ctxAudio) return;
+        const osc = ctxAudio.createOscillator();
+        const gain = ctxAudio.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctxAudio.currentTime);
+        if (slide !== 0) {
+            osc.frequency.linearRampToValueAtTime(Math.max(20, freq + slide), ctxAudio.currentTime + duration);
+        }
+        gain.gain.setValueAtTime(volume, ctxAudio.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctxAudio.destination);
+        osc.start();
+        osc.stop(ctxAudio.currentTime + duration);
+    }
+
+    function playNoise(duration, volume) {
+        const ctxAudio = ensureAudioContext();
+        if (!ctxAudio) return;
+        const buffer = ctxAudio.createBuffer(1, ctxAudio.sampleRate * duration, ctxAudio.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+        const source = ctxAudio.createBufferSource();
+        source.buffer = buffer;
+        const gain = ctxAudio.createGain();
+        gain.gain.setValueAtTime(volume, ctxAudio.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctxAudio.currentTime + duration);
+        source.connect(gain);
+        gain.connect(ctxAudio.destination);
+        source.start();
+    }
+
+    function playCastSfx() {
+        playTone(430, 'triangle', 0.08, 0.05, 120);
+    }
+
+    function playMissSfx() {
+        playTone(180, 'square', 0.15, 0.06, -80);
+    }
+
+    function playHookSfx() {
+        playTone(620, 'sine', 0.07, 0.07, 90);
+        setTimeout(() => playTone(760, 'sine', 0.09, 0.06, 0), 60);
+    }
+
+    function playCatchSfx() {
+        playTone(520, 'triangle', 0.09, 0.08, 140);
+        setTimeout(() => playTone(740, 'triangle', 0.1, 0.08, 160), 80);
+        setTimeout(() => playTone(960, 'triangle', 0.12, 0.07, 0), 160);
+    }
+
+    function playFailCatchSfx() {
+        playTone(190, 'sawtooth', 0.2, 0.07, -120);
+        playNoise(0.07, 0.06);
+    }
+
+    function playHitSfx() {
+        playTone(120, 'square', 0.1, 0.07, -60);
+        playNoise(0.05, 0.05);
+    }
+
+    function playStageClearSfx() {
+        playTone(420, 'triangle', 0.1, 0.08, 60);
+        setTimeout(() => playTone(620, 'triangle', 0.12, 0.08, 100), 80);
+        setTimeout(() => playTone(820, 'triangle', 0.14, 0.07, 90), 180);
+    }
+
+    function playGameOverSfx() {
+        playTone(180, 'sawtooth', 0.25, 0.08, -120);
+        setTimeout(() => playTone(120, 'sawtooth', 0.3, 0.06, -80), 120);
+    }
+
+    function playVictorySfx() {
+        playTone(523, 'triangle', 0.14, 0.08, 0);
+        setTimeout(() => playTone(659, 'triangle', 0.14, 0.08, 0), 120);
+        setTimeout(() => playTone(784, 'triangle', 0.16, 0.08, 0), 240);
+        setTimeout(() => playTone(1046, 'triangle', 0.2, 0.07, 0), 360);
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>

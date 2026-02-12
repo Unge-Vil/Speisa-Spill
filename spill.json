@@ -38,5 +38,13 @@
         "url": "spacefighter/",
         "ikon": "fa-solid fa-rocket",
         "farge": "bg-gradient-to-br from-purple-900 to-black"
+    },
+    {
+        "id": 6,
+        "tittel": "Fiskefeber - Stormtur",
+        "beskrivelse": "Styr båten, få napp, sveiv inn fangsten og unngå farlige hindringer i uværet.",
+        "url": "fiskefeber/",
+        "ikon": "fa-solid fa-fish",
+        "farge": "bg-gradient-to-br from-cyan-900 to-blue-950"
     }
 ]
