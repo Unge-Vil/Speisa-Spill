@@ -54,5 +54,15 @@
         "url": "fiskefeber/",
         "ikon": "fa-solid fa-fish",
         "farge": "bg-gradient-to-br from-cyan-900 to-blue-950"
+    },
+    {
+        "id": 7,
+        "tittel": "Snake",
+        "beskrivelse": "Spis epler, voks deg lengre og hold deg unna vegger og hale i denne klassiske arkadefavoritten.",
+        "url": "snake/",
+        "ikon": "fa-solid fa-worm",
+        "farge": "bg-gradient-to-br from-emerald-900 via-lime-800 to-black",
+        "badgeTekst": "NY",
+        "badgeType": "new"
     }
 ]
