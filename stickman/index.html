@@ -6,7 +6,7 @@
     <title>Stickman Kingdoms: Iron Duel</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Oxanium:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
             --gold: #f6cb7b;
@@ -38,7 +38,7 @@
                 radial-gradient(circle at bottom, rgba(98, 130, 255, 0.08), transparent 45%),
                 #050913;
             color: var(--ivory);
-            font-family: "Oxanium", sans-serif;
+            font-family: 'Press Start 2P', monospace; font-size: 0.7rem; line-height: 1.6;
         }
 
         body {
@@ -89,242 +89,63 @@
             pointer-events: none;
         }
 
-        .panel-shell {
-            width: min(1160px, 100%);
-            display: grid;
-            grid-template-columns: 1.3fr 1fr;
-            gap: 28px;
-            align-items: stretch;
+        
+        .retro-menu {
+            width: min(800px, 100%);
             margin: auto;
+            text-align: center;
         }
-
-        .panel {
-            background: linear-gradient(180deg, rgba(17, 23, 40, 0.92), rgba(9, 13, 24, 0.88));
-            border: 1px solid var(--line);
-            border-radius: 28px;
-            box-shadow:
-                0 30px 80px rgba(0, 0, 0, 0.5),
-                inset 0 1px 0 rgba(255, 255, 255, 0.08);
-            overflow: hidden;
-            position: relative;
+        .retro-menu .panel {
+            background: rgba(10, 10, 16, 0.85);
+            border: 4px solid var(--gold);
+            border-radius: 0;
+            box-shadow: 
+                8px 8px 0 rgba(0,0,0,0.8),
+                inset 4px 4px 0 rgba(255,255,255,0.1);
+            padding: 48px 32px;
+            image-rendering: pixelated;
         }
-
-        .panel::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background:
-                linear-gradient(120deg, rgba(255, 255, 255, 0.06), transparent 35%),
-                linear-gradient(180deg, transparent, rgba(104, 214, 255, 0.05));
-            pointer-events: none;
+        .title-wrap h1 {
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            line-height: 1.4;
+            color: var(--ivory);
+            text-shadow: 4px 4px 0 #000;
+            margin-bottom: 48px;
         }
-
-        .menu-main {
-            padding: 44px;
+        .title-wrap h1 span {
+            color: var(--gold);
+        }
+        .menu-actions {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            gap: 28px;
-        }
-
-        .eyebrow {
-            display: inline-flex;
+            gap: 24px;
             align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
-            border-radius: 999px;
-            background: rgba(246, 203, 123, 0.08);
-            border: 1px solid rgba(246, 203, 123, 0.2);
-            color: var(--gold);
-            text-transform: uppercase;
-            letter-spacing: 0.18em;
-            font-size: 0.76rem;
-            font-weight: 800;
         }
-
-        .title-wrap h1 {
-            font-family: "Cinzel", serif;
-            font-size: clamp(2.8rem, 6vw, 5.7rem);
-            line-height: 0.95;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            text-shadow:
-                0 0 18px rgba(246, 203, 123, 0.12),
-                0 8px 30px rgba(0, 0, 0, 0.35);
-        }
-
-        .title-wrap h1 span {
-            display: block;
-            color: var(--gold);
-        }
-
-        .title-wrap p {
-            margin-top: 18px;
-            max-width: 60ch;
-            font-size: 1.02rem;
-            line-height: 1.65;
-            color: rgba(255, 243, 214, 0.82);
-        }
-
-        .menu-actions {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 16px;
-        }
-
-        .primary-btn {
-            position: relative;
-            padding: 18px 20px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, rgba(246, 203, 123, 0.16), rgba(246, 203, 123, 0.06));
-            border: 1px solid rgba(246, 203, 123, 0.34);
-            text-align: left;
-            transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
-        }
-
-        .primary-btn strong {
-            display: block;
-            font-size: 1.08rem;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-        }
-
-        .primary-btn span {
-            display: block;
-            margin-top: 8px;
-            font-size: 0.92rem;
-            color: rgba(255, 243, 214, 0.7);
-            line-height: 1.45;
-        }
-
-        .primary-btn:hover,
-        .primary-btn:focus-visible {
-            transform: translateY(-4px);
-            box-shadow: 0 18px 36px rgba(246, 203, 123, 0.18);
-            border-color: rgba(246, 203, 123, 0.58);
-            outline: none;
-        }
-
-        .side-column {
-            display: grid;
-            grid-template-rows: auto auto 1fr;
-            gap: 18px;
-        }
-
-        .info-card {
-            padding: 22px;
-            border-radius: 24px;
-            background: rgba(9, 13, 24, 0.84);
-            border: 1px solid var(--line);
-        }
-
-        .info-card h2,
-        .info-card h3 {
-            font-family: "Cinzel", serif;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-        }
-
-        .feature-grid {
-            display: grid;
-            gap: 12px;
-        }
-
-        .feature-row {
-            padding: 14px 16px;
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .feature-row strong {
-            display: block;
-            color: var(--gold);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-size: 0.9rem;
-        }
-
-        .feature-row span {
-            display: block;
-            margin-top: 6px;
-            color: rgba(255, 243, 214, 0.72);
-            line-height: 1.5;
-            font-size: 0.92rem;
-        }
-
-        .showcase-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-        }
-
-        .showcase-tile {
-            padding: 10px;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .showcase-tile.wide {
-            grid-column: 1 / -1;
-        }
-
-        .showcase-tile img {
-            width: 100%;
-            aspect-ratio: 16 / 9;
-            object-fit: cover;
-            display: block;
-            border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
-        }
-
-        .showcase-tile strong {
-            display: block;
-            margin-top: 10px;
-            color: var(--gold);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-size: 0.86rem;
-        }
-
-        .showcase-tile span {
-            display: block;
-            margin-top: 6px;
-            color: rgba(255, 243, 214, 0.72);
-            font-size: 0.9rem;
-            line-height: 1.45;
-        }
-
-        .control-list {
-            display: grid;
-            gap: 12px;
-        }
-
-        .control-row {
-            display: grid;
-            grid-template-columns: minmax(110px, auto) 1fr;
-            gap: 12px;
-            align-items: center;
-            font-size: 0.94rem;
-        }
-
-        .control-row code {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 40px;
-            padding: 8px 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            background: rgba(255, 255, 255, 0.05);
+        .retro-btn {
+            font-family: 'Press Start 2P', monospace;
+            background: #1a1a24;
+            border: 4px solid var(--azure);
             color: var(--azure);
-            font-weight: 700;
-            letter-spacing: 0.04em;
+            padding: 24px 32px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            width: 80%;
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.8);
+            transition: transform 0.1s, box-shadow 0.1s;
         }
-
+        .retro-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.8);
+            background: #2a2a3a;
+            color: #fff;
+            border-color: #fff;
+        }
+        .retro-btn:active {
+            transform: translate(4px, 4px);
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.8);
+        }
         #hud {
             position: absolute;
             inset: 0;
@@ -371,7 +192,7 @@
 
         .hud-name {
             margin-top: 6px;
-            font-family: "Cinzel", serif;
+            font-family: 'Press Start 2P', monospace;
             text-transform: uppercase;
             font-size: 1.35rem;
             letter-spacing: 0.08em;
@@ -466,7 +287,7 @@
             border-radius: 999px;
             background: rgba(8, 12, 24, 0.82);
             border: 1px solid rgba(255, 255, 255, 0.12);
-            font-family: "Cinzel", serif;
+            font-family: 'Press Start 2P', monospace;
             letter-spacing: 0.18em;
             text-transform: uppercase;
             font-size: clamp(1rem, 2.2vw, 1.5rem);
@@ -492,7 +313,7 @@
             background: rgba(5, 8, 16, 0.86);
             border: 1px solid rgba(246, 203, 123, 0.28);
             color: var(--gold);
-            font-family: "Cinzel", serif;
+            font-family: 'Press Start 2P', monospace;
             font-size: clamp(1.2rem, 3vw, 2.1rem);
             letter-spacing: 0.16em;
             text-transform: uppercase;
@@ -512,7 +333,7 @@
         }
 
         .result-card h2 {
-            font-family: "Cinzel", serif;
+            font-family: 'Press Start 2P', monospace;
             text-transform: uppercase;
             letter-spacing: 0.12em;
             font-size: clamp(2rem, 5vw, 3.4rem);
@@ -551,23 +372,22 @@
         }
 
         @media (max-width: 1024px) {
-            .panel-shell {
-                grid-template-columns: 1fr;
-            }
-
             .hud-top {
                 grid-template-columns: 1fr;
             }
-
-            .menu-actions {
-                grid-template-columns: 1fr;
-            }
         }
-
         @media (max-width: 720px) {
             .screen {
-                padding: 18px;
+                padding: 16px;
             }
+            .hud-card {
+                padding: 14px 16px;
+            }
+            .hint-bar {
+                width: calc(100% - 8px);
+                font-size: 0.82rem;
+            }
+        }
 
             .menu-main {
                 padding: 24px;
@@ -635,107 +455,21 @@
         <div id="pause-chip" class="hidden">Paused</div>
 
         <div id="menu-screen" class="screen">
-            <div class="panel-shell">
+            <div class="panel-shell retro-menu">
                 <section class="panel menu-main">
-                    <div>
-                        <div class="eyebrow">Ny middelalderlig remake</div>
-                        <div class="title-wrap">
-                            <h1>Stickman <span>Kingdoms</span></h1>
-                            <p>
-                                Neon Mayhem er erstattet med et helt nytt 2D-spill: tungt sverdspill, lokale dueller og en
-                                side-scrollende eventyrbane med fiender, checkpoints, plattformer, bosskamp og mer levende
-                                animasjoner.
-                            </p>
-                        </div>
+                    <div class="title-wrap">
+                        <h1>STICKMAN<br><span>KINGDOMS</span></h1>
                     </div>
 
                     <div class="menu-actions">
-                        <button class="primary-btn" data-mode="adventure">
-                            <strong>1 Player Adventure</strong>
-                            <span>Reis gjennom et mørkt kongerike, slå ned vakter, samle livseliksirer og nå den svarte borgen.</span>
+                        <button class="primary-btn retro-btn" data-mode="adventure">
+                            <strong>1 PLAYER ADVENTURE</strong>
                         </button>
-                        <button class="primary-btn" data-mode="duel">
-                            <strong>2 Player Duel</strong>
-                            <span>Kjør lokal versus-kamp med to spillere, blokking, tunge slag og flere kampanimasjoner.</span>
+                        <button class="primary-btn retro-btn" data-mode="duel">
+                            <strong>2 PLAYER DUEL</strong>
                         </button>
                     </div>
                 </section>
-
-                <aside class="side-column">
-                    <section class="info-card">
-                        <h2>Hva er nytt</h2>
-                        <div class="feature-grid">
-                            <div class="feature-row">
-                                <strong>Eventyrverden</strong>
-                                <span>Side-scrollende bane med ruiner, broer, checkpoints, fiender i flere klasser og en stor bossduell.</span>
-                            </div>
-                            <div class="feature-row">
-                                <strong>Rik kampfølelse</strong>
-                                <span>Lett og tungt angrep, blokking, knockback, guard break, luftslag, partikler og skjermrystelser.</span>
-                            </div>
-                            <div class="feature-row">
-                                <strong>Sprite-bakgrunner</strong>
-                                <span>Nye lagdelte palass- og borgmiljøer fra spritepakkene dine brukes nå som ekte scene-bakgrunner i flere soner.</span>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="info-card">
-                        <h3>Miljøgalleri</h3>
-                        <div class="showcase-grid">
-                            <div class="showcase-tile">
-                                <img src="background3/Preview 3.png" alt="Moonlit Frontier preview">
-                                <strong>Moonlit Frontier</strong>
-                                <span>Utendørs taklinjer, skyer og kveldslys for starten av eventyrmodusen.</span>
-                            </div>
-                            <div class="showcase-tile">
-                                <img src="background2/Preview 2.png" alt="Royal Hall preview">
-                                <strong>Royal Gallery</strong>
-                                <span>Steinhall med bannere og balkonger brukt i midtpartiet av reisen.</span>
-                            </div>
-                            <div class="showcase-tile">
-                                <img src="background1/Preview 1.png" alt="Iron Courtyard preview">
-                                <strong>Iron Courtyard</strong>
-                                <span>Borggård med trær og fontene som arena for duellene.</span>
-                            </div>
-                            <div class="showcase-tile wide">
-                                <img src="background4/Preview 4.png" alt="Black Keep preview">
-                                <strong>Black Keep Hall</strong>
-                                <span>Indre katedralhall brukt i siste del av reisen og ved bosskampen.</span>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="info-card">
-                        <h3>Kontroller</h3>
-                        <div class="control-list">
-                            <div class="control-row">
-                                <code>P1 A / D</code>
-                                <span>Beveg venstre eller høyre</span>
-                            </div>
-                            <div class="control-row">
-                                <code>P1 W</code>
-                                <span>Hopp og ta luftangrep</span>
-                            </div>
-                            <div class="control-row">
-                                <code>P1 F / G / H</code>
-                                <span>Lett angrep, tungt angrep og blokk</span>
-                            </div>
-                            <div class="control-row">
-                                <code>P2 J / L / I</code>
-                                <span>Bevegelse og hopp i duellmodus</span>
-                            </div>
-                            <div class="control-row">
-                                <code>P2 N / M / ,</code>
-                                <span>Lett angrep, tungt angrep og blokk</span>
-                            </div>
-                            <div class="control-row">
-                                <code>ESC</code>
-                                <span>Pause, fortsett eller gå tilbake til menyen</span>
-                            </div>
-                        </div>
-                    </section>
-                </aside>
             </div>
         </div>
 
@@ -765,10 +499,12 @@
             menuBtn: document.getElementById("menu-btn"),
             announcer: document.getElementById("announcer"),
             pauseChip: document.getElementById("pause-chip"),
+            leftLabel: document.getElementById("left-label"),
             leftName: document.getElementById("left-name"),
             leftSubtext: document.getElementById("left-subtext"),
             leftHealth: document.getElementById("left-health"),
             leftStamina: document.getElementById("left-stamina"),
+            rightLabel: document.getElementById("right-label"),
             rightName: document.getElementById("right-name"),
             rightSubtext: document.getElementById("right-subtext"),
             rightHealth: document.getElementById("right-health"),
@@ -846,6 +582,7 @@
                 left: ["KeyA"],
                 right: ["KeyD"],
                 jump: ["KeyW"],
+                dash: ["ShiftLeft", "KeyE"],
                 light: ["KeyF"],
                 heavy: ["KeyG"],
                 block: ["KeyH"]
@@ -854,6 +591,7 @@
                 left: ["KeyJ", "ArrowLeft"],
                 right: ["KeyL", "ArrowRight"],
                 jump: ["KeyI", "ArrowUp"],
+                dash: ["ShiftRight", "Period"],
                 light: ["KeyN", "Numpad1"],
                 heavy: ["KeyM", "Numpad2"],
                 block: ["Comma", "Numpad3"]
@@ -888,8 +626,15 @@
             objective: "",
             currentZoneName: "",
             audioCtx: null,
-            masterGain: null
+            masterGain: null,
+            bgmMenu: new Audio("489554__wi-photos__menu-music.wav"),
+            bgmGame: new Audio("79645__milton__good-morning-tokyo.mp3")
         };
+
+        app.bgmMenu.loop = true;
+        app.bgmMenu.volume = 0.4;
+        app.bgmGame.loop = true;
+        app.bgmGame.volume = 0.3;
 
         const spritePacks = createSpritePackLibrary();
 
@@ -913,6 +658,15 @@
             }
             keysDown.delete(event.code);
         });
+
+        window.addEventListener("click", initAudioOnInteraction, { once: true });
+        window.addEventListener("keydown", initAudioOnInteraction, { once: true });
+
+        function initAudioOnInteraction() {
+            if (app.state === "menu") {
+                app.bgmMenu.play().catch(() => {});
+            }
+        }
 
         window.addEventListener("resize", resizeCanvas);
         document.querySelectorAll("[data-mode]").forEach((button) => {
@@ -983,12 +737,14 @@
             updateHud();
         }
 
+        let padState = { p1: {}, p2: {} };
+
         function updateDuel(dt) {
             const left = app.fighters[0];
             const right = app.fighters[1];
 
-            updateFighter(left, readHumanInput(controls.p1), dt, app.world);
-            updateFighter(right, readHumanInput(controls.p2), dt, app.world);
+            updateFighter(left, readHumanInput(controls.p1, 0, "p1"), dt, app.world);
+            updateFighter(right, readHumanInput(controls.p2, 1, "p2"), dt, app.world);
             resolveCombat();
             resolveFalls();
 
@@ -1008,7 +764,7 @@
             updateAdventureObjective();
             updateAdventureEvents(hero);
 
-            updateFighter(hero, readHumanInput(controls.p1), dt, app.world);
+            updateFighter(hero, readHumanInput(controls.p1, 0, "p1"), dt, app.world);
 
             for (const fighter of app.fighters) {
                 if (fighter === hero || fighter.removed) {
@@ -1046,6 +802,46 @@
             }
         }
 
+        function readHumanInput(binding, padIndex, padKey) {
+            let move = (isDown(binding.right) ? 1 : 0) - (isDown(binding.left) ? 1 : 0);
+            let jump = wasPressed(binding.jump);
+            let dash = wasPressed(binding.dash);
+            let light = wasPressed(binding.light);
+            let heavy = wasPressed(binding.heavy);
+            let block = isDown(binding.block);
+
+            const pad = navigator.getGamepads ? navigator.getGamepads()[padIndex] : null;
+            if (pad) {
+                if (Math.abs(pad.axes[0]) > 0.3) {
+                    move = Math.sign(pad.axes[0]);
+                }
+                const prev = padState[padKey];
+                if (pad.buttons[0] && pad.buttons[0].pressed) {
+                    jump = jump || !prev.jump;
+                }
+                if (pad.buttons[2] && pad.buttons[2].pressed) {
+                    light = light || !prev.light;
+                }
+                if (pad.buttons[3] && pad.buttons[3].pressed) {
+                    heavy = heavy || !prev.heavy;
+                }
+                if (pad.buttons[5] && pad.buttons[5].pressed) {
+                    dash = dash || !prev.dash;
+                }
+                if ((pad.buttons[1] && pad.buttons[1].pressed) || (pad.buttons[6] && pad.buttons[6].pressed)) {
+                    block = true;
+                }
+                padState[padKey] = {
+                    jump: pad.buttons[0] && pad.buttons[0].pressed,
+                    light: pad.buttons[2] && pad.buttons[2].pressed,
+                    heavy: pad.buttons[3] && pad.buttons[3].pressed,
+                    dash: pad.buttons[5] && pad.buttons[5].pressed
+                };
+            }
+
+            return { move, jump, dash, light, heavy, block };
+        }
+
         function updatePendingResult(dt) {
             if (!app.pendingResult) {
                 return;
@@ -1067,6 +863,8 @@
             fighter.hurtTimer = Math.max(0, fighter.hurtTimer - dt);
             fighter.stunTimer = Math.max(0, fighter.stunTimer - dt);
             fighter.blockFlash = Math.max(0, fighter.blockFlash - dt * 4);
+            fighter.dashTimer = Math.max(0, fighter.dashTimer - dt);
+            fighter.dashCooldown = Math.max(0, fighter.dashCooldown - dt);
             fighter.aiAttackCooldown = Math.max(0, fighter.aiAttackCooldown - dt);
             fighter.aiJumpCooldown = Math.max(0, fighter.aiJumpCooldown - dt);
             fighter.specialCooldown = Math.max(0, fighter.specialCooldown - dt);
@@ -1114,6 +912,16 @@
                 playJumpTone();
             }
 
+            if (commands.dash && canAct && fighter.dashCooldown <= 0 && fighter.stamina >= 15 && !fighter.action) {
+                fighter.dashTimer = 0.28;
+                fighter.dashCooldown = 1.0;
+                fighter.stamina -= 15;
+                fighter.invuln = Math.max(fighter.invuln, 0.3);
+                fighter.block = false;
+                spawnDust(fighter.x, fighter.y - 4, fighter.accent, 14, 220);
+                playSwingTone("light");
+            }
+
             if (commands.light && canAct) {
                 tryStartAttack(fighter, fighter.onGround ? ATTACKS.light : ATTACKS.air);
             }
@@ -1131,8 +939,15 @@
             }
 
             const moveScale = fighter.block ? 0.34 : fighter.action ? 0.72 : 1;
-            const targetSpeed = canAct ? commands.move * fighter.speed * moveScale : 0;
-            const accel = fighter.onGround ? 2400 : 1400;
+            let targetSpeed = canAct ? commands.move * fighter.speed * moveScale : 0;
+            let accel = fighter.onGround ? 2400 : 1400;
+
+            if (fighter.dashTimer > 0) {
+                targetSpeed = fighter.facing * fighter.speed * 2.2;
+                accel = 6000;
+                spawnDust(fighter.x - fighter.facing * 10, fighter.y - 8, fighter.accent, 2, 80);
+            }
+
             fighter.vx = approach(fighter.vx, targetSpeed, accel * dt);
             if (!fighter.onGround) {
                 fighter.vy += GRAVITY * dt;
@@ -1694,8 +1509,8 @@
             ui.progress.style.width = progressValue + "%";
 
             ui.hintBar.textContent = app.mode === "duel"
-                ? "P1: A / D / W / F / G / H  |  P2: J / L / I / N / M / ,  |  Blokk vender slag tilbake og kan trigge guard break."
-                : "P1: A / D / W / F / G / H  |  Kryss verden, bruk blokking mot prosjektiler og nå porten etter bossen.";
+                ? "P1: A/D/W (Move/Jump) F/G/H (Attack/Block) LShift (Dash) | P2: J/L/I (Move/Jump) N/M/, (Attack/Block) RShift (Dash)"
+                : "P1: A/D/W (Beveg) F/G/H (Slag/Blokk) LShift (Dash) | Unngå skade med dash, bruk blokk mot prosjektiler.";
         }
 
         function getAdventureRightPanelTarget() {
@@ -2501,6 +2316,10 @@
 
         function startMode(mode) {
             unlockAudio();
+            app.bgmMenu.pause();
+            app.bgmMenu.currentTime = 0;
+            app.bgmGame.play().catch(() => {});
+
             app.mode = mode;
             app.state = "playing";
             app.pendingResult = null;
@@ -2614,6 +2433,10 @@
         }
 
         function showMenu() {
+            app.bgmGame.pause();
+            app.bgmGame.currentTime = 0;
+            app.bgmMenu.play().catch(() => {});
+
             app.state = "menu";
             app.mode = null;
             app.world = null;
@@ -2645,6 +2468,7 @@
             return {
                 move: (isDown(binding.right) ? 1 : 0) - (isDown(binding.left) ? 1 : 0),
                 jump: wasPressed(binding.jump),
+                dash: wasPressed(binding.dash),
                 light: wasPressed(binding.light),
                 heavy: wasPressed(binding.heavy),
                 block: isDown(binding.block)
@@ -3000,6 +2824,8 @@
                 hitFlash: 0,
                 onGround: false,
                 groundedGrace: 0,
+                dashTimer: 0,
+                dashCooldown: 0,
                 aiAttackCooldown: rand(0.25, 0.8),
                 aiJumpCooldown: 0,
                 specialCooldown: 0,
