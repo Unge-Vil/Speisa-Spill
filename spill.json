@@ -5,7 +5,9 @@
         "beskrivelse": "Bannlys alle trollene og kanskje også enda skummlere fiender!",
         "url": "banhammer/",
         "ikon": "fa-solid fa-hammer",
-        "farge": "bg-gradient-to-br from-blue-900 to-black"
+        "farge": "bg-gradient-to-br from-blue-900 to-black",
+        "badgeTekst": "Featured",
+        "badgeType": "featured"
     },
     {
         "id": 2,
@@ -13,15 +15,19 @@
         "beskrivelse": "Det er et hektisk arkadespill hvor du spiller som en stresset prosjektleder.",
         "url": "erasmus/",
         "ikon": "fa-solid fa-toilet-paper",
-        "farge": "bg-gradient-to-br from-purple-900 to-black"
+        "farge": "bg-gradient-to-br from-purple-900 to-black",
+        "badgeTekst": "Featured",
+        "badgeType": "featured"
     },
     {
         "id": 3,
-        "tittel": "Neon Mayhem",
-        "beskrivelse": "Neon fight-spill i street fighter-stil med lokale dueller, bot-kamp og flashy kombos.",
+        "tittel": "Stickman Kingdoms: Iron Duel",
+        "beskrivelse": "Middelaldersk 2D stickman fighter med lokal 2-player-duell og et side-scrollende 1-player-eventyr fullt av fiender, plattformer og bosskamp.",
         "url": "stickman/",
         "ikon": "fa-solid fa-hand-fist",
-        "farge": "bg-gradient-to-br from-purple-900 to-black"
+        "farge": "bg-gradient-to-br from-amber-900 via-slate-900 to-black",
+        "badgeTekst": "Ny!",
+        "badgeType": "new"
     },
     {
         "id": 4,
@@ -37,7 +43,9 @@
         "beskrivelse": "Early Access",
         "url": "spacefighter/",
         "ikon": "fa-solid fa-rocket",
-        "farge": "bg-gradient-to-br from-purple-900 to-black"
+        "farge": "bg-gradient-to-br from-purple-900 to-black",
+        "badgeTekst": "Featured",
+        "badgeType": "featured"
     },
     {
         "id": 6,
