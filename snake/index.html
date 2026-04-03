@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Speisa 3D Snake</title>
+    <!-- Inkluderer Tailwind for rask og moderne UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inkluderer Three.js for 3D grafikk -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Ekstra Three.js moduler for Bloom (Neon glød) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; touch-action: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #game-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; }
+        .pointer-events-auto { pointer-events: auto; }
+        
+        /* Glassmorphism for UI elementer */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
+        }
+
+        #game-over-screen { display: none; }
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- 3D Canvas Container -->
+    <div id="game-container"></div>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        
+        <!-- Toppmeny: Tittel -->
+        <div class="flex justify-between items-start pointer-events-auto">
+            <div class="glass-panel px-4 py-2">
+                <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">Speisa Spill</h1>
+                <p class="text-sm opacity-80 uppercase tracking-widest">3D Snake</p>
+            </div>
+        </div>
+
+        <!-- Start / Game Over Skjerm -->
+        <div id="start-screen" class="absolute inset-0 flex items-center justify-center pointer-events-auto">
+            <div class="glass-panel p-8 text-center max-w-md w-full mx-4 shadow-2xl flex flex-col items-center bg-black/60">
+                <h2 class="text-4xl font-bold mb-4">Klar for en speisa tur?</h2>
+                
+                <!-- Temavelger før spillet starter -->
+                <div class="w-full mb-6 bg-white/10 p-4 rounded-xl border border-white/20">
+                    <label for="theme-selector" class="block text-sm opacity-80 mb-2 font-bold uppercase tracking-wider">1. Velg ditt tema:</label>
+                    <select id="theme-selector" class="w-full bg-transparent border-b-2 border-purple-400 text-white text-xl outline-none cursor-pointer font-bold pb-2 text-center">
+                        <option value="neon" class="text-black">Neon Cyberpunk</option>
+                        <option value="nordlys" class="text-black">Nordlys (Arktisk)</option>
+                        <option value="skog" class="text-black">Norsk Skogstur</option>
+                    </select>
+                </div>
+
+                <p class="mb-6 opacity-90 text-sm bg-blue-900/40 p-4 rounded-lg border border-blue-400/30">
+                    <strong class="text-blue-300 text-lg block mb-1">Tredjeperson!</strong>
+                    Styr som en bil: Sving <strong class="text-white">venstre/høyre</strong> med A/D eller piltastene.<br>
+                    <span class="text-xs opacity-70">(På mobil: Swipe venstre/høyre)</span>
+                </p>
+                <button id="start-btn" class="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-bold py-4 px-8 rounded-full transition-transform transform hover:scale-105 shadow-[0_0_20px_rgba(168,85,247,0.5)] w-full text-lg">
+                    Start Spillet
+                </button>
+            </div>
+        </div>
+
+        <div id="game-over-screen" class="absolute inset-0 flex items-center justify-center pointer-events-auto">
+            <div class="glass-panel p-8 text-center max-w-md w-full mx-4 shadow-2xl bg-red-900/60">
+                <h2 class="text-5xl font-bold mb-2 text-red-400 drop-shadow-lg">GAME OVER</h2>
+                <p class="text-2xl mb-6">Poeng: <span id="final-score" class="font-bold text-white">0</span></p>
+                <button id="restart-btn" class="bg-white text-gray-900 hover:bg-gray-200 font-bold py-4 px-8 rounded-full transition-transform transform hover:scale-105 shadow-lg w-full text-lg">
+                    Prøv Igjen
+                </button>
+            </div>
+        </div>
+
+        <!-- Bunnmeny: Poeng -->
+        <div class="flex justify-center pointer-events-auto pb-4">
+            <div class="glass-panel px-8 py-3 text-center">
+                <p class="text-sm opacity-70 uppercase tracking-widest">Poeng</p>
+                <p id="score-display" class="text-4xl font-bold">0</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LYDSYSTEM (Web Audio API) ---
+        // Genererer retro lydeffekter uten eksterne filer
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const nå = audioCtx.currentTime;
+            
+            if (type === 'eat') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, nå);
+                osc.frequency.exponentialRampToValueAtTime(1200, nå + 0.1);
+                gain.gain.setValueAtTime(0.3, nå);
+                gain.gain.exponentialRampToValueAtTime(0.01, nå + 0.1);
+                osc.start(nå);
+                osc.stop(nå + 0.1);
+            } else if (type === 'die') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, nå);
+                osc.frequency.exponentialRampToValueAtTime(50, nå + 0.4);
+                gain.gain.setValueAtTime(0.4, nå);
+                gain.gain.exponentialRampToValueAtTime(0.01, nå + 0.4);
+                osc.start(nå);
+                osc.stop(nå + 0.4);
+            }
+        }
+
+        // --- THREE.JS OPPSETT ---
+        const container = document.getElementById('game-container');
+        const scene = new THREE.Scene();
+        
+        // Kamera (Tredjeperson - oppdateres dynamisk i render loop for GTA-følelsen)
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        let cameraLookAtTarget = new THREE.Vector3(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // --- NYE GRAFIKK- OG LYSINNSTILLINGER ---
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Myke skygger
+        renderer.toneMapping = THREE.ACESFilmicToneMapping; // Realistisk film-lys
+        renderer.toneMappingExposure = 1.15;
+        renderer.outputEncoding = THREE.sRGBEncoding; // Mer korrekte farger
+
+        container.appendChild(renderer.domElement);
+
+        // --- POST-PROCESSING (For ekte Neon-glød) ---
+        const renderScene = new THREE.RenderPass(scene, camera);
+        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        const composer = new THREE.EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // --- SPILLVARIABLER ---
+        const gridSize = 40; // Dobbelt så stort brett for å gi plass til 3. persons kamera
+        const cellSize = 1;
+        let snake = [];
+        let snakeMeshes = [];
+        let food = { x: 0, z: 0 };
+        let foodMesh;
+        
+        // Retninger for tredjeperson relativ styring: 0=Nord, 1=Øst, 2=Sør, 3=Vest
+        const dirs = [
+            {x: 0, z: -1}, // Nord
+            {x: 1, z: 0},  // Øst
+            {x: 0, z: 1},  // Sør
+            {x: -1, z: 0}  // Vest
+        ];
+        let currentHeading = 0; 
+        let nextHeading = 0;
+        
+        let score = 0;
+        let gameSpeed = 120; // Raskere basehastighet
+        let lastMoveTime = 0;
+        let isPlaying = false;
+        
+        // Dynamisk "frontlys" festet til slangens hode
+        let headLight = new THREE.PointLight(0xffffff, 1.5, 20);
+        scene.add(headLight);
+
+        // --- DEKORASJONER / MILJØ ---
+        let environmentGroup = new THREE.Group();
+        scene.add(environmentGroup);
+        let boardFloor;
+        let boardEdges;
+        let lights = [];
+        let updatables = []; // Ting som må animeres hver frame
+
+        // --- TEMAER ---
+        const themes = {
+            neon: {
+                bg: 0x020208,
+                floor: 0x050510,
+                snakeHead: 0xff00ff,
+                snakeBody: 0x00ffff,
+                food: 0xffff00,
+                ambient: 0x111122,
+                directional: 0x4444aa,
+                bloomStrength: 2.5, // Maks glød!
+                setup: () => {
+                    scene.fog = new THREE.FogExp2(0x020208, 0.03);
+                    
+                    // Retro Synthwave Sol
+                    const sunGeo = new THREE.CircleGeometry(40, 64);
+                    const sunMat = new THREE.MeshBasicMaterial({ 
+                        color: 0xff3366, 
+                        fog: false,
+                        transparent: true
+                    });
+                    const sun = new THREE.Mesh(sunGeo, sunMat);
+                    sun.position.set(0, 10, -80);
+                    environmentGroup.add(sun);
+
+                    // Glødende Grid (Bakke)
+                    const gridHelper = new THREE.GridHelper(gridSize * 3, gridSize * 1.5, 0xff00aa, 0x0044aa);
+                    gridHelper.position.y = -0.49;
+                    environmentGroup.add(gridHelper);
+
+                    // Animer gridet for fartsfølelse
+                    updatables.push((time) => {
+                        gridHelper.position.z = (time * 0.01) % 2;
+                    });
+
+                    // Suser forbi (stjerner/datapunkter)
+                    const dustGeo = new THREE.BufferGeometry();
+                    const dustCount = 400;
+                    const dustPos = new Float32Array(dustCount * 3);
+                    for(let i=0; i<dustCount*3; i++) dustPos[i] = (Math.random() - 0.5) * 100;
+                    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+                    const dustMat = new THREE.PointsMaterial({ color: 0x00ffff, size: 0.2, transparent: true });
+                    const dust = new THREE.Points(dustGeo, dustMat);
+                    environmentGroup.add(dust);
+
+                    updatables.push((time) => {
+                        const positions = dust.geometry.attributes.position.array;
+                        for(let i=2; i<dustCount*3; i+=3) {
+                            positions[i] += 0.2; // Flytt mot kamera
+                            if(positions[i] > 50) positions[i] = -50;
+                        }
+                        dust.geometry.attributes.position.needsUpdate = true;
+                    });
+                }
+            },
+            nordlys: {
+                bg: 0x01020a,
+                floor: 0x051020,
+                snakeHead: 0x88ffff,
+                snakeBody: 0x2288ff,
+                food: 0xffaa00,
+                ambient: 0x112244,
+                directional: 0x88aaff,
+                bloomStrength: 1.0, // Svak glød
+                setup: () => {
+                    scene.fog = new THREE.FogExp2(0x01020a, 0.02);
+                    
+                    // EKTE Nordlys-shader (Wavy teppe i himmelen)
+                    const auroraGeo = new THREE.PlaneGeometry(120, 30, 60, 10);
+                    const auroraMat = new THREE.ShaderMaterial({
+                        uniforms: { time: { value: 0 } },
+                        vertexShader: `
+                            varying vec2 vUv;
+                            uniform float time;
+                            void main() {
+                                vUv = uv;
+                                vec3 pos = position;
+                                pos.z += sin(pos.x * 0.1 + time * 0.5) * 5.0; // Bølger i Z
+                                pos.y += sin(pos.x * 0.05 + time * 0.3) * 3.0; // Bølger i Y
+                                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                            }
+                        `,
+                        fragmentShader: `
+                            varying vec2 vUv;
+                            uniform float time;
+                            void main() {
+                                // Fader ut på toppen og bunnen
+                                float verticalFade = sin(vUv.y * 3.1415);
+                                float horizontalFade = sin(vUv.x * 3.1415);
+                                
+                                // Bland grønn og lilla dynamisk
+                                vec3 color1 = vec3(0.0, 1.0, 0.5); // Neon grønn
+                                vec3 color2 = vec3(0.6, 0.0, 1.0); // Lilla
+                                float mixVal = sin(vUv.x * 5.0 + time) * 0.5 + 0.5;
+                                vec3 finalColor = mix(color1, color2, mixVal);
+                                
+                                // Stripete detaljer
+                                float stripes = sin(vUv.x * 50.0 + time * 2.0) * 0.5 + 0.5;
+                                
+                                gl_FragColor = vec4(finalColor + (stripes * 0.2), verticalFade * horizontalFade * 0.7);
+                            }
+                        `,
+                        transparent: true,
+                        side: THREE.DoubleSide,
+                        blending: THREE.AdditiveBlending,
+                        depthWrite: false
+                    });
+
+                    // Lag 3 lag med nordlys
+                    for(let i=0; i<3; i++) {
+                        const aurora = new THREE.Mesh(auroraGeo, auroraMat);
+                        aurora.position.set(0, 20 + i * 5, -30 - i * 10);
+                        environmentGroup.add(aurora);
+                    }
+
+                    updatables.push((time) => {
+                        auroraMat.uniforms.time.value = time * 0.002;
+                    });
+
+                    // Fjell i bakgrunnen
+                    const mountainGeo = new THREE.ConeGeometry(20, 30, 4);
+                    const mountainMat = new THREE.MeshStandardMaterial({ color: 0x020510, roughness: 1.0 });
+                    for(let i=0; i<5; i++) {
+                        const mnt = new THREE.Mesh(mountainGeo, mountainMat);
+                        mnt.position.set((Math.random() - 0.5) * 100, 5, -40 - Math.random() * 20);
+                        mnt.rotation.y = Math.random() * Math.PI;
+                        environmentGroup.add(mnt);
+                    }
+
+                    // Snøfall med svaiing i vinden
+                    for(let i=0; i<400; i++) {
+                        const snowGeo = new THREE.SphereGeometry(Math.random() * 0.1 + 0.05, 4, 4);
+                        const snowMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+                        const flake = new THREE.Mesh(snowGeo, snowMat);
+                        flake.position.set(
+                            (Math.random() - 0.5) * gridSize * 1.5,
+                            Math.random() * 25,
+                            (Math.random() - 0.5) * gridSize * 1.5
+                        );
+                        // Lagre unik hastighet for hvert snøfnugg
+                        flake.userData = { speed: Math.random() * 0.05 + 0.02, sway: Math.random() * 0.02 };
+                        environmentGroup.add(flake);
+                        
+                        updatables.push((time) => {
+                            flake.position.y -= flake.userData.speed;
+                            flake.position.x += Math.sin(time * 0.001 + flake.position.y) * flake.userData.sway;
+                            if(flake.position.y < -1) flake.position.y = 25;
+                        });
+                    }
+                }
+            },
+            skog: {
+                bg: 0x1e3b5e, // Kveldsblå, gir bedre stemning for ildfluer
+                floor: 0x223d16, 
+                snakeHead: 0x2b1712, 
+                snakeBody: 0x4e342e, 
+                food: 0xff2200, 
+                ambient: 0x446688, 
+                directional: 0xffccaa, // Varmt kveldslys
+                bloomStrength: 0.5, // Litt glød for ildfluer og epler
+                setup: () => {
+                    scene.fog = new THREE.FogExp2(0x1e3b5e, 0.035);
+
+                    // Utvidet skogbunn for å skjule horisonten
+                    const groundGeo = new THREE.PlaneGeometry(150, 150);
+                    const groundMat = new THREE.MeshStandardMaterial({color: 0x1a2e11, roughness: 1.0});
+                    const ground = new THREE.Mesh(groundGeo, groundMat);
+                    ground.rotation.x = -Math.PI / 2;
+                    ground.position.y = -0.55;
+                    ground.receiveShadow = true;
+                    environmentGroup.add(ground);
+
+                    const createTree = (x, z, scale) => {
+                        const tree = new THREE.Group();
+                        
+                        const trunk = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.3, 0.6, 2.0, 6), 
+                            new THREE.MeshStandardMaterial({color: 0x3e2723, roughness: 1.0})
+                        );
+                        trunk.position.y = 1.0;
+                        trunk.castShadow = true;
+                        tree.add(trunk);
+                        
+                        const leafColor = new THREE.Color().setHSL(0.25 + Math.random() * 0.1, 0.6, 0.2 + Math.random() * 0.15);
+                        const leafMat = new THREE.MeshStandardMaterial({color: leafColor, roughness: 0.9});
+                        
+                        const bottomLeaves = new THREE.Mesh(new THREE.ConeGeometry(2.5, 4, 6), leafMat);
+                        bottomLeaves.position.y = 2.5;
+                        bottomLeaves.castShadow = true;
+                        tree.add(bottomLeaves);
+
+                        const topLeaves = new THREE.Mesh(new THREE.ConeGeometry(1.8, 3.5, 6), leafMat);
+                        topLeaves.position.y = 4.5;
+                        topLeaves.castShadow = true;
+                        tree.add(topLeaves);
+                        
+                        tree.position.set(x, -0.5, z);
+                        tree.rotation.y = Math.random() * Math.PI;
+                        tree.scale.setScalar(scale);
+                        
+                        environmentGroup.add(tree);
+                    };
+
+                    const border = gridSize / 2;
+                    // Enda tettere, massiv skog
+                    for(let i=0; i<150; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const radius = border + 1 + Math.random() * 30;
+                        createTree(Math.cos(angle) * radius, Math.sin(angle) * radius, 0.6 + Math.random() * 0.8);
+                    }
+
+                    // Steiner!
+                    const rockGeo = new THREE.DodecahedronGeometry(1, 1);
+                    const rockMat = new THREE.MeshStandardMaterial({color: 0x555555, roughness: 0.8});
+                    for(let i=0; i<40; i++) {
+                        const rock = new THREE.Mesh(rockGeo, rockMat);
+                        const angle = Math.random() * Math.PI * 2;
+                        const radius = border + Math.random() * 20;
+                        rock.position.set(Math.cos(angle) * radius, -0.2, Math.sin(angle) * radius);
+                        rock.scale.set(Math.random() * 1.5 + 0.5, Math.random() * 0.8 + 0.3, Math.random() * 1.5 + 0.5);
+                        rock.rotation.set(Math.random(), Math.random(), Math.random());
+                        rock.castShadow = true;
+                        environmentGroup.add(rock);
+                    }
+
+                    // Ildfluer (Glødende prikker i luften)
+                    for(let i=0; i<50; i++) {
+                        const fireflyGeo = new THREE.SphereGeometry(0.1, 4, 4);
+                        const fireflyMat = new THREE.MeshBasicMaterial({ color: 0xccee00 });
+                        const firefly = new THREE.Mesh(fireflyGeo, fireflyMat);
+                        
+                        // Startposisjon
+                        const startX = (Math.random() - 0.5) * gridSize * 1.2;
+                        const startZ = (Math.random() - 0.5) * gridSize * 1.2;
+                        const startY = Math.random() * 4;
+                        firefly.position.set(startX, startY, startZ);
+                        
+                        // Eget lite lys
+                        const ffLight = new THREE.PointLight(0xccee00, 0.5, 3);
+                        firefly.add(ffLight);
+                        
+                        environmentGroup.add(firefly);
+
+                        const offset = Math.random() * 100;
+                        updatables.push((time) => {
+                            const t = time * 0.001 + offset;
+                            firefly.position.y = startY + Math.sin(t * 2) * 1.5;
+                            firefly.position.x = startX + Math.sin(t * 1.5) * 2.0;
+                            firefly.position.z = startZ + Math.cos(t * 1.3) * 2.0;
+                            ffLight.intensity = Math.abs(Math.sin(t * 3)) * 0.8 + 0.2; // Pulserende lys
+                        });
+                    }
+                }
+            }
+        };
+
+        let currentTheme = themes['neon'];
+
+        // --- BYGG SCENEN ---
+        function applyTheme(themeName) {
+            currentTheme = themes[themeName];
+            scene.background = new THREE.Color(currentTheme.bg);
+
+            // Rydd opp gammelt miljø
+            while(environmentGroup.children.length > 0){ 
+                environmentGroup.remove(environmentGroup.children[0]); 
+            }
+            lights.forEach(l => scene.remove(l));
+            lights = [];
+            updatables = []; // Nullstill animasjoner
+
+            // Sett bloom styrke basert på tema
+            bloomPass.strength = currentTheme.bloomStrength;
+
+            // Lys - Oppgradert for bedre kvalitet og spredning
+            const hemiLight = new THREE.HemisphereLight(0xffffff, currentTheme.floor, 0.4);
+            scene.add(hemiLight);
+            lights.push(hemiLight);
+
+            const ambientLight = new THREE.AmbientLight(currentTheme.ambient, 0.3);
+            scene.add(ambientLight);
+            lights.push(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(currentTheme.directional, 1.2);
+            dirLight.position.set(15, 25, 10);
+            dirLight.castShadow = true;
+            // Dobbel oppløsning på skygger
+            dirLight.shadow.mapSize.width = 2048; 
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 50;
+            // Gjør skyggeområdet stort nok for hele brettet
+            dirLight.shadow.camera.left = -25;
+            dirLight.shadow.camera.right = 25;
+            dirLight.shadow.camera.top = 25;
+            dirLight.shadow.camera.bottom = -25;
+            dirLight.shadow.bias = -0.0005; // Forhindrer shadow-acne
+            scene.add(dirLight);
+            lights.push(dirLight);
+
+            // Brett / Gulv
+            const floorGeo = new THREE.BoxGeometry(gridSize, 1, gridSize);
+            
+            // Gjør isen i Nordlys-temaet høyreflekterende og speilaktig!
+            const isNordlys = themeName === 'nordlys';
+            const floorMat = new THREE.MeshStandardMaterial({ 
+                color: currentTheme.floor,
+                roughness: isNordlys ? 0.02 : 0.8, // Enda blankere is
+                metalness: isNordlys ? 0.8 : 0.1
+            });
+            
+            if(boardFloor) scene.remove(boardFloor);
+            boardFloor = new THREE.Mesh(floorGeo, floorMat);
+            boardFloor.position.y = -0.5;
+            boardFloor.receiveShadow = true;
+            scene.add(boardFloor);
+
+            // Kant rundt brettet
+            const edgesGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(gridSize, 1.1, gridSize));
+            const edgesMat = new THREE.LineBasicMaterial({ color: currentTheme.snakeHead, linewidth: 2 });
+            if(boardEdges) scene.remove(boardEdges);
+            boardEdges = new THREE.LineSegments(edgesGeo, edgesMat);
+            boardEdges.position.y = -0.5;
+            scene.add(boardEdges);
+
+            // Tema-spesifikk setup
+            currentTheme.setup();
+
+            // Oppdater farger på eksisterende slange og mat hvis i spill
+            updateMeshesColor();
+        }
+
+        // --- SPILL LOGIKK ---
+        function createBox(x, z, isHead) {
+            let geo, mat;
+            
+            // Forskjellige, mer realistiske materialer basert på tema
+            if (document.getElementById('theme-selector').value === 'nordlys') {
+                geo = new THREE.BoxGeometry(cellSize * 0.85, cellSize * 0.85, cellSize * 0.85);
+                mat = new THREE.MeshPhysicalMaterial({ 
+                    color: isHead ? currentTheme.snakeHead : currentTheme.snakeBody,
+                    transmission: 0.5, opacity: 1, roughness: 0.1, ior: 1.5, // "Glass/Is" effekt
+                    emissive: isHead ? currentTheme.snakeHead : 0x000000,
+                    emissiveIntensity: 0.3
+                });
+            } else {
+                geo = new THREE.BoxGeometry(cellSize * 0.9, cellSize * 0.9, cellSize * 0.9);
+                mat = new THREE.MeshStandardMaterial({ 
+                    color: isHead ? currentTheme.snakeHead : currentTheme.snakeBody,
+                    emissive: isHead ? currentTheme.snakeHead : 0x000000,
+                    emissiveIntensity: 0.4,
+                    roughness: 0.3, metalness: 0.2
+                });
+            }
+
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, 0, z);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            
+            // Lagre målposisjon for den glidende animasjonen
+            mesh.userData.targetPos = new THREE.Vector3(x, 0, z);
+            
+            scene.add(mesh);
+            return mesh;
+        }
+
+        function spawnFood() {
+            if(foodMesh) scene.remove(foodMesh);
+            
+            let valid = false;
+            let fx, fz;
+            while(!valid) {
+                fx = Math.floor(Math.random() * gridSize) - gridSize/2 + 0.5;
+                fz = Math.floor(Math.random() * gridSize) - gridSize/2 + 0.5;
+                valid = true;
+                for(let segment of snake) {
+                    if(segment.x === fx && segment.z === fz) valid = false;
+                }
+            }
+            food = { x: fx, z: fz };
+
+            // Bedre mat-grafikk: Et svevende oktaeder (krystall)
+            const geo = new THREE.OctahedronGeometry(cellSize * 0.4);
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: currentTheme.food,
+                emissive: currentTheme.food,
+                emissiveIntensity: 0.8,
+                roughness: 0.1, metalness: 0.8
+            });
+            foodMesh = new THREE.Mesh(geo, mat);
+            foodMesh.position.set(food.x, 0.5, food.z);
+            foodMesh.castShadow = true;
+            
+            // Eget lys fra maten for ekstra kul effekt
+            const foodLight = new THREE.PointLight(currentTheme.food, 1, 5);
+            foodMesh.add(foodLight);
+            
+            scene.add(foodMesh);
+        }
+
+        function updateMeshesColor() {
+            if(foodMesh) {
+                foodMesh.material.color.setHex(currentTheme.food);
+                foodMesh.material.emissive.setHex(currentTheme.food);
+                foodMesh.children[0].color.setHex(currentTheme.food); // Oppdater PointLight på maten
+            }
+            snakeMeshes.forEach((mesh, index) => {
+                const color = index === 0 ? currentTheme.snakeHead : currentTheme.snakeBody;
+                mesh.material.color.setHex(color);
+                if(index === 0) mesh.material.emissive.setHex(color);
+                else mesh.material.emissive.setHex(0x000000);
+            });
+            if(boardEdges) boardEdges.material.color.setHex(currentTheme.snakeHead);
+            headLight.color.setHex(currentTheme.snakeHead);
+        }
+
+        function initGame() {
+            // Skjul UI
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-over-screen').style.display = 'none';
+            
+            // Nullstill variabler
+            snakeMeshes.forEach(m => scene.remove(m));
+            snake = [];
+            snakeMeshes = [];
+            currentHeading = 0; // Starter pekende mot Nord (-z)
+            nextHeading = 0;
+            score = 0;
+            document.getElementById('score-display').innerText = score;
+            gameSpeed = 120;
+
+            // Startslange
+            for(let i=0; i<3; i++) {
+                const x = 0.5;
+                const z = 0.5 + i; // Bygger sørover
+                snake.push({x: x, z: z});
+                snakeMeshes.push(createBox(x, z, i === 0));
+            }
+
+            spawnFood();
+            
+            // Plasser kamera bak slangen umiddelbart
+            camera.position.set(0.5, 5, 5.5);
+            cameraLookAtTarget.set(0.5, 0, -5);
+            camera.lookAt(cameraLookAtTarget);
+
+            isPlaying = true;
+            lastMoveTime = performance.now();
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            playSound('die');
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-over-screen').style.display = 'flex';
+        }
+
+        function updateGame(time) {
+            if(!isPlaying) return;
+
+            if (time - lastMoveTime > gameSpeed) {
+                lastMoveTime = time;
+                currentHeading = nextHeading; // Oppdater gjeldende retning
+                const direction = dirs[currentHeading];
+
+                // Regn ut ny posisjon for hodet basert på relativ retning
+                const head = snake[0];
+                const newHead = { x: head.x + direction.x, z: head.z + direction.z };
+
+                // Sjekk kollisjon med vegger
+                const halfGrid = gridSize / 2;
+                if (newHead.x < -halfGrid || newHead.x >= halfGrid || 
+                    newHead.z < -halfGrid || newHead.z >= halfGrid) {
+                    gameOver();
+                    return;
+                }
+
+                // Sjekk kollisjon med seg selv
+                for (let i = 0; i < snake.length; i++) {
+                    if (newHead.x === snake[i].x && newHead.z === snake[i].z) {
+                        gameOver();
+                        return;
+                    }
+                }
+
+                // Sjekk mat
+                let ateFood = false;
+                if (Math.abs(newHead.x - food.x) < 0.1 && Math.abs(newHead.z - food.z) < 0.1) {
+                    ateFood = true;
+                    score += 10;
+                    document.getElementById('score-display').innerText = score;
+                    playSound('eat');
+                    spawnFood();
+                    // Øk farten litt raskere
+                    if(gameSpeed > 60) gameSpeed -= 2;
+                }
+
+                // Flytt logisk slange
+                snake.unshift(newHead); 
+                
+                if (ateFood) {
+                    const newMesh = createBox(newHead.x, newHead.z, true);
+                    snakeMeshes[0].material.color.setHex(currentTheme.snakeBody);
+                    snakeMeshes[0].material.emissive.setHex(0x000000);
+                    snakeMeshes.unshift(newMesh);
+                } else {
+                    snake.pop();
+                    const tailMesh = snakeMeshes.pop();
+                    
+                    // IKKE flytt direkte, men sett ny MÅL-posisjon (for glidende animasjon)
+                    tailMesh.userData.targetPos.set(newHead.x, 0, newHead.z);
+                    
+                    // Oppdater farger
+                    tailMesh.material.color.setHex(currentTheme.snakeHead);
+                    tailMesh.material.emissive.setHex(currentTheme.snakeHead);
+                    snakeMeshes[0].material.color.setHex(currentTheme.snakeBody);
+                    snakeMeshes[0].material.emissive.setHex(0x000000);
+                    
+                    snakeMeshes.unshift(tailMesh);
+                }
+
+                // Oppdater målposisjoner for ALLE mesh-deler slik at de vet hvor de skal gli
+                for(let i=0; i<snakeMeshes.length; i++) {
+                    snakeMeshes[i].userData.targetPos.set(snake[i].x, 0, snake[i].z);
+                }
+            }
+        }
+
+        // --- RENDER LOOP ---
+        function animate(time) {
+            requestAnimationFrame(animate);
+
+            updateGame(time);
+
+            // 1. Glidende bevegelse for slangen ("Lerp" interpolasjon)
+            snakeMeshes.forEach(mesh => {
+                if (mesh.userData.targetPos) {
+                    // Flytt meshen 30% av veien til målet hver frame (silkemykt!)
+                    mesh.position.lerp(mesh.userData.targetPos, 0.3);
+                }
+            });
+
+            // 2. Animer maten (hoppende / roterende krystall med pulserende lys)
+            if(foodMesh) {
+                foodMesh.rotation.y += 0.05;
+                foodMesh.rotation.x += 0.02;
+                foodMesh.position.y = 0.5 + Math.sin(time * 0.005) * 0.2;
+                
+                if(foodMesh.children.length > 0) {
+                    // Lysstyrken pulserer
+                    foodMesh.children[0].intensity = 1.0 + Math.sin(time * 0.01) * 0.5;
+                }
+            }
+
+            // 3. Animer miljøspesifikke detaljer (Nordlys-bølger, ildfluer, neon-grid)
+            updatables.forEach(fn => fn(time));
+
+            // --- 4. TREDJEPERSONS KAMERA (GTA-stil) ---
+            if (isPlaying && snakeMeshes.length > 0) {
+                headLight.intensity = 1.5; // Slå på frontlyset
+                
+                const headPos = snakeMeshes[0].position;
+                const dir = dirs[currentHeading];
+
+                // Fest "frontlyset" til hodet
+                headLight.position.set(headPos.x, headPos.y + 1, headPos.z);
+
+                // Regn ut hvor kameraet skal sveve (bak og over slangen)
+                const camDist = 7;
+                const camHeight = 5;
+                const targetCamPos = new THREE.Vector3(
+                    headPos.x - dir.x * camDist,
+                    camHeight,
+                    headPos.z - dir.z * camDist
+                );
+
+                // Regn ut hvor kameraet skal SE (litt foran slangen)
+                const lookAhead = 5;
+                const targetLookAt = new THREE.Vector3(
+                    headPos.x + dir.x * lookAhead,
+                    0,
+                    headPos.z + dir.z * lookAhead
+                );
+
+                // Interpoler ("Lerp") kameraet slik at det føles som det henger i en elastisk snor
+                camera.position.lerp(targetCamPos, 0.08);
+                cameraLookAtTarget.lerp(targetLookAt, 0.1);
+                camera.lookAt(cameraLookAtTarget);
+                
+            } else if (!isPlaying) {
+                headLight.intensity = 0; // Slå av frontlyset
+                
+                // Før start: La kameraet sirkulere majestetisk rundt brettet
+                camera.position.x = Math.sin(time * 0.0005) * 20;
+                camera.position.z = Math.cos(time * 0.0005) * 20;
+                camera.position.y = 15;
+                camera.lookAt(0, 0, 0);
+            }
+
+            // Bruk Composer (Post-processing) i stedet for vanlig renderer for gløde-effekt
+            composer.render();
+        }
+
+        // --- KONTROLLER (Relativ Styring som en bil) ---
+        function handleInput(key) {
+            if(!isPlaying) return;
+            
+            // Sving mot venstre (A eller Venstre-pil)
+            if (key === 'ArrowLeft' || key === 'a' || key === 'A') {
+                // Modulo i Javascript for å unngå negative tall: ((x % n) + n) % n
+                nextHeading = (((currentHeading - 1) % 4) + 4) % 4;
+            } 
+            // Sving mot høyre (D eller Høyre-pil)
+            else if (key === 'ArrowRight' || key === 'd' || key === 'D') {
+                nextHeading = (currentHeading + 1) % 4;
+            }
+        }
+
+        window.addEventListener('keydown', (e) => handleInput(e.key));
+
+        // Touch/Swipe støtte (Oppdatert for venstre/høyre svinging)
+        let touchStartX = 0;
+        let touchStartY = 0;
+        
+        container.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, {passive: false});
+
+        container.addEventListener('touchend', (e) => {
+            let touchEndX = e.changedTouches[0].screenX;
+            let touchEndY = e.changedTouches[0].screenY;
+            handleSwipe(touchStartX, touchStartY, touchEndX, touchEndY);
+        }, {passive: false});
+
+        document.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+
+        function handleSwipe(startX, startY, endX, endY) {
+            const dx = endX - startX;
+            const minSwipe = 30; // Minimum for swipe
+
+            if (Math.abs(dx) > minSwipe) {
+                if (dx > 0) handleInput('ArrowRight'); // Swipe høyre = sving høyre
+                else handleInput('ArrowLeft');         // Swipe venstre = sving venstre
+            }
+        }
+
+        // --- UI HENDELSER ---
+        document.getElementById('start-btn').addEventListener('click', () => {
+            applyTheme(document.getElementById('theme-selector').value);
+            initGame();
+        });
+        
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            // Tilbake til Hovedmenyen!
+            document.getElementById('game-over-screen').style.display = 'none';
+            document.getElementById('start-screen').style.display = 'flex';
+            
+            // Rydd opp spilltilstanden slik at kameraet sirkulerer over tomt brett igjen
+            isPlaying = false;
+            snakeMeshes.forEach(m => scene.remove(m));
+            snake = [];
+            snakeMeshes = [];
+            if(foodMesh) scene.remove(foodMesh);
+            
+            // Nullstill poeng
+            score = 0;
+            document.getElementById('score-display').innerText = score;
+        });
+        
+        // Oppdater bakgrunnen umiddelbart når spilleren velger fra drop-down
+        document.getElementById('theme-selector').addEventListener('change', (e) => {
+            applyTheme(e.target.value);
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start
+        applyTheme('neon');
+        animate(0);
+
+    </script>
+</body>
+</html>
