@@ -70,8 +70,9 @@
             position: absolute;
             inset: 0;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
+            overflow-y: auto;
             padding: 32px;
             background:
                 linear-gradient(180deg, rgba(4, 8, 16, 0.4), rgba(4, 8, 16, 0.86)),
@@ -94,6 +95,7 @@
             grid-template-columns: 1.3fr 1fr;
             gap: 28px;
             align-items: stretch;
+            margin: auto;
         }
 
         .panel {
@@ -506,6 +508,7 @@
             width: min(560px, 100%);
             padding: 34px;
             text-align: center;
+            margin: auto;
         }
 
         .result-card h2 {
@@ -600,7 +603,7 @@
         <div id="hud" class="hidden">
             <div class="hud-top">
                 <div class="hud-card">
-                    <div class="hud-label">Venstre side</div>
+                    <div id="left-label" class="hud-label">Spiller 1</div>
                     <div id="left-name" class="hud-name">Aurelia</div>
                     <div id="left-subtext" class="hud-subtext">Ridder av Nordporten</div>
                     <div class="meter"><div id="left-health" class="meter-fill health-left"></div></div>
@@ -615,7 +618,7 @@
                 </div>
 
                 <div class="hud-card">
-                    <div class="hud-label">Høyre side</div>
+                    <div id="right-label" class="hud-label">Motstander</div>
                     <div id="right-name" class="hud-name">Rival</div>
                     <div id="right-subtext" class="hud-subtext">Klar for kamp</div>
                     <div class="meter"><div id="right-health" class="meter-fill health-right"></div></div>
@@ -1119,7 +1122,7 @@
                 tryStartAttack(fighter, fighter.onGround ? ATTACKS.heavy : ATTACKS.air);
             }
 
-            if (!fighter.block && !fighter.action && commands.move !== 0) {
+            if (!fighter.block && !fighter.action && commands.move !== 0 && canAct) {
                 fighter.facing = commands.move > 0 ? 1 : -1;
             }
 
@@ -1128,7 +1131,7 @@
             }
 
             const moveScale = fighter.block ? 0.34 : fighter.action ? 0.72 : 1;
-            const targetSpeed = commands.move * fighter.speed * moveScale;
+            const targetSpeed = canAct ? commands.move * fighter.speed * moveScale : 0;
             const accel = fighter.onGround ? 2400 : 1400;
             fighter.vx = approach(fighter.vx, targetSpeed, accel * dt);
             if (!fighter.onGround) {
@@ -1664,6 +1667,9 @@
             }
 
             ui.modePill.textContent = app.mode === "duel" ? "2 Player Duel" : "1 Player Adventure";
+
+            ui.leftLabel.textContent = app.mode === "duel" ? "Spiller 1" : "Helt";
+            ui.rightLabel.textContent = app.mode === "duel" ? "Spiller 2" : "Fokus";
 
             const left = app.mode === "duel" ? app.fighters[0] : app.player;
             const right = app.mode === "duel" ? app.fighters[1] : getAdventureRightPanelTarget();
@@ -3819,6 +3825,11 @@
                 result ^= result + Math.imul(result ^ (result >>> 7), result | 61);
                 return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
             };
+        }
+    </script>
+</body>
+</html>
+        };
         }
     </script>
 </body>
